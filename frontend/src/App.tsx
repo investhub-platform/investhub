@@ -2,7 +2,7 @@ import React from 'react'
 import Navbar from './components/layout/Navbar'
 import Hero from './components/landing/Hero'
 import SocialProof from './components/landing/SocialProof'
-import FeaturesBento from './components/landing/FeaturesBento'
+// import FeaturesBento from './components/landing/FeaturesBento'
 import ValueCards from './components/landing/ValueCards'
 import HowItWorks from './components/landing/HowItWorks'
 import FAQAccordion from './components/landing/FAQAccordion'
@@ -26,9 +26,9 @@ const App: React.FC = () => {
         </div>
 
         {/* Feature Bento */}
-        <div className="px-6">
+        {/* <div className="px-6">
           <FeaturesBento />
-        </div>
+        </div> */}
 
         {/* How it works */}
         <div className="px-6">

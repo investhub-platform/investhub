@@ -247,7 +247,7 @@ const WalletUnlock: React.FC = () => {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isInView]);
+  }, [isInView, milestones.length]);
 
   return (
     <div ref={containerRef} className="space-y-4">

@@ -139,18 +139,14 @@ export default function Aurora(props: AuroraProps) {
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.canvas.style.backgroundColor = 'transparent';
 
-    let program: Program | undefined;
-
     function resize() {
       if (!ctn) return;
       const width = ctn.offsetWidth;
       const height = ctn.offsetHeight;
       renderer.setSize(width, height);
-      if (program) {
-        program.uniforms.uResolution.value = [width, height];
-      }
+      // program will be created below; guard when used
+      // we cannot reference program here before it's created synchronously
     }
-    window.addEventListener('resize', resize);
 
     const geometry = new Triangle(gl);
     if (geometry.attributes.uv) {
@@ -162,7 +158,7 @@ export default function Aurora(props: AuroraProps) {
       return [c.r, c.g, c.b];
     });
 
-    program = new Program(gl, {
+    const program = new Program(gl, {
       vertex: VERT,
       fragment: FRAG,
       uniforms: {
@@ -195,6 +191,11 @@ export default function Aurora(props: AuroraProps) {
     };
     animateId = requestAnimationFrame(update);
 
+    // now that program exists, wire resize listener and set resolution
+    window.addEventListener('resize', resize);
+    if (program) {
+      program.uniforms.uResolution.value = [ctn.offsetWidth, ctn.offsetHeight];
+    }
     resize();
 
     return () => {
@@ -205,7 +206,7 @@ export default function Aurora(props: AuroraProps) {
       }
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
-  }, [amplitude]);
+  }, [amplitude, blend, colorStops]);
 
   return <div ref={ctnDom} className="aurora-container" />;
 }
