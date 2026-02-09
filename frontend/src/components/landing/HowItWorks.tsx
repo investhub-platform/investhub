@@ -36,24 +36,24 @@ export default function HowItWorks() {
   const steps = view === 'founder' ? founderSteps : investorSteps
 
   return (
-    <section id="how" className="w-full py-32 bg-[#020617] relative overflow-hidden">
+    <section id="how" className="w-full py-16 sm:py-24 md:py-32 bg-[#020617] relative overflow-hidden">
       
       {/* Background Grid (Optional) */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] mask-image-gradient pointer-events-none" />
 
-      <div className="max-w-5xl mx-auto px-6 relative z-10" ref={containerRef}>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 relative z-10" ref={containerRef}>
         
         {/* Header Section */}
-        <div className="text-center mb-20">
+        <div className="text-center mb-12 sm:mb-16 md:mb-20">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="inline-block mb-4 px-4 py-1.5 rounded-full border border-blue-500/20 bg-blue-500/10 text-blue-400 text-sm font-medium"
+            className="inline-block mb-3 sm:mb-4 px-3 sm:px-4 py-1.5 rounded-full border border-blue-500/20 bg-blue-500/10 text-blue-400 text-xs sm:text-sm font-medium"
           >
             Workflow
           </motion.div>
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6 tracking-tight px-4">
             From Idea to <span className="text-blue-500">Exit.</span>
           </h2>
           
@@ -63,7 +63,7 @@ export default function HowItWorks() {
               <button
                 key={tab}
                 onClick={() => setView(tab)}
-                className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors z-10 ${view === tab ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`relative px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors z-10 ${view === tab ? 'text-white' : 'text-slate-400 hover:text-white'}`}
               >
                 {view === tab && (
                   <motion.div
@@ -113,12 +113,12 @@ export default function HowItWorks() {
 
                   {/* Content Card */}
                   <div className="w-[calc(100%-80px)] md:w-[45%] ml-20 md:ml-0 pl-4 md:pl-0">
-                    <div className="group p-6 rounded-2xl bg-[#0B0D10] border border-white/5 hover:border-blue-500/30 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-900/10">
-                      <div className="flex items-center gap-4 mb-3">
-                        <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 text-xs font-mono text-slate-400 border border-white/5">
+                    <div className="group p-4 sm:p-6 rounded-2xl bg-[#0B0D10] border border-white/5 hover:border-blue-500/30 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-900/10 active:scale-[0.98]">
+                      <div className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-3">
+                        <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white/5 text-xs font-mono text-slate-400 border border-white/5">
                           0{index + 1}
                         </span>
-                        <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
+                        <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
                           {step.title}
                         </h3>
                       </div>

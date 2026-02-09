@@ -24,15 +24,15 @@ const companies = [
 
 export default function SocialProof() {
   return (
-    <section className="relative w-full py-6 overflow-hidden bg-transparent">
+    <section className="relative w-full py-4 sm:py-6 overflow-hidden bg-transparent">
       {/* Background Glow (subtle radial, centered) */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(closest-side, rgba(59,130,246,0.04), transparent 35%)', filter: 'blur(56px)' }}
       />
 
-      <div className="max-w-6xl mx-auto px-6 relative z-10">
-        <h3 className="text-center text-sm font-medium text-slate-500 uppercase tracking-widest mb-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
+        <h3 className="text-center text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-widest mb-4 sm:mb-6">
           Trusted by next‑gen founders from
         </h3>
 
@@ -67,11 +67,11 @@ export default function SocialProof() {
               >
                 {/* Icon */}
                 <company.icon 
-                  className="w-6 h-6 text-slate-600 group-hover:text-blue-400 transition-colors duration-300" 
+                  className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 group-hover:text-blue-400 transition-colors duration-300" 
                   strokeWidth={2.5}
                 />
                 {/* Text Logo */}
-                <span className="text-xl font-bold text-slate-600 group-hover:text-white transition-colors duration-300 tracking-tight">
+                <span className="text-lg sm:text-xl font-bold text-slate-600 group-hover:text-white transition-colors duration-300 tracking-tight">
                   {company.name}
                 </span>
               </div>
