@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion'
+import { motion, useScroll, useSpring } from 'framer-motion'
 import { User, BrainCircuit, Users, Wallet, Search, ShieldCheck, LineChart, CheckCircle2 } from 'lucide-react'
 
 // Steps Data with Icons

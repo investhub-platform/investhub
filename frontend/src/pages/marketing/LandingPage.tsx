@@ -1,5 +1,4 @@
-
-import React, { useRef } from 'react'
+// React import removed (automatic JSX runtime) — prevents unused import TS6133
 import { motion } from 'framer-motion'
 import Navbar from '../../components/layout/Navbar'
 import Hero from '../../components/landing/Hero'

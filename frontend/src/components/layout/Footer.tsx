@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
-import { ArrowRight, Github, Twitter, Linkedin, Send } from 'lucide-react'
+import { ArrowRight, Github, Twitter, Linkedin } from 'lucide-react'
+import type { ComponentType, SVGProps } from 'react'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -123,7 +124,7 @@ export default function Footer() {
 }
 
 // Helper Component for Social Icons
-function SocialIcon({ icon: Icon }: { icon: any }) {
+function SocialIcon({ icon: Icon }: { icon: ComponentType<SVGProps<SVGSVGElement>> }) {
   return (
     <a href="#" className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-all active:scale-90">
       <Icon className="w-5 h-5" />

@@ -1,0 +1,63 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-build:
+    name: Lint & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Run lint
+        run: npm run lint
+        working-directory: frontend
+
+      - name: Run build
+        run: npm run build
+        working-directory: frontend
+
+  deploy-vercel:
+    name: Deploy to Vercel (optional)
+    needs: lint-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Deploy to Vercel (via CLI)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx vercel --prod --confirm
+        working-directory: frontend
+
+# Notes:
+# - This workflow runs lint + build on PRs and pushes to `main`.
+# - To enable automatic production deploys, add the secret `VERCEL_TOKEN` to your GitHub repo
+#   (Repository Settings → Secrets → Actions) and connect your Vercel project to this repo.
+# - Alternatively, prefer Vercel's native Git integration — Vercel will run its own builds and deploys.
