@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { motion, useInView, useMotionValue, useSpring } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import { motion, useInView } from 'framer-motion';
 import { Brain, Lock, Users, CheckCircle2, TrendingUp, Shield } from 'lucide-react';
 
 const FeaturesBento: React.FC = () => {

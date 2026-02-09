@@ -1,47 +1,84 @@
-import React from 'react'
+import { motion } from "framer-motion";
+import { 
+  Cpu, 
+  Globe2, 
+  Orbit, 
+  Zap, 
+  Triangle, 
+  Layers, 
+  Hexagon, 
+  Command 
+} from "lucide-react";
 
+// 1. Mock "Real" Logos using Lucide Icons + Text
 const companies = [
-  { name: 'Foundry' },
-  { name: 'LaunchPad' },
-  { name: 'Vertex' },
-  { name: 'Orbit' },
-  { name: 'Pioneer' },
-  { name: 'Summit' },
-  { name: 'Catalyst' },
-  { name: 'Nexus' },
-]
+  { name: "Foundry", icon: Hexagon },
+  { name: "LaunchPad", icon: Zap },
+  { name: "Vertex", icon: Triangle },
+  { name: "Orbit", icon: Orbit },
+  { name: "Pioneer", icon: Globe2 },
+  { name: "Summit", icon: Layers },
+  { name: "Catalyst", icon: Cpu },
+  { name: "Nexus", icon: Command },
+];
 
 export default function SocialProof() {
-  // duplicate list so the marquee can loop seamlessly
-  const items = [...companies, ...companies]
-
   return (
-    <section className="w-full py-8">
-      <div className="max-w-7xl mx-auto px-6">
-        <h3 className="text-center text-sm text-slate-400 mb-4">Trusted by next‑gen founders from:</h3>
+    <section className="relative w-full py-6 overflow-hidden bg-transparent">
+      {/* Background Glow (subtle radial, centered) */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(closest-side, rgba(59,130,246,0.04), transparent 35%)', filter: 'blur(56px)' }}
+      />
 
-        <div className="relative overflow-hidden">
-          <div
-            className="marquee flex gap-8 w-[200%] items-center"
-            style={{ animation: 'marquee 28s linear infinite' }}
-            aria-hidden={false}
+      <div className="max-w-6xl mx-auto px-6 relative z-10">
+        <h3 className="text-center text-sm font-medium text-slate-500 uppercase tracking-widest mb-6">
+          Trusted by next‑gen founders from
+        </h3>
+
+        {/* 2. The Marquee Container with Gradient Mask */}
+        <div className="relative flex overflow-hidden mask-image-gradient py-2">
+          {/* Gradient Mask Logic (Add this to your globals.css or use inline style below):
+             mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+          */}
+          <div 
+            className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-[#020617] to-transparent z-20 pointer-events-none" 
+          />
+          <div 
+            className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-[#020617] to-transparent z-20 pointer-events-none" 
+          />
+
+          {/* 3. Framer Motion Infinite Loop */}
+          <motion.div
+            className="flex flex-nowrap gap-16"
+            animate={{ x: "-50%" }}
+            transition={{ 
+              duration: 30, // Adjust speed (higher = slower)
+              ease: "linear", 
+              repeat: Infinity 
+            }}
+            style={{ width: "max-content" }} // Ensures container fits all items
           >
-            {items.map((c, i) => (
-              <div key={`${c.name}-${i}`} className="flex-shrink-0 w-40 h-12 flex items-center justify-center bg-transparent rounded-md">
-                <div className="w-full h-full flex items-center justify-center text-slate-400 opacity-60 hover:opacity-100 hover:text-white transition duration-250 transform hover:-translate-y-0.5">
-                  {/* Simple text-logo placeholder to avoid external assets */}
-                  <span className="font-semibold tracking-wide">{c.name}</span>
-                </div>
+            {/* Render Twice for Seamless Loop */}
+            {[...companies, ...companies].map((company, index) => (
+              <div 
+                key={`${company.name}-${index}`} 
+                className="group flex items-center gap-2 cursor-pointer transition-all duration-300 hover:scale-105"
+              >
+                {/* Icon */}
+                <company.icon 
+                  className="w-6 h-6 text-slate-600 group-hover:text-blue-400 transition-colors duration-300" 
+                  strokeWidth={2.5}
+                />
+                {/* Text Logo */}
+                <span className="text-xl font-bold text-slate-600 group-hover:text-white transition-colors duration-300 tracking-tight">
+                  {company.name}
+                </span>
               </div>
             ))}
-          </div>
-
-          {/* pointer overlay to pause on hover via CSS only */}
-          <style>{`
-            .marquee:hover { animation-play-state: paused; }
-          `}</style>
+          </motion.div>
         </div>
       </div>
     </section>
-  )
+  );
 }

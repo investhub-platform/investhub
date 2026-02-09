@@ -1,6 +1,5 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { User, Users, DollarSign } from 'lucide-react'
 
 const founderSteps = [
   { title: 'Build Profile', desc: 'Create your startup identity.' },
@@ -74,6 +73,7 @@ export default function HowItWorks() {
                 >
                   <rect x="-80" y="-34" width="180" height="72" rx="12" fill="#0b1726" stroke="#ffffff" strokeOpacity="0.12" />
                     <foreignObject x="-76" y="-30" width="172" height="64">
+                      {/* @ts-ignore: xmlns is required inside foreignObject for XHTML content */}
                       <div xmlns="http://www.w3.org/1999/xhtml" className="p-3 text-sm text-slate-100">
                         <div className="text-white font-semibold">{s.title}</div>
                         <div className="text-slate-300 text-xs mt-1">{s.desc}</div>
