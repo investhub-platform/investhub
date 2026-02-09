@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useRef } from 'react'
+import { motion } from 'framer-motion'
 import Navbar from './components/layout/Navbar'
 import Hero from './components/landing/Hero'
 import SocialProof from './components/landing/SocialProof'
@@ -15,15 +16,26 @@ const App: React.FC = () => {
       <Hero />
 
       <main className="pb-24">
-        {/* Social Proof Section */}
-        <div className="pt-12 px-6 pb-6 max-w-6xl mx-auto">
-          <SocialProof />
-        </div>
+      {/* Background grid and grouped SocialProof + ValueCards */}
+      <div className="relative">
+        <motion.div
+          className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] mask-image-gradient pointer-events-none"
+          initial={{ opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.6 }}
+        />
 
-        {/* Value Cards */}
-        <div className="px-6">
-          <ValueCards />
+        <div className="max-w-5xl mx-auto px-6 relative z-10">
+          <div className="pt-12 pb-6">
+            <SocialProof />
+          </div>
+
+          <div className="pb-6">
+            <ValueCards />
+          </div>
         </div>
+      </div>
 
         {/* Feature Bento */}
         {/* <div className="px-6">

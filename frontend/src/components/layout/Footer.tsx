@@ -1,92 +1,132 @@
 import { motion } from 'framer-motion'
-
-const container = {
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.08,
-    },
-  },
-}
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.45 } },
-}
+import { ArrowRight, Github, Twitter, Linkedin, Send } from 'lucide-react'
 
 export default function Footer() {
+  const currentYear = new Date().getFullYear()
+
   return (
-    <footer className="relative mt-16">
-      {/* Aurora glows */}
-      <div className="pointer-events-none absolute inset-x-0 -top-40 flex justify-center overflow-hidden">
-        <div className="w-[60rem] h-48 rounded-full bg-gradient-to-r from-[#3b82f6]/30 via-[#8b5cf6]/20 to-[#3b82f6]/10 blur-3xl opacity-40 transform-gpu" />
-      </div>
+    <footer className="relative mt-32 w-full bg-[#020617] border-t border-white/5 overflow-hidden">
+      
+      {/* 1. Background Texture (Subtle Grid) */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] mask-image-gradient pointer-events-none" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-20">
-        <motion.div variants={container} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.2 }} className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <motion.div variants={item} className="col-span-1">
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
-              <h2 className="text-4xl font-extrabold text-white leading-tight">Ready to build the future?</h2>
-              <p className="mt-3 text-sm text-slate-400 max-w-md">Join founders and investors shaping the next era of infrastructure, marketplaces and fintech.</p>
-
-              <div className="mt-6 flex items-center gap-3">
-                <motion.a whileHover={{ scale: 1.05 }} className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-lg shadow-md">
-                  Get started
-                </motion.a>
-
-                <motion.a whileHover={{ scale: 1.05 }} className="inline-flex items-center gap-2 text-slate-300 px-4 py-2 rounded-lg border border-white/6 bg-white/2">
-                  Contact sales
-                </motion.a>
+      <div className="relative z-10 max-w-7xl mx-auto px-6 pt-20 pb-12">
+        
+        {/* 2. Main Top Section: CTA + Links */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 mb-20">
+          
+          {/* Left: Brand & Newsletter */}
+          <div className="lg:col-span-5 flex flex-col justify-between">
+            <div>
+              <motion.h2 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-6"
+              >
+                Ready to build <br />
+                <span className="text-slate-500">the future?</span>
+              </motion.h2>
+              <p className="text-slate-400 mb-8 max-w-sm leading-relaxed">
+                Join 10,000+ founders and investors shaping the next era of fintech.
+              </p>
+              
+              {/* Newsletter Input */}
+              <div className="flex items-center gap-2 max-w-sm">
+                <div className="relative flex-1 group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+                  <input 
+                    type="email" 
+                    placeholder="Enter your email" 
+                    className="relative w-full bg-[#0B0D10] text-white px-4 py-3 rounded-lg border border-white/10 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-slate-600"
+                  />
+                </div>
+                <button className="p-3 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/5">
+                  <ArrowRight className="w-5 h-5" />
+                </button>
               </div>
             </div>
-          </motion.div>
-
-          <motion.div variants={item} className="col-span-1 md:col-span-2 grid grid-cols-2 gap-6">
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <h4 className="text-white font-semibold">Product</h4>
-              <ul className="mt-4 space-y-2 text-sm text-slate-400">
-                <li>Features</li>
-                <li>Pricing</li>
-                <li>Docs</li>
-              </ul>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <h4 className="text-white font-semibold">Company</h4>
-              <ul className="mt-4 space-y-2 text-sm text-slate-400">
-                <li>About</li>
-                <li>Careers</li>
-                <li>Blog</li>
-              </ul>
-            </div>
-          </motion.div>
-        </motion.div>
-
-        {/* Footer bottom */}
-        <div className="mt-10 flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-slate-400">
-          <div className="flex items-center gap-4">
-            <div className="text-white font-semibold">InvestHub</div>
-            <div>© {new Date().getFullYear()} InvestHub, Inc.</div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <a className="text-slate-400">Privacy</a>
-            <a className="text-slate-400">Terms</a>
+          {/* Right: Navigation Links */}
+          <div className="lg:col-span-7 grid grid-cols-2 md:grid-cols-3 gap-8">
+            {/* Column 1 */}
+            <div className="space-y-6">
+              <h4 className="text-sm font-semibold text-white uppercase tracking-wider">Product</h4>
+              <ul className="space-y-4">
+                {['Features', 'Pricing', 'Docs', 'Changelog'].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="group flex items-center text-slate-400 hover:text-blue-400 transition-colors">
+                      <span className="relative">
+                        {item}
+                        <span className="absolute -bottom-1 left-0 w-0 h-px bg-blue-400 transition-all group-hover:w-full" />
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Column 2 */}
+            <div className="space-y-6">
+              <h4 className="text-sm font-semibold text-white uppercase tracking-wider">Company</h4>
+              <ul className="space-y-4">
+                {['About', 'Careers', 'Blog', 'Contact'].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="text-slate-400 hover:text-blue-400 transition-colors">
+                      {item}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Column 3 */}
+            <div className="space-y-6">
+              <h4 className="text-sm font-semibold text-white uppercase tracking-wider">Legal</h4>
+              <ul className="space-y-4">
+                {['Privacy', 'Terms', 'Security', 'Status'].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="text-slate-400 hover:text-blue-400 transition-colors">
+                      {item}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
+
+        {/* 3. Bottom Bar: Copyright & Socials */}
+        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="text-slate-500 text-sm">
+            © {currentYear} InvestHub Inc. All rights reserved.
+          </div>
+
+          <div className="flex items-center gap-6">
+            <SocialIcon icon={Twitter} />
+            <SocialIcon icon={Github} />
+            <SocialIcon icon={Linkedin} />
+          </div>
+        </div>
+
       </div>
 
-      {/* Huge subtle watermark (centered & responsive) */}
-      <div className="absolute inset-x-0 bottom-0 -mb-28 pointer-events-none overflow-hidden">
-        <div className="w-full flex justify-center">
-          <span
-            className="block font-black text-white leading-none select-none text-[10rem] md:text-[14rem] lg:text-[18rem]"
-            style={{ lineHeight: 0.8, opacity: 0.03, transform: 'translateY(8px)' }}
-          >
-            InvestHub
-          </span>
-        </div>
+      {/* 4. Massive Watermark (Clipped) */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/3 pointer-events-none select-none">
+        <h1 className="text-[12rem] md:text-[20rem] font-bold text-white/[0.02] tracking-tighter leading-none whitespace-nowrap">
+          InvestHub
+        </h1>
       </div>
     </footer>
+  )
+}
+
+// Helper Component for Social Icons
+function SocialIcon({ icon: Icon }: { icon: any }) {
+  return (
+    <a href="#" className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+      <Icon className="w-5 h-5" />
+    </a>
   )
 }
