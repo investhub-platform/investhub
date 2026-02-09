@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { ArrowRight, Github, Twitter, Linkedin, Send } from 'lucide-react'
+import { ArrowRight, Github, Twitter, Linkedin } from 'lucide-react'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
