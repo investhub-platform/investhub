@@ -10,7 +10,7 @@ const Hero: React.FC = () => {
       {/* --- CIRCULAR GRADIENT BACKGROUND (commented out) --- */}
       
       <svg className="absolute z-0 w-full -mt-40 md:mt-0" width="1440" height="676" viewBox="0 0 1440 676" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="-92" y="-948" width="1624" height="1624" rx="812" fill="url(#circleGradient)" fillOpacity="0.45" />
+        <rect x="-92" y="-948" width="1624" height="1624" rx="812" fill="url(#circleGradient)" className="hero-circle-rect" />
         <defs>
           <radialGradient id="circleGradient" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="rotate(90 428 292)scale(812)">
             <stop offset=".63" stopColor="#372AAC" stopOpacity="0" />
@@ -19,10 +19,17 @@ const Hero: React.FC = () => {
           </radialGradient>
         </defs>
       </svg>
+      {/* Responsive style to reduce transparency (increase opacity) on small screens */}
+      <style>{`
+        .hero-circle-rect{fill-opacity:0.45}
+        @media (max-width: 640px){
+          .hero-circle-rect{fill-opacity:0.85}
+        }
+      `}</style>
       
 
       {/* Aurora background component (replaces SVG) - wrapped to control vertical size */}
-      <div className="absolute inset-x-0 -top-56 h-[50vh] z-0 pointer-events-none">
+      <div className="absolute inset-x-0 -top-28 sm:-top-56 h-[30vh] sm:h-[50vh] z-0 pointer-events-none">
         <Aurora
           colorStops={["#020617","#3b82f6","#06b6d4"]}
           blend={0.5}
@@ -33,16 +40,16 @@ const Hero: React.FC = () => {
 
 
       {/* --- MAIN CONTENT --- */}
-      <div className="relative z-20 max-w-7xl mx-auto px-6 pt-40 pb-32 flex flex-col items-center text-center">
+      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32 md:pt-40 pb-20 sm:pb-28 md:pb-32 flex flex-col items-center text-center">
         
         {/* Badge / Announcement Pill */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-8"
+          className="mb-6 sm:mb-8"
         >
-          <a href="#" className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300 text-sm font-medium hover:bg-blue-500/20 transition-colors transform-none">
+          <a href="#" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300 text-xs sm:text-sm font-medium hover:bg-blue-500/20 transition-colors transform-none active:scale-95">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
@@ -57,9 +64,9 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-[1.1]"
+          className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight mb-4 sm:mb-6 leading-[1.1] px-4"
         >
-          Venture Capital, <br className="hidden md:block" />
+          Venture Capital, <br className="hidden sm:block" />
           <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
             Democratized.
           </span>
@@ -70,7 +77,7 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-lg md:text-xl text-slate-400 max-w-2xl mb-10 leading-relaxed"
+          className="text-base sm:text-lg md:text-xl text-slate-400 max-w-2xl mb-8 sm:mb-10 leading-relaxed px-4"
         >
           Connect with elite technical mentors and secure funding through our <span className="text-white font-medium">AI-driven investment ecosystem</span>. Stop chasing leads, start building.
         </motion.p>
@@ -80,15 +87,15 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full sm:w-auto"
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center w-full sm:w-auto px-4"
         >
-          <button className="group relative px-8 py-4 rounded-full bg-blue-600 text-white font-semibold shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] hover:bg-blue-500 transition-all hover:scale-105 active:scale-95">
+          <button className="group relative w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base rounded-full bg-blue-600 text-white font-semibold shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] hover:bg-blue-500 transition-all hover:scale-105 active:scale-95">
             <span className="flex items-center gap-2">
               Start Funding <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </span>
           </button>
           
-          <button className="group px-8 py-4 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm text-white font-medium hover:bg-white/10 transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
+          <button className="group w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base rounded-full border border-white/10 bg-white/5 backdrop-blur-sm text-white font-medium hover:bg-white/10 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
             <Play className="w-4 h-4 fill-white" /> View Demo
           </button>
         </motion.div>
@@ -99,7 +106,7 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0, y: 50, rotateX: 20 }}
           animate={{ opacity: 1, y: 0, rotateX: 0 }}
           transition={{ duration: 0.8, delay: 0.5, type: "spring" }}
-          className="mt-20 relative w-full max-w-5xl perspective-1000"
+          className="mt-12 sm:mt-16 md:mt-20 relative w-full max-w-5xl perspective-1000 px-4"
         >
           {/* Glow behind the dashboard */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[50%] bg-blue-500/20 blur-[100px] rounded-full pointer-events-none" />
@@ -115,10 +122,10 @@ const Hero: React.FC = () => {
             </div>
 
             {/* Dashboard Content Mockup */}
-            <div className="p-6 md:p-8 grid grid-cols-3 gap-6">
+            <div className="p-4 sm:p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               
               {/* Sidebar Mockup */}
-              <div className="hidden md:flex flex-col gap-4 col-span-1 border-r border-white/5 pr-6">
+              <div className="hidden lg:flex flex-col gap-4 col-span-1 border-r border-white/5 pr-6">
                 <div className="h-8 w-32 bg-white/10 rounded animate-pulse" />
                 <div className="space-y-3 mt-4">
                   {[1, 2, 3, 4].map((i) => (
@@ -132,11 +139,11 @@ const Hero: React.FC = () => {
               </div>
 
               {/* Main Area */}
-              <div className="col-span-3 md:col-span-2 space-y-6">
-                <div className="flex justify-between items-end">
+              <div className="col-span-1 md:col-span-2 lg:col-span-2 space-y-4 sm:space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
                   <div>
-                    <div className="text-sm text-slate-400 mb-1">Total Valuation</div>
-                    <div className="text-3xl font-bold text-white">$2,450,000.00</div>
+                    <div className="text-xs sm:text-sm text-slate-400 mb-1">Total Valuation</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white">$2,450,000.00</div>
                   </div>
                   <div className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-sm rounded-full border border-emerald-500/20 flex items-center gap-1">
                     <TrendingUp className="w-3 h-3" /> +12.5%
@@ -153,7 +160,7 @@ const Hero: React.FC = () => {
                 </div>
 
                 {/* Cards Row */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="p-4 bg-white/5 rounded-lg border border-white/5">
                     <ShieldCheck className="w-5 h-5 text-indigo-400 mb-2" />
                     <div className="text-xs text-slate-400">Risk Score</div>
