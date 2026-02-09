@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/* Ensure the page background matches the app dark theme to avoid white gaps */
+html, body, #root {
+	background: #020617;
+	min-height: 100%;
+}
+
+/* Aurora glow behind hero */
+.aurora {
+	position: absolute;
+	inset: -10% -20% auto -20%;
+	height: 60rem;
+	filter: blur(80px) saturate(140%);
+	pointer-events: none;
+	z-index: 0;
+}
+.aurora .a1{background: radial-gradient(closest-side, rgba(59,130,246,0.18), transparent 40%);} 
+.aurora .a2{background: radial-gradient(closest-side, rgba(79,70,229,0.12), transparent 30%); margin-left:30rem; margin-top:-8rem}
+
+/* Gradient animated text flow */
+.gradient-flow{
+	background: linear-gradient(92deg, var(--accent-from), var(--accent-to), #7c3aed);
+	background-size: 200% 200%;
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	animation: flow 4s linear infinite;
+}
+@keyframes flow{
+	0%{background-position:0% 50%}
+	50%{background-position:100% 50%}
+	100%{background-position:0% 50%}
+}
+
+/* Glass card base */
+.glass-card{
+	background: rgba(255,255,255,0.04);
+	border: 1px solid rgba(255,255,255,0.06);
+	backdrop-filter: blur(14px);
+}
+
+/* Primary CTA glow */
+.btn-primary{
+	background: linear-gradient(90deg, var(--accent-from), var(--accent-to));
+	box-shadow: 0 10px 30px rgba(59,130,246,0.12), 0 2px 8px rgba(79,70,229,0.08);
+}
+.btn-primary:hover{transform:translateY(-2px)}
+
+/* Secondary CTA */
+.btn-ghost{
+	background: transparent;
+	border: 1px solid rgba(255,255,255,0.12);
+}
+
+/* Orbiting wireframe */
+.orb{width:420px;height:420px}
+.orb-rotate{animation: orbit 18s linear infinite}
+@keyframes orbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* utility to ensure hero content sits above effects */
+.hero-stage{position:relative;z-index:10}
+
+/* subtle text coloring */
+.muted { color: var(--text-muted); }
+
+/* Marquee animation for social proof logos */
+@keyframes marquee {
+	0% { transform: translateX(0); }
+	100% { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.marquee { animation: none !important; }
+}
