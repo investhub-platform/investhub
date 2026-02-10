@@ -1,0 +1,86 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+### Node / package managers
+node_modules/
+.pnp/
+.pnp.js
+
+### Build outputs
+dist/
+dist-ssr/
+build/
+out/
+
+### Vite / tooling caches
+.vite/
+.cache/
+.parcel-cache/
+
+### Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+### Env files
+.env
+.env.*.local
+
+### TypeScript
+*.tsbuildinfo
+tsserver.log
+
+### Coverage, testing, and reporters
+coverage/
+.nyc_output/
+coverage-final.json
+jest.cache
+
+### Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+### OS files
+._*
+
+### Misc IDE / project files
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+### Caches created by bundlers / transpilers
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+
+### ESLint
+.eslintcache
+
+### Storybook
+storybook-static/
+
+### Framework-specific (optional)
+.next/
+out/
+
+### Yarn v2/v3
+.yarn/*
+.yarnrc.yml
+
+# Keep lockfiles (package-lock.json / yarn.lock) tracked by git unless you want to ignore them intentionally.
