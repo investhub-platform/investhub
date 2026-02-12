@@ -1,7 +1,6 @@
-import React from 'react'
 import LandingPage from './pages/marketing/LandingPage'
 
-const App: React.FC = () => {
+const App = () => {
   return (
     <LandingPage />
   )

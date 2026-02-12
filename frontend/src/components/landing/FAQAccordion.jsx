@@ -29,7 +29,7 @@ const items = [
 ]
 
 export default function FAQAccordion() {
-  const [open, setOpen] = useState<number | null>(0)
+  const [open, setOpen] = useState(0)
 
   return (
     <section className="w-full py-12 sm:py-16 md:py-20">

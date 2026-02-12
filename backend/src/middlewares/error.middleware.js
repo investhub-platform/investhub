@@ -1,6 +1,4 @@
-import { NextFunction, Request, Response } from 'express';
-
-export default function errorHandler(err: any, _req: Request, res: Response, _next: NextFunction) {
+export default function errorHandler(err, _req, res, _next) {
   // eslint-disable-next-line no-console
   console.error(err);
   const status = err.statusCode || 500;

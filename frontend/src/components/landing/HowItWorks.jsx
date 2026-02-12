@@ -18,8 +18,8 @@ const investorSteps = [
 ]
 
 export default function HowItWorks() {
-  const [view, setView] = useState<'founder' | 'investor'>('founder')
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [view, setView] = useState('founder')
+  const containerRef = useRef(null)
   
   // Scroll Progress for the "Beam"
   const { scrollYProgress } = useScroll({
@@ -59,7 +59,7 @@ export default function HowItWorks() {
           
           {/* Toggle Switch */}
           <div className="inline-flex bg-white/5 p-1 rounded-full border border-white/10 backdrop-blur-sm relative">
-            {(['founder', 'investor'] as const).map((tab) => (
+            {(['founder', 'investor']).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setView(tab)}

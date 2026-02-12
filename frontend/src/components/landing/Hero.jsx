@@ -1,9 +1,8 @@
-import React from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Play, ChevronRight, TrendingUp, ShieldCheck } from "lucide-react";
 import Aurora from './Aurora';
 
-const Hero: React.FC = () => {
+const Hero = () => {
   return (
     <section className="relative w-full min-h-screen overflow-hidden text-white selection:bg-blue-500/30">
       

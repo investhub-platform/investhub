@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listStartups, createStartup } from '../../controllers/startupController';
+import { listStartups, createStartup } from '../../controllers/startupController.js';
 
 const router = Router();
 
