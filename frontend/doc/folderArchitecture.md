@@ -5,9 +5,9 @@ investhub-web/
 ├── src/
 │   ├── assets/             # Global assets (images, fonts, global css)
 │   ├── components/         # Shared UI components (Buttons, Inputs, Cards)
-│   │   ├── ui/             # presentation components (Button.tsx)
+│   │   ├── ui/             # presentation components (Button.jsx)
 │   │   └── layout/         # Layout wrappers (Navbar, Sidebar, Footer)
-│   ├── config/             # Environment variables & constants (firebase.ts, env.ts)
+│   ├── config/             # Environment variables & constants (firebase.js, env.js)
 │   ├── features/           # BUSINESS LOGIC (The most important folder)
 │   │   ├── auth/           # specific to Authentication
 │   │   ├── investments/    # specific to Investments
@@ -15,16 +15,16 @@ investhub-web/
 │   ├── hooks/              # Global custom hooks (useTheme, useWindowSize)
 │   ├── lib/                # 3rd party library configurations (axios, stripe, gemini)
 │   ├── pages/              # Page components (routed views)
-│   ├── routes/             # Routing configuration (AppRoutes.tsx)
+│   ├── routes/             # Routing configuration (AppRoutes.jsx)
 │   ├── stores/             # Global state management (Zustand/Redux slices)
-│   ├── types/              # Global TypeScript interfaces/types
+│   ├── types/              # Optional types folder (for documentation / editors)
 │   ├── utils/              # Pure helper functions (formatDate, calculateRisk)
-│   ├── App.tsx             # Main App component
-│   └── main.tsx            # Entry point
+│   ├── App.jsx             # Main App component
+│   └── main.jsx            # Entry point
 ├── .env                    # Environment variables
 ├── index.html              # Entry HTML
 ├── tailwind.config.js      # Tailwind configuration
-└── vite.config.ts          # Vite configuration
+└── vite.config.js          # Vite configuration
 
 ## 2. Detailed Breakdown
 ### A. src/features/ (The Scalability Secret)

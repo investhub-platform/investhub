@@ -1,61 +1,60 @@
 backend/
 ├── src/
 │   ├── config/              # Database & 3rd party service configuration
-│   │   ├── db.ts            # MongoDB connection
-│   │   ├── stripe.ts        # Stripe API config
-│   │   ├── gemini.ts        # Google AI config
-│   │   └── redis.ts         # Redis/BullMQ config
+│   │   ├── db.js            # MongoDB connection
+│   │   ├── stripe.js        # Stripe API config
+│   │   ├── gemini.js        # Google AI config
+│   │   └── redis.js         # Redis/BullMQ config
 │   │
 │   ├── controllers/         # Request Handlers (receive req, send res)
-│   │   ├── authController.ts
-│   │   ├── startupController.ts
-│   │   ├── investmentController.ts
-│   │   └── webhookController.ts
+│   │   ├── authController.js
+│   │   ├── startupController.js
+│   │   ├── investmentController.js
+│   │   └── webhookController.js
 │   │
 │   ├── models/              # Mongoose Schemas (Data Layer)
-│   │   ├── User.ts
-│   │   ├── Startup.ts
-│   │   ├── Wallet.ts
-│   │   └── Transaction.ts
+│   │   ├── User.js
+│   │   ├── Startup.js
+│   │   ├── Wallet.js
+│   │   └── Transaction.js
 │   │
 │   ├── routes/              # API Route Definitions
 │   │   ├── v1/              # Versioning
-│   │   │   ├── auth.routes.ts
-│   │   │   ├── startups.routes.ts
-│   │   │   └── wallet.routes.ts
-│   │   └── index.ts
+│   │   │   ├── auth.routes.js
+│   │   │   ├── startups.routes.js
+│   │   │   └── wallet.routes.js
+│   │   └── index.js
 │   │
 │   ├── services/            # BUSINESS LOGIC (The "Brain")
 │   │   ├── ai/
-│   │   │   ├── analyzer.service.ts  # Gemini prompt logic
-│   │   │   └── risk.service.ts
+│   │   │   ├── analyzer.service.js  # Gemini prompt logic
+│   │   │   └── risk.service.js
 │   │   ├── payment/
-│   │   │   ├── ledger.service.ts    # Internal Virtual Wallet logic
-│   │   │   └── stripe.service.ts    # External Real money logic
-│   │   └── auth.service.ts
+│   │   │   ├── ledger.service.js    # Internal Virtual Wallet logic
+│   │   │   └── stripe.service.js    # External Real money logic
+│   │   └── auth.service.js
 │   │
 │   ├── jobs/                # Background Workers (Async Tasks)
-│   │   ├── queues.ts        # BullMQ Queue definitions
+│   │   ├── queues.js        # BullMQ Queue definitions
 │   │   └── workers/
-│   │       └── aiAnalysisWorker.ts # Process AI analysis in background
+│   │       └── aiAnalysisWorker.js # Process AI analysis in background
 │   │
 │   ├── middlewares/         # Interceptors
-│   │   ├── auth.middleware.ts
-│   │   ├── validate.middleware.ts
-│   │   └── error.middleware.ts
+│   │   ├── auth.middleware.js
+│   │   ├── validate.middleware.js
+│   │   └── error.middleware.js
 │   │
 │   ├── utils/               # Helpers
-│   │   ├── AppError.ts      # Custom Error class
-│   │   ├── logger.ts        # Winston/Morgan logger
-│   │   └── response.ts      # Standard JSON response formatter
+│   │   ├── AppError.js      # Custom Error class
+│   │   ├── logger.js        # Winston/Morgan logger
+│   │   └── response.js      # Standard JSON response formatter
 │   │
-│   ├── types/               # TypeScript Type Definitions
-│   │   └── express.d.ts     # Extending Request type (req.user)
+│   ├── types/               # Optional folder for any runtime/shared typedefs
+│   │   └── express.d.ts     # (If present) Type declarations are not required for runtime
 │   │
-│   ├── app.ts               # Express App Setup (Middleware, Routes)
-│   └── server.ts            # Entry Point (Port listening)
+│   ├── app.js               # Express App Setup (Middleware, Routes)
+│   └── server.js            # Entry Point (Port listening)
 │
 ├── .env                     # Environment Variables
 ├── .gitignore
 ├── package.json
-└── tsconfig.json
