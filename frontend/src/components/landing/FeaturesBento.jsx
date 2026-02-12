@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { Brain, Lock, Users, CheckCircle2, TrendingUp, Shield } from 'lucide-react';
 
-const FeaturesBento: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
+const FeaturesBento = () => {
+  const containerRef = useRef(null);
   const isInView = useInView(containerRef, { once: true, margin: "-100px" });
 
   return (
@@ -136,9 +136,9 @@ const FeaturesBento: React.FC = () => {
 };
 
 // Risk Score Chart Component
-const RiskScoreChart: React.FC = () => {
+const RiskScoreChart = () => {
   const [score, setScore] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef(null);
   const isInView = useInView(containerRef, { once: true });
 
   useEffect(() => {
@@ -219,9 +219,9 @@ const RiskScoreChart: React.FC = () => {
 };
 
 // Wallet Unlock Animation Component
-const WalletUnlock: React.FC = () => {
-  const [unlockedStages, setUnlockedStages] = useState<number>(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+const WalletUnlock = () => {
+  const [unlockedStages, setUnlockedStages] = useState(0);
+  const containerRef = useRef(null);
   const isInView = useInView(containerRef, { once: true });
 
   const milestones = [
@@ -341,8 +341,8 @@ const WalletUnlock: React.FC = () => {
 };
 
 // Mentor Avatars Component
-const MentorAvatars: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
+const MentorAvatars = () => {
+  const containerRef = useRef(null);
   const isInView = useInView(containerRef, { once: true });
 
   const mentors = [

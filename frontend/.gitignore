@@ -36,9 +36,9 @@ lerna-debug.log*
 .env
 .env.*.local
 
-### TypeScript
-*.tsbuildinfo
-tsserver.log
+### TypeScript (not used)
+# *.tsbuildinfo
+# tsserver.log
 
 ### Coverage, testing, and reporters
 coverage/
