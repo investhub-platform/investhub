@@ -3,8 +3,12 @@ name: Frontend CI
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'frontend/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'frontend/**'
 
 jobs:
   lint-build:
@@ -23,6 +27,10 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        working-directory: frontend
+
+      - name: Run tests
+        run: npm test -- --watchAll=false
         working-directory: frontend
 
       - name: Run lint
@@ -59,7 +67,6 @@ jobs:
         working-directory: frontend
 
 # Notes:
-# - This workflow runs lint + build on PRs and pushes to `main`.
+# - This workflow runs tests + lint + build on PRs and pushes that touch `frontend/**`.
 # - To enable automatic production deploys, add the secret `VERCEL_TOKEN` to your GitHub repo
 #   (Repository Settings → Secrets → Actions) and connect your Vercel project to this repo.
-# - Alternatively, prefer Vercel's native Git integration — Vercel will run its own builds and deploys.
