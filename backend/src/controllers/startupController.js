@@ -1,14 +1,33 @@
-import Startup from '../models/Startup.js';
+import * as startupService from "../services/startupService.js";
 
-export const listStartups = async (_req, res) => {
-  const docs = await Startup.find().lean();
-  res.json({ data: docs });
+/**
+ * StartupController
+ * Handles HTTP requests and responses
+ * Delegates business logic to startupService
+ */
+
+/**
+ * List all startups
+ * GET /startups
+ */
+export const listStartups = async (_req, res, next) => {
+  try {
+    const data = await startupService.getAllStartups();
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
 };
 
-export const createStartup = async (req, res) => {
-  const { name, description } = req.body;
-  if (!name) return res.status(400).json({ message: 'name is required' });
-
-  const doc = await Startup.create({ name, description });
-  res.status(201).json({ data: doc });
+/**
+ * Create a new startup
+ * POST /startups
+ */
+export const createStartup = async (req, res, next) => {
+  try {
+    const data = await startupService.createNewStartup(req.body);
+    res.status(201).json({ data });
+  } catch (error) {
+    next(error);
+  }
 };
