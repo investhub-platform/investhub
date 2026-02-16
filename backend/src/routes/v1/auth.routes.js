@@ -10,6 +10,8 @@ router.post("/logout", authController.logout);
 router.post("/verify-email", authController.verifyEmailOtp);
 router.post("/forgot-password", authController.forgotPassword);
 router.post("/reset-password", authController.resetPassword);
+router.post("/resend-email-otp", authController.resendEmailOtp);
+
 
 
 export default router;

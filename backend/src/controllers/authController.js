@@ -79,3 +79,11 @@ export const resetPassword = async (req, res, next) => {
   }
 };
  
+export const resendEmailOtp = async (req, res, next) => {
+  try {
+    const data = await authService.resendEmailOtp(req.body);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};

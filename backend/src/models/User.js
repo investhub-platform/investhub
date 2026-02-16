@@ -36,9 +36,14 @@ const userSchema = new mongoose.Schema(
     // OTPs (store HASHES, not plain OTP)
     emailOtpHash: { type: String, default: null },
     emailOtpExpiryUtc: { type: Date, default: null },
+    //resend otp
+    emailOtpLastSentUtc: { type: Date, default: null },
+
 
     resetOtpHash: { type: String, default: null },
     resetOtpExpiryUtc: { type: Date, default: null },
+    resetOtpLastSentUtc: { type: Date, default: null },
+
 
     // Refresh token (store HASH)
     refreshTokenHash: { type: String, default: null },

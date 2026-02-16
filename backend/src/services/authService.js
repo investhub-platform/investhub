@@ -71,6 +71,8 @@ export const login = async ({ email, password }) => {
   validateEmail(email);
   validatePassword(password);
 
+
+
   if (!email || !password) throw new AppError("Email and password are required", 400);
 
   const user = await userRepo.findByEmail(email);
@@ -82,8 +84,8 @@ export const login = async ({ email, password }) => {
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) throw new AppError("Invalid credentials", 401);
 
-  // (Optional policy) block login until email verified:
-  // if (user.status !== "active") throw new AppError("Please verify your email", 403);
+  //  block login until email verified:
+  if (user.status !== "active") throw new AppError("Please verify your email before logging in", 403);
 
   const accessToken = signAccessToken(user);
   const refreshToken = signRefreshToken(user);
@@ -163,16 +165,36 @@ export const forgotPassword = async ({ email }) => {
 
   const user = await userRepo.findByEmail(email);
 
-  // Always respond success (avoid email enumeration)
+  // Prevent email enumeration
   if (!user) {
     return { message: "If the email exists, a reset OTP has been sent." };
   }
+
+  // Only allow active accounts
+  if (user.status !== "active") {
+    return { message: "If the email exists, a reset OTP has been sent." };
+  }
+
+  // 🔐 THROTTLING STARTS HERE
+  if (user.resetOtpLastSentUtc) {
+    const seconds =
+      (Date.now() - new Date(user.resetOtpLastSentUtc).getTime()) / 1000;
+
+    if (seconds < 60) {
+      throw new AppError("Please wait before requesting a new OTP", 429);
+    }
+  }
+  // 🔐 THROTTLING ENDS HERE
 
   const otp = generateOtp();
   const otpHash = sha256(otp);
 
   user.resetOtpHash = otpHash;
   user.resetOtpExpiryUtc = new Date(Date.now() + 10 * 60 * 1000);
+
+  // 👇 SAVE LAST SENT TIME HERE
+  user.resetOtpLastSentUtc = new Date();
+
   user.updatedUtc = new Date();
 
   await userRepo.save(user);
@@ -185,6 +207,7 @@ export const forgotPassword = async ({ email }) => {
 
   return { message: "If the email exists, a reset OTP has been sent." };
 };
+
 
 
 export const resetPassword = async ({ email, otp, newPassword }) => {
@@ -219,3 +242,47 @@ export const resetPassword = async ({ email, otp, newPassword }) => {
   return { message: "Password reset successful" };
 };
 
+export const resendEmailOtp = async ({ email }) => {
+  requireFields({ email }, ["email"]);
+  validateEmail(email);
+
+  const user = await userRepo.findByEmail(email);
+
+  // Security best practice: do not reveal if email exists
+  if (!user) {
+    return { message: "If the email exists, a verification OTP has been sent." };
+  }
+
+  // If already verified
+  if (user.status === "active") {
+    return { message: "Email is already verified." };
+  }
+
+  // If account blocked states
+  if (user.status === "suspended") throw new AppError("Account suspended", 403);
+  if (user.status === "deleted") throw new AppError("Account deleted", 403);
+
+  // Throttle: allow resend only once per 60 seconds
+  if (user.emailOtpLastSentUtc) {
+    const seconds = (Date.now() - new Date(user.emailOtpLastSentUtc).getTime()) / 1000;
+    if (seconds < 60) {
+      throw new AppError("Please wait a bit before requesting a new OTP", 429);
+    }
+  }
+
+  const otp = generateOtp();
+  user.emailOtpHash = sha256(otp);
+  user.emailOtpExpiryUtc = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  user.emailOtpLastSentUtc = new Date();
+  user.updatedUtc = new Date();
+
+  await userRepo.save(user);
+
+  await sendEmail({
+    to: user.email,
+    subject: "Your InvestHub verification OTP",
+    html: `<h3>Your OTP: ${otp}</h3><p>Valid for 10 minutes.</p>`,
+  });
+
+  return { message: "If the email exists, a verification OTP has been sent." };
+};
