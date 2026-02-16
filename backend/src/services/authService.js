@@ -156,3 +156,66 @@ export const verifyEmailOtp = async ({ email, otp }) => {
   return { message: "Email verified successfully" };
 };
 
+
+export const forgotPassword = async ({ email }) => {
+  requireFields({ email }, ["email"]);
+  validateEmail(email);
+
+  const user = await userRepo.findByEmail(email);
+
+  // Always respond success (avoid email enumeration)
+  if (!user) {
+    return { message: "If the email exists, a reset OTP has been sent." };
+  }
+
+  const otp = generateOtp();
+  const otpHash = sha256(otp);
+
+  user.resetOtpHash = otpHash;
+  user.resetOtpExpiryUtc = new Date(Date.now() + 10 * 60 * 1000);
+  user.updatedUtc = new Date();
+
+  await userRepo.save(user);
+
+  await sendEmail({
+    to: user.email,
+    subject: "Reset your InvestHub password",
+    html: `<h3>Your password reset OTP: ${otp}</h3><p>Valid for 10 minutes.</p>`,
+  });
+
+  return { message: "If the email exists, a reset OTP has been sent." };
+};
+
+
+export const resetPassword = async ({ email, otp, newPassword }) => {
+  requireFields({ email, otp, newPassword }, ["email", "otp", "newPassword"]);
+  validateEmail(email);
+  validatePassword(newPassword);
+
+  const user = await userRepo.findByEmail(email);
+  if (!user) throw new AppError("Invalid OTP or email", 400);
+
+  if (!user.resetOtpHash || !user.resetOtpExpiryUtc)
+    throw new AppError("No reset request found", 400);
+
+  if (user.resetOtpExpiryUtc < new Date())
+    throw new AppError("OTP expired", 400);
+
+  if (sha256(otp) !== user.resetOtpHash)
+    throw new AppError("Invalid OTP", 400);
+
+  user.passwordHash = await bcrypt.hash(newPassword, 10);
+
+  user.resetOtpHash = null;
+  user.resetOtpExpiryUtc = null;
+
+  // Invalidate refresh token (security best practice)
+  user.refreshTokenHash = null;
+
+  user.updatedUtc = new Date();
+
+  await userRepo.save(user);
+
+  return { message: "Password reset successful" };
+};
+

@@ -61,5 +61,21 @@ export const verifyEmailOtp = async (req, res, next) => {
   }
 };
 
-//test mail option
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const data = await authService.forgotPassword(req.body);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const data = await authService.resetPassword(req.body);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
  
