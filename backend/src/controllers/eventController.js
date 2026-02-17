@@ -63,3 +63,55 @@ export const rsvpEvent = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Update an event
+// @route   PUT /api/v1/events/:id
+// @access  Private (organizer or admin)
+export const updateEvent = async (req, res, next) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) return res.status(404).json({ message: "Event not found" });
+
+    // Only organizer or admin can update
+    const isOwner = String(event.organizerId) === String(req.user.id);
+    const isAdmin = Array.isArray(req.user.roles) && req.user.roles.includes("admin");
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: "Forbidden: not allowed to update this event" });
+    }
+
+    // Allow partial updates
+    const updatable = ["title", "description", "eventType", "date", "link", "bannerImage"];
+    updatable.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+        event[key] = req.body[key];
+      }
+    });
+
+    await event.save();
+    res.status(200).json({ data: event });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete an event
+// @route   DELETE /api/v1/events/:id
+// @access  Private (organizer or admin)
+export const deleteEvent = async (req, res, next) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) return res.status(404).json({ message: "Event not found" });
+
+    // Only organizer or admin can delete
+    const isOwner = String(event.organizerId) === String(req.user.id);
+    const isAdmin = Array.isArray(req.user.roles) && req.user.roles.includes("admin");
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: "Forbidden: not allowed to delete this event" });
+    }
+
+    await event.deleteOne();
+    res.status(200).json({ message: "Event deleted" });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -7,5 +7,7 @@ const router = Router();
 router.post("/", protect, eventController.createEvent);
 router.get("/", eventController.getEvents);
 router.post("/:id/rsvp", protect, eventController.rsvpEvent);
+router.put("/:id", protect, eventController.updateEvent);
+router.delete("/:id", protect, eventController.deleteEvent);
 
 export default router;
