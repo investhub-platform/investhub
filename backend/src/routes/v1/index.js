@@ -27,9 +27,13 @@ router.get("/startups", listStartups);
 router.post("/startups", createStartup);
 
 import wallets from './wallets.js';
+import eventsRoutes from './events.routes.js';
 
 // Wallet routes
 router.use('/wallets', wallets);
+
+// Event routes
+router.use('/events', eventsRoutes);
 
 // Request routes
 router.get("/requests", listRequests); // list all requests
