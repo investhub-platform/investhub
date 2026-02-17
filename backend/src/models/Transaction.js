@@ -32,6 +32,7 @@ const transactionSchema = mongoose.Schema(
       enum: ['Pending', 'Completed', 'Failed'],
       default: 'Pending',
     },
+    completedAt: { type: Date },
     description: { type: String },
     // If this was an investment, link to the startup
     relatedStartupId: {

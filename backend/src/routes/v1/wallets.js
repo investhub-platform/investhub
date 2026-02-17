@@ -1,14 +1,12 @@
 import { Router } from 'express';
-import walletController from '../../controllers/walletController.js';
-import { protect } from '../../middlewares/auth.middleware.js';
-
-const {
+import {
   getMyWallet,
   initiateDeposit,
   payhereNotify,
   investInStartup,
   getWalletHistory,
-} = walletController;
+} from '../../controllers/walletController.js';
+import { protect } from '../../middlewares/auth.middleware.js';
 
 const router = Router();
 

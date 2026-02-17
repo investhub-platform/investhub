@@ -1,12 +1,12 @@
-const mongoose = require('mongoose');
-const Wallet = require('../models/walletModel');
-const Transaction = require('../models/transactionModel');
-const crypto = require('crypto'); // For PayHere signature verification
+import mongoose from 'mongoose';
+import Wallet from '../models/Wallet.js';
+import Transaction from '../models/Transaction.js';
+import crypto from 'crypto'; // For PayHere signature verification
 
 // @desc    Get current user's wallet & balance
 // @route   GET /api/wallets/me
 // @access  Private
-const getMyWallet = async (req, res) => {
+export const getMyWallet = async (req, res) => {
   try {
     let wallet = await Wallet.findOne({ userId: req.user.id });
 
@@ -24,7 +24,7 @@ const getMyWallet = async (req, res) => {
 // @desc    Get Transaction History
 // @route   GET /api/wallets/transactions
 // @access  Private
-const getWalletHistory = async (req, res) => {
+export const getWalletHistory = async (req, res) => {
   try {
     const transactions = await Transaction.find({ userId: req.user.id })
       .sort({ createdAt: -1 }); // Newest first
@@ -38,55 +38,67 @@ const getWalletHistory = async (req, res) => {
 // @desc    Initiate a Deposit (Generate PayHere Hash)
 // @route   POST /api/wallets/deposit/initiate
 // @access  Private
-const initiateDeposit = async (req, res) => {
+export const initiateDeposit = async (req, res) => {
   const { amount } = req.body;
   const merchantId = process.env.PAYHERE_MERCHANT_ID;
   const merchantSecret = process.env.PAYHERE_SECRET; // NEVER expose this to frontend
   const orderId = `ORDER_${Date.now()}`;
-  const currency = 'LKR';
+  const currency = process.env.PAYHERE_CURRENCY || 'LKR';
+
+  if (!merchantId || !merchantSecret) {
+    return res.status(500).json({ message: 'Payment gateway not configured' });
+  }
+
+  // Validate amount
+  const amt = parseFloat(amount);
+  if (Number.isNaN(amt) || amt <= 0) {
+    return res.status(400).json({ message: 'Invalid amount' });
+  }
 
   // 1. Generate PayHere Hash (md5)
-  // Format: merchant_id + order_id + amount + currency + "hashed_secret"
   const hashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
-  const amountFormatted = parseFloat(amount).toFixed(2);
+  const amountFormatted = amt.toFixed(2);
   const hashString = merchantId + orderId + amountFormatted + currency + hashedSecret;
   const hash = crypto.createHash('md5').update(hashString).digest('hex').toUpperCase();
 
-  // 2. Create a "Pending" Transaction record
-  // We need this to verify the payment later
-  const wallet = await Wallet.findOne({ userId: req.user.id });
-  
+  // 2. Ensure wallet exists
+  let wallet = await Wallet.findOne({ userId: req.user.id });
+  if (!wallet) {
+    wallet = await Wallet.create({ userId: req.user.id });
+  }
+
+  // 3. Create a "Pending" Transaction record
   await Transaction.create({
     walletId: wallet._id,
     userId: req.user.id,
     type: 'Deposit',
-    amount: amount,
+    amount: amt,
     currency: currency,
     paymentId: orderId,
     status: 'Pending',
     description: 'Top-up via PayHere'
   });
 
-  // 3. Send params back to Frontend to open PayHere Popup
+  // 4. Send params back to Frontend to open PayHere Popup
   res.status(200).json({
     merchant_id: merchantId,
-    return_url: `${process.env.FRONTEND_URL}/wallet`, // Redirect after success
-    cancel_url: `${process.env.FRONTEND_URL}/wallet`,
-    notify_url: `${process.env.BACKEND_URL}/api/wallets/notify`, // Webhook
+    return_url: `${process.env.FRONTEND_URL || ''}/wallet`, // Redirect after success
+    cancel_url: `${process.env.FRONTEND_URL || ''}/wallet`,
+    notify_url: `${process.env.BACKEND_URL || ''}/api/v1/wallets/notify`, // Webhook
     order_id: orderId,
     items: 'Wallet Top-up',
     currency: currency,
     amount: amountFormatted,
     hash: hash,
-    first_name: req.user.name,
-    email: req.user.email,
+    first_name: req.user.name || '',
+    email: req.user.email || '',
   });
 };
 
 // @desc    Handle PayHere Webhook (Server-to-Server)
 // @route   POST /api/wallets/notify
 // @access  Public (PayHere calls this)
-const payhereNotify = async (req, res) => {
+export const payhereNotify = async (req, res) => {
   const {
     merchant_id,
     order_id,
@@ -104,7 +116,8 @@ const payhereNotify = async (req, res) => {
     .update(merchant_id + order_id + payhere_amount + payhere_currency + status_code + hashedSecret)
     .digest('hex').toUpperCase();
 
-  if (localMd5sig !== md5sig) {
+  if (localMd5sig !== (md5sig || '').toUpperCase()) {
+    console.warn('Invalid PayHere signature', { order_id });
     return res.status(400).send('Invalid Signature'); // Stop hackers faking payments
   }
 
@@ -118,13 +131,23 @@ const payhereNotify = async (req, res) => {
       session.startTransaction();
 
       try {
+        // Validate amount matches expected
+        const expected = parseFloat(transaction.amount).toFixed(2);
+        const received = parseFloat(payhere_amount).toFixed(2);
+        if (expected !== received) {
+          console.error('Amount mismatch for order', order_id, { expected, received });
+          await session.abortTransaction();
+          return res.status(400).send('Amount mismatch');
+        }
+
         // A. Update Transaction Status
         transaction.status = 'Completed';
+        transaction.completedAt = new Date();
         await transaction.save({ session });
 
         // B. Update Wallet Balance
-        const wallet = await Wallet.findById(transaction.walletId);
-        wallet.balance += parseFloat(payhere_amount);
+        const wallet = await Wallet.findById(transaction.walletId).session(session);
+        wallet.balance = (parseFloat(wallet.balance) + parseFloat(payhere_amount));
         await wallet.save({ session });
 
         await session.commitTransaction();
@@ -135,6 +158,8 @@ const payhereNotify = async (req, res) => {
       } finally {
         session.endSession();
       }
+    } else {
+      console.warn('Transaction not found or already processed', { order_id });
     }
   }
 
@@ -144,7 +169,7 @@ const payhereNotify = async (req, res) => {
 // @desc    Invest in a Startup (Atomic Transfer)
 // @route   POST /api/wallets/invest
 // @access  Private
-const investInStartup = async (req, res) => {
+export const investInStartup = async (req, res) => {
   const { amount, startupId, startupOwnerId } = req.body;
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -205,7 +230,7 @@ const investInStartup = async (req, res) => {
   }
 };
 
-module.exports = {
+export default {
   getMyWallet,
   getWalletHistory,
   initiateDeposit,
