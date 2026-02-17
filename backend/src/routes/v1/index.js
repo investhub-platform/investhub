@@ -13,9 +13,14 @@ import {
   setMentorDecision
 } from "../../controllers/requestController.js";
 
+//user management
 import authRoutes from "./auth.routes.js";
 import userRoutes from "./user.routes.js";
 import adminRoutes from "./admin.routes.js";
+
+//notification management
+import notificationRoutes from "./notification.routes.js";
+import adminNotificationRoutes from "./adminNotification.routes.js";
 
 const router = Router();
 
@@ -35,10 +40,15 @@ router.patch("/requests/:id/withdraw", withdrawRequest); // withdraw a request
 router.patch("/requests/:id/founder-decision", setFounderDecision); // set founder decision
 router.patch("/requests/:id/mentor-decision", setMentorDecision); // set mentor decision
 
+//user
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 
+//admin
 router.use("/admin", adminRoutes);
 
+//notification
+router.use("/notifications", notificationRoutes);
+router.use("/admin", adminNotificationRoutes);
 
 export default router;
