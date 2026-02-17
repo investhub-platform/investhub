@@ -13,6 +13,10 @@ import {
   setMentorDecision
 } from "../../controllers/requestController.js";
 
+import authRoutes from "./auth.routes.js";
+import userRoutes from "./user.routes.js";
+import adminRoutes from "./admin.routes.js";
+
 const router = Router();
 
 // Health check
@@ -30,5 +34,11 @@ router.put("/requests/:id", updateRequest); // update a request completely
 router.patch("/requests/:id/withdraw", withdrawRequest); // withdraw a request
 router.patch("/requests/:id/founder-decision", setFounderDecision); // set founder decision
 router.patch("/requests/:id/mentor-decision", setMentorDecision); // set mentor decision
+
+router.use("/auth", authRoutes);
+router.use("/users", userRoutes);
+
+router.use("/admin", adminRoutes);
+
 
 export default router;
