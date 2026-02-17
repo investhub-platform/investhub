@@ -1,5 +1,8 @@
 import dotenv from 'dotenv';
 dotenv.config();
+console.log("SMTP_HOST:", process.env.SMTP_HOST);
+console.log("SMTP_PORT:", process.env.SMTP_PORT);
+
 
 import http from 'http';
 import app from './app.js';

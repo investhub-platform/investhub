@@ -5,6 +5,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import router from "./routes/index.js";
 import errorHandler from "./middlewares/error.middleware.js";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use(cors());
 app.use(helmet());
 app.use(morgan("dev"));
+app.use(cookieParser());
 
 app.use("/api", router);
 
