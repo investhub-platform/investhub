@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const walletSchema = mongoose.Schema(
   {
@@ -24,5 +24,4 @@ const walletSchema = mongoose.Schema(
   },
   { timestamps: true }
 );
-
-module.exports = mongoose.model('Wallet', walletSchema);
+export default mongoose.model('Wallet', walletSchema);
