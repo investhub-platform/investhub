@@ -15,7 +15,7 @@ import {
 
 import authRoutes from "./auth.routes.js";
 import userRoutes from "./user.routes.js";
-
+import adminRoutes from "./admin.routes.js";
 
 const router = Router();
 
@@ -38,6 +38,7 @@ router.patch("/requests/:id/mentor-decision", setMentorDecision); // set mentor 
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 
+router.use("/admin", adminRoutes);
 
 
 export default router;
