@@ -22,6 +22,11 @@ router.get("/health", (_req, res) => res.json({ ok: true }));
 router.get("/startups", listStartups);
 router.post("/startups", createStartup);
 
+import wallets from './wallets.js';
+
+// Wallet routes
+router.use('/wallets', wallets);
+
 // Request routes
 router.get("/requests", listRequests); // list all requests
 router.get("/requests/:id", getRequest); // get a single request by ID
