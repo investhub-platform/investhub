@@ -3,16 +3,26 @@ import Wallet from '../models/Wallet.js';
 import Transaction from '../models/Transaction.js';
 import crypto from 'crypto'; // For PayHere signature verification
 
+// Helper: resolve a user identity for testing when auth is disabled
+const resolveUser = (req) => {
+  const id = req?.user?.id || req?.body?.userId || req?.query?.userId || process.env.TEST_USER_ID;
+  const name = req?.user?.name || req?.body?.first_name || req?.body?.name || '';
+  const email = req?.user?.email || req?.body?.email || '';
+  return { id, name, email };
+};
+
 // @desc    Get current user's wallet & balance
 // @route   GET /api/wallets/me
 // @access  Private
 export const getMyWallet = async (req, res) => {
   try {
-    let wallet = await Wallet.findOne({ userId: req.user.id });
+    const user = resolveUser(req);
+    if (!user.id) return res.status(400).json({ message: 'userId required (or set TEST_USER_ID)' });
+    let wallet = await Wallet.findOne({ userId: user.id });
 
     // Auto-create wallet if it doesn't exist (First time user)
     if (!wallet) {
-      wallet = await Wallet.create({ userId: req.user.id });
+      wallet = await Wallet.create({ userId: user.id });
     }
 
     res.status(200).json(wallet);
@@ -26,7 +36,9 @@ export const getMyWallet = async (req, res) => {
 // @access  Private
 export const getWalletHistory = async (req, res) => {
   try {
-    const transactions = await Transaction.find({ userId: req.user.id })
+    const user = resolveUser(req);
+    if (!user.id) return res.status(400).json({ message: 'userId required (or set TEST_USER_ID)' });
+    const transactions = await Transaction.find({ userId: user.id })
       .sort({ createdAt: -1 }); // Newest first
 
     res.status(200).json(transactions);
@@ -61,10 +73,14 @@ export const initiateDeposit = async (req, res) => {
   const hashString = merchantId + orderId + amountFormatted + currency + hashedSecret;
   const hash = crypto.createHash('md5').update(hashString).digest('hex').toUpperCase();
 
+  // Resolve user (allow testing without auth)
+  const user = resolveUser(req);
+  if (!user.id) return res.status(400).json({ message: 'userId required (or set TEST_USER_ID)' });
+
   // 2. Ensure wallet exists
-  let wallet = await Wallet.findOne({ userId: req.user.id });
+  let wallet = await Wallet.findOne({ userId: user.id });
   if (!wallet) {
-    wallet = await Wallet.create({ userId: req.user.id });
+    wallet = await Wallet.create({ userId: user.id });
   }
 
   // 3. Create a "Pending" Transaction record
@@ -90,8 +106,8 @@ export const initiateDeposit = async (req, res) => {
     currency: currency,
     amount: amountFormatted,
     hash: hash,
-    first_name: req.user.name || '',
-    email: req.user.email || '',
+    first_name: user.name || '',
+    email: user.email || '',
   });
 };
 
@@ -175,10 +191,13 @@ export const investInStartup = async (req, res) => {
   session.startTransaction();
 
   try {
-    const investorWallet = await Wallet.findOne({ userId: req.user.id }).session(session);
+    const user = resolveUser(req);
+    if (!user.id) return res.status(400).json({ message: 'userId required (or set TEST_USER_ID)' });
+
+    const investorWallet = await Wallet.findOne({ userId: user.id }).session(session);
     
     // 1. Check Balance
-    if (investorWallet.balance < amount) {
+    if (!investorWallet || investorWallet.balance < amount) {
       throw new Error('Insufficient funds');
     }
 
