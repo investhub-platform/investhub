@@ -1,7 +1,8 @@
 import jwt from "jsonwebtoken";
 import AppError from "../utils/AppError.js";
+import User from "../models/User.js";
 
-export const requireAuth = (req, _res, next) => {
+export const requireAuth = async (req, _res, next) => {
   try {
     const header = req.headers.authorization;
     if (!header?.startsWith("Bearer ")) {
@@ -11,9 +12,17 @@ export const requireAuth = (req, _res, next) => {
     const token = header.split(" ")[1];
     const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
 
+    // Load user from DB to get full details (name, email)
+    const user = await User.findById(payload.sub).lean();
+    if (!user) {
+      throw new AppError("User not found", 401);
+    }
+
     req.user = {
-      id: payload.sub,
-      roles: payload.roles || [],
+      id: String(user._id),
+      name: user.name,
+      email: user.email,
+      roles: payload.roles || user.roles || [],
     };
 
     next();
