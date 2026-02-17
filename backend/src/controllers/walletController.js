@@ -1,0 +1,214 @@
+const mongoose = require('mongoose');
+const Wallet = require('../models/walletModel');
+const Transaction = require('../models/transactionModel');
+const crypto = require('crypto'); // For PayHere signature verification
+
+// @desc    Get current user's wallet & balance
+// @route   GET /api/wallets/me
+// @access  Private
+const getMyWallet = async (req, res) => {
+  try {
+    let wallet = await Wallet.findOne({ userId: req.user.id });
+
+    // Auto-create wallet if it doesn't exist (First time user)
+    if (!wallet) {
+      wallet = await Wallet.create({ userId: req.user.id });
+    }
+
+    res.status(200).json(wallet);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get Transaction History
+// @route   GET /api/wallets/transactions
+// @access  Private
+const getWalletHistory = async (req, res) => {
+  try {
+    const transactions = await Transaction.find({ userId: req.user.id })
+      .sort({ createdAt: -1 }); // Newest first
+
+    res.status(200).json(transactions);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Initiate a Deposit (Generate PayHere Hash)
+// @route   POST /api/wallets/deposit/initiate
+// @access  Private
+const initiateDeposit = async (req, res) => {
+  const { amount } = req.body;
+  const merchantId = process.env.PAYHERE_MERCHANT_ID;
+  const merchantSecret = process.env.PAYHERE_SECRET; // NEVER expose this to frontend
+  const orderId = `ORDER_${Date.now()}`;
+  const currency = 'LKR';
+
+  // 1. Generate PayHere Hash (md5)
+  // Format: merchant_id + order_id + amount + currency + "hashed_secret"
+  const hashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
+  const amountFormatted = parseFloat(amount).toFixed(2);
+  const hashString = merchantId + orderId + amountFormatted + currency + hashedSecret;
+  const hash = crypto.createHash('md5').update(hashString).digest('hex').toUpperCase();
+
+  // 2. Create a "Pending" Transaction record
+  // We need this to verify the payment later
+  const wallet = await Wallet.findOne({ userId: req.user.id });
+  
+  await Transaction.create({
+    walletId: wallet._id,
+    userId: req.user.id,
+    type: 'Deposit',
+    amount: amount,
+    currency: currency,
+    paymentId: orderId,
+    status: 'Pending',
+    description: 'Top-up via PayHere'
+  });
+
+  // 3. Send params back to Frontend to open PayHere Popup
+  res.status(200).json({
+    merchant_id: merchantId,
+    return_url: `${process.env.FRONTEND_URL}/wallet`, // Redirect after success
+    cancel_url: `${process.env.FRONTEND_URL}/wallet`,
+    notify_url: `${process.env.BACKEND_URL}/api/wallets/notify`, // Webhook
+    order_id: orderId,
+    items: 'Wallet Top-up',
+    currency: currency,
+    amount: amountFormatted,
+    hash: hash,
+    first_name: req.user.name,
+    email: req.user.email,
+  });
+};
+
+// @desc    Handle PayHere Webhook (Server-to-Server)
+// @route   POST /api/wallets/notify
+// @access  Public (PayHere calls this)
+const payhereNotify = async (req, res) => {
+  const {
+    merchant_id,
+    order_id,
+    payhere_amount,
+    payhere_currency,
+    status_code,
+    md5sig // The signature PayHere sends back
+  } = req.body;
+
+  const merchantSecret = process.env.PAYHERE_SECRET;
+
+  // 1. Verify Signature (Security Check)
+  const hashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
+  const localMd5sig = crypto.createHash('md5')
+    .update(merchant_id + order_id + payhere_amount + payhere_currency + status_code + hashedSecret)
+    .digest('hex').toUpperCase();
+
+  if (localMd5sig !== md5sig) {
+    return res.status(400).send('Invalid Signature'); // Stop hackers faking payments
+  }
+
+  // 2. Process Payment
+  if (status_code === '2') { // '2' means Success in PayHere
+    const transaction = await Transaction.findOne({ paymentId: order_id });
+
+    if (transaction && transaction.status === 'Pending') {
+      // Start a session for atomicity
+      const session = await mongoose.startSession();
+      session.startTransaction();
+
+      try {
+        // A. Update Transaction Status
+        transaction.status = 'Completed';
+        await transaction.save({ session });
+
+        // B. Update Wallet Balance
+        const wallet = await Wallet.findById(transaction.walletId);
+        wallet.balance += parseFloat(payhere_amount);
+        await wallet.save({ session });
+
+        await session.commitTransaction();
+        console.log(`Payment Verified: ${order_id}`);
+      } catch (err) {
+        await session.abortTransaction();
+        console.error('Transaction Error:', err);
+      } finally {
+        session.endSession();
+      }
+    }
+  }
+
+  res.status(200).send('OK');
+};
+
+// @desc    Invest in a Startup (Atomic Transfer)
+// @route   POST /api/wallets/invest
+// @access  Private
+const investInStartup = async (req, res) => {
+  const { amount, startupId, startupOwnerId } = req.body;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const investorWallet = await Wallet.findOne({ userId: req.user.id }).session(session);
+    
+    // 1. Check Balance
+    if (investorWallet.balance < amount) {
+      throw new Error('Insufficient funds');
+    }
+
+    // 2. Find Startup Wallet (Recipient)
+    // Note: Assuming startupOwnerId is passed or we find it via Startup Model
+    const startupWallet = await Wallet.findOne({ userId: startupOwnerId }).session(session);
+    if (!startupWallet) {
+      throw new Error('Startup wallet not initialized');
+    }
+
+    // 3. Deduct from Investor
+    investorWallet.balance -= amount;
+    await investorWallet.save({ session });
+
+    // 4. Add to Startup
+    startupWallet.balance += Number(amount);
+    await startupWallet.save({ session });
+
+    // 5. Create Transaction Record (Investor Side)
+    await Transaction.create([{
+      walletId: investorWallet._id,
+      userId: req.user.id,
+      type: 'Investment',
+      amount: -amount, // Negative for deduction logic if you prefer, or handle in UI
+      status: 'Completed',
+      description: `Investment in Startup ${startupId}`,
+      relatedStartupId: startupId
+    }], { session });
+
+    // 6. Create Transaction Record (Startup Side)
+    await Transaction.create([{
+      walletId: startupWallet._id,
+      userId: startupOwnerId,
+      type: 'Deposit', // Or 'Funding Received'
+      amount: amount,
+      status: 'Completed',
+      description: `Investment received from ${req.user.name}`,
+      relatedStartupId: startupId
+    }], { session });
+
+    await session.commitTransaction();
+    res.status(200).json({ message: 'Investment successful' });
+
+  } catch (error) {
+    await session.abortTransaction();
+    res.status(400).json({ message: error.message });
+  } finally {
+    session.endSession();
+  }
+};
+
+module.exports = {
+  getMyWallet,
+  getWalletHistory,
+  initiateDeposit,
+  payhereNotify,
+  investInStartup
+};
