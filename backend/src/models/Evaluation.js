@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const evaluationSchema = mongoose.Schema(
   {
@@ -28,4 +28,4 @@ const evaluationSchema = mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Evaluation', evaluationSchema);
+export default mongoose.model('Evaluation', evaluationSchema);
