@@ -64,6 +64,19 @@ export const rsvpEvent = async (req, res, next) => {
   }
 };
 
+// @desc    Get a single event by ID
+// @route   GET /api/v1/events/:id
+// @access  Public
+export const getEventById = async (req, res, next) => {
+  try {
+    const event = await Event.findById(req.params.id).populate("organizerId", "name email");
+    if (!event) return res.status(404).json({ message: "Event not found" });
+    res.status(200).json({ data: event });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Update an event
 // @route   PUT /api/v1/events/:id
 // @access  Private (organizer or admin)
