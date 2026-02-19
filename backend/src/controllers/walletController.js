@@ -22,12 +22,28 @@ export const getMyWallet = async (req, res) => {
 };
 
 // @desc    Get Transaction History
-// @route   GET /api/wallets/transactions
+// @route   GET /api/v1/wallets/transactions
+// @query   ?type=Deposit|Investment|Withdrawal|Refund
+// @query   ?status=Pending|Completed|Failed
+// @query   ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 // @access  Private
 export const getWalletHistory = async (req, res) => {
   try {
-    const transactions = await Transaction.find({ userId: req.user.id })
-      .sort({ createdAt: -1 }); // Newest first
+    const { type, status, startDate, endDate } = req.query;
+
+    // Build filter — always scope to the authenticated user
+    const filter = { userId: req.user.id };
+
+    if (type)   filter.type   = type;    // e.g. ?type=Deposit
+    if (status) filter.status = status;  // e.g. ?status=Completed
+
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(startDate);
+      if (endDate)   filter.createdAt.$lte = new Date(new Date(endDate).setHours(23, 59, 59, 999));
+    }
+
+    const transactions = await Transaction.find(filter).sort({ createdAt: -1 });
 
     res.status(200).json(transactions);
   } catch (error) {
