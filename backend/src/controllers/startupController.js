@@ -127,7 +127,7 @@ export const deleteStartup = async (req, res, next) => {
   try {
     const userId = req.user?.id;
     const data = await startupService.deleteStartup(req.params.id, userId);
-    res.json({ message: \"Startup deleted successfully\", data });
+    res.json({ message: "Startup deleted successfully", data });
   } catch (error) {
     next(error);
   }
