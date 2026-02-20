@@ -137,21 +137,18 @@ export const updateExistingStartup = async (id, payload, userId) => {
  */
 export const approveStartup = async (id, userId) => {
   try {
-    const startup = await startupRepository.updateById(
-      id,
-      {
-        status: \"Approved\",
-        updatedUtc: new Date(),
-        updatedBy: userId
-      }
-    );
+    const startup = await startupRepository.updateById(id, {
+      status: "Approved",
+      updatedUtc: new Date(),
+      updatedBy: userId
+    });
     if (!startup) {
-      throw new AppError(\"Startup not found\", 404);
+      throw new AppError("Startup not found", 404);
     }
     return startup;
   } catch (error) {
     if (error instanceof AppError) throw error;
-    throw new AppError(\"Failed to approve startup\", 500);
+    throw new AppError("Failed to approve startup", 500);
   }
 };
 
@@ -160,21 +157,18 @@ export const approveStartup = async (id, userId) => {
  */
 export const rejectStartup = async (id, userId) => {
   try {
-    const startup = await startupRepository.updateById(
-      id,
-      {
-        status: \"NotApproved\",
-        updatedUtc: new Date(),
-        updatedBy: userId
-      }
-    );
+    const startup = await startupRepository.updateById(id, {
+      status: "NotApproved",
+      updatedUtc: new Date(),
+      updatedBy: userId
+    });
     if (!startup) {
-      throw new AppError(\"Startup not found\", 404);
+      throw new AppError("Startup not found", 404);
     }
     return startup;
   } catch (error) {
     if (error instanceof AppError) throw error;
-    throw new AppError(\"Failed to reject startup\", 500);
+    throw new AppError("Failed to reject startup", 500);
   }
 };
 
@@ -185,11 +179,11 @@ export const deleteStartup = async (id, userId) => {
   try {
     const startup = await startupRepository.softDeleteById(id, userId);
     if (!startup) {
-      throw new AppError(\"Startup not found\", 404);
+      throw new AppError("Startup not found", 404);
     }
     return startup;
   } catch (error) {
     if (error instanceof AppError) throw error;
-    throw new AppError(\"Failed to delete startup\", 500);
+    throw new AppError("Failed to delete startup", 500);
   }
 };
