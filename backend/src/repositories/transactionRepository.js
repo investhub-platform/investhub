@@ -22,8 +22,11 @@ export const create = async (payload, session = null) => {
  * Create multiple transactions in one call (used for investment debit + credit).
  * Requires a Mongo session.
  */
-export const createMany = (payloads, session) =>
-  Transaction.create(payloads, { session });
+export const createMany = (payloads, session) => {
+  // Use insertMany when creating multiple documents within a session.
+  // Model.create with a session + multiple docs can fail unless `ordered: true` is set.
+  return Transaction.insertMany(payloads, { session, ordered: true });
+};
 
 /**
  * Find all transactions for a user with optional extra filters.

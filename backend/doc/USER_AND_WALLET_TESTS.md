@@ -79,7 +79,9 @@ const md5sig = crypto.createHash('md5')
   .toUpperCase();
 console.log(md5sig);
 ```
-
+- cd backend
+node --env-file=.env script/simulate_payhere.js --orderId=ORDER_1771568280211 --amount=5000.00
+ 
 - Webhook payload (Postman body):
   {
     "merchant_id": "YOUR_MERCHANT_ID",
