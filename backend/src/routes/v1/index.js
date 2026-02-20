@@ -1,7 +1,14 @@
 import { Router } from "express";
 import {
   listStartups,
-  createStartup
+  getStartup,
+  getStartupsByUser,
+  getStartupsByStatusController,
+  createStartup,
+  updateStartup,
+  approveStartup,
+  rejectStartup,
+  deleteStartup
 } from "../../controllers/startupController.js";
 import {
   listRequests,
@@ -19,8 +26,15 @@ const router = Router();
 router.get("/health", (_req, res) => res.json({ ok: true }));
 
 // Startup routes
-router.get("/startups", listStartups);
-router.post("/startups", createStartup);
+router.get("/startups", listStartups); // list all startups
+router.get("/startups/user/:userId", getStartupsByUser); // get startups by user ID
+router.get("/startups/status/:status", getStartupsByStatusController); // get startups by status
+router.get("/startups/:id", getStartup); // get a single startup by ID
+router.post("/startups", createStartup); // create a new startup
+router.put("/startups/:id", updateStartup); // update a startup completely
+router.patch("/startups/:id/approve", approveStartup); // approve a startup
+router.patch("/startups/:id/reject", rejectStartup); // reject a startup
+router.delete("/startups/:id", deleteStartup); // soft delete a startup
 
 // Request routes
 router.get("/requests", listRequests); // list all requests
