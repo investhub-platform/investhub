@@ -16,6 +16,7 @@ import {
 import authRoutes from "./auth.routes.js";
 import userRoutes from "./user.routes.js";
 import adminRoutes from "./admin.routes.js";
+import ideaRoutes from "./idea.routes.js";
 
 const router = Router();
 
@@ -39,6 +40,9 @@ router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 
 router.use("/admin", adminRoutes);
+
+// Idea routes
+router.use("/ideas", ideaRoutes);
 
 
 export default router;
