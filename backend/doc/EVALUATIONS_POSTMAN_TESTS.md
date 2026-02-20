@@ -6,6 +6,7 @@ Base URL (adjust to your environment):
 Notes:
 - Auth: all evaluation endpoints are protected — include `Authorization: Bearer {{accessToken}}`.
 - Admin role is required for update/delete by default (see implementation notes).
+- Gemini integration: if `GEMINI_API_KEY` is set in your `.env` the service will call Gemini; otherwise a deterministic mock response is returned so tests do not fail.
 
 Endpoints overview
 - POST /evaluations/generate — Create/generate evaluation for a startup (protected)
