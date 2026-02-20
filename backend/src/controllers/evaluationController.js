@@ -4,16 +4,16 @@ import * as evaluationService from '../services/evaluationService.js';
 // @route   POST /api/v1/evaluations/generate
 // @access  Private (Startup Owner or Admin)
 export const generateEvaluation = async (req, res, next) => {
-  const { startupId, description, budget, category } = req.body;
+  const { startupId, description, budget, category, force } = req.body;
 
-  if (!startupId || !description) {
-    return res.status(400).json({ message: 'startupId and description are required' });
+  if (!startupId) {
+    return res.status(400).json({ message: 'startupId is required' });
   }
 
   try {
     const { evaluation, created } = await evaluationService.generateOrFetch(
       startupId,
-      { description, budget, category }
+      { description, budget, category, force: !!force }
     );
     res.status(created ? 201 : 200).json({ data: evaluation });
   } catch (error) {

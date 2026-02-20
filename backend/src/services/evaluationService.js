@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as evalRepo from '../repositories/evaluationRepository.js';
+import * as startupRepo from '../repositories/startupRepository.js';
 import AppError from '../utils/AppError.js';
 
 /**
@@ -12,12 +13,14 @@ import AppError from '../utils/AppError.js';
 
 /**
  * Call the Gemini API and parse a structured SWOT + risk score.
- * Falls back to a deterministic mock when GEMINI_API_KEY is absent (dev / CI).
+ * Falls back to a deterministic mock ONLY when GEMINI_API_KEY is absent (dev / CI without a key).
+ * When the key IS set, any API error is thrown — no silent mock fallback.
  */
 const runGeminiEvaluation = async ({ description, budget, category }) => {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
+    // No key configured — return deterministic mock so the app still starts in dev
     console.warn('[EvaluationService] GEMINI_API_KEY not set — using mock response.');
     return {
       swotAnalysis: {
@@ -30,8 +33,9 @@ const runGeminiEvaluation = async ({ description, budget, category }) => {
     };
   }
 
+  // Key is present — always call Gemini; surface errors to the caller
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
   const prompt = `You are an expert startup investment analyst.
 Analyze the following startup idea and return ONLY a valid JSON object — no markdown fences, no extra text.
@@ -50,11 +54,13 @@ Return this exact JSON structure:
   "riskScore": <integer 1-10 where 10 is highest risk>
 }`;
 
-  const result  = await model.generateContent(prompt);
-  const raw     = result.response.text().trim();
+  // Use the v1 API surface (v1beta does not expose newer Gemini 2.x models)
+  const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
+  const result = await model.generateContent(prompt);
+  const raw = result.response.text().trim();
   // Strip accidental markdown fences Gemini sometimes adds
   const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
-  const parsed  = JSON.parse(cleaned); // throws SyntaxError on bad output
+  const parsed = JSON.parse(cleaned);
 
   return {
     swotAnalysis: {
@@ -73,9 +79,23 @@ Return this exact JSON structure:
  * Return existing evaluation for the startup, or generate a new one via Gemini.
  * Returns { evaluation, created: boolean }.
  */
-export const generateOrFetch = async (startupId, { description, budget, category }) => {
+export const generateOrFetch = async (startupId, { description, budget, category, force } = {}) => {
   const existing = await evalRepo.findByStartup(startupId);
-  if (existing) return { evaluation: existing, created: false };
+  // Return cached evaluation unless force-regeneration is requested
+  if (existing && !force) return { evaluation: existing, created: false };
+  // Delete stale evaluation so we can replace it with a fresh Gemini response
+  if (existing && force) await evalRepo.deleteDoc(existing);
+
+  // If caller didn't provide description/budget/category, try to fetch from startup record
+  if (!description) {
+    const startup = await startupRepo.findById(startupId);
+    if (startup) {
+      description = startup.description || null;
+      budget    = budget    || startup.budget;
+      category  = category  || startup.category;
+    }
+    // If startup is not found, Gemini will receive 'N/A' for description — still valid
+  }
 
   const { swotAnalysis, riskScore } = await runGeminiEvaluation({ description, budget, category });
   const evaluation = await evalRepo.create({ startupId, riskScore, swotAnalysis });

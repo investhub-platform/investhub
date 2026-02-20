@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Startup from "../models/Startup.js";
 
 /**
@@ -11,7 +12,10 @@ export const findAll = async () => {
 };
 
 export const findById = async (id) => {
-  return await Startup.findById(id).lean();
+  // Explicitly cast to ObjectId — BaseSchema uses { _id: false } which causes Mongoose
+  // to skip automatic ObjectId casting on lookups, so findById/findOne({ _id: id }) fail.
+  const oid = id instanceof mongoose.Types.ObjectId ? id : new mongoose.Types.ObjectId(String(id));
+  return await Startup.findOne({ _id: oid }).lean();
 };
 
 export const create = async (payload) => {
