@@ -6,6 +6,8 @@ Base URL (adjust to your environment):
 Notes:
 - Auth: all evaluation endpoints are protected — include `Authorization: Bearer {{accessToken}}`.
 - Admin role is required for update/delete by default (see implementation notes).
+- Gemini integration: if `GEMINI_API_KEY` is set, the service always calls Gemini (model: `GEMINI_MODEL` env var, defaults to `gemini-2.5-flash`). API errors are surfaced as 500 — no silent mock fallback. If the key is absent, a deterministic mock is returned so the app starts in dev without a key.
+- Stale mock evaluations: if you have old mock evaluations in the DB, send `"force": true` to delete and regenerate with Gemini.
 
 Endpoints overview
 - POST /evaluations/generate — Create/generate evaluation for a startup (protected)
@@ -24,16 +26,20 @@ Request
   - `Content-Type: application/json`
   - `Authorization: Bearer {{accessToken}}`
 
-Body (JSON) — fields used for simulated AI logic; only `startupId` is required server-side:
+Body (JSON) — only `startupId` is required. The backend automatically fetches `description`, `budget`, and `category` from the stored Startup record. You can override any field by including it in the body. Pass `"force": true` to delete a stale/mock evaluation and regenerate a fresh one from Gemini.
+{
+  "startupId": "64a..."
+}
+
+To force-regenerate (e.g. replace an old mock evaluation):
 {
   "startupId": "64a...",
-  "description": "Short description of the startup",
-  "budget": 150000,
-  "category": "Fintech"
+  "force": true
 }
 
 Expected success response
-- Status: 201 Created (or 200 if evaluation already exists)
+- Status: 201 Created (new evaluation generated)
+- Status: 200 OK (existing evaluation returned — use `"force": true` to regenerate)
 - Body (example):
 {
   "data": {
@@ -155,7 +161,7 @@ Failure cases
 ---
 
 ## Notes / Troubleshooting
-- The controller simulates AI output; real integration may require API keys and rate limits.
+- The service calls the real Gemini API when `GEMINI_API_KEY` is set. Errors (e.g., wrong model name) surface as 500 responses with the API error message.
 - If you prefer owner-based permissions (owner of startup or evaluator), we can add a `createdBy` field to the `Evaluation` model and update checks.
 
 If you'd like, I can also:

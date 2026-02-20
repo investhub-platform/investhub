@@ -1,7 +1,7 @@
 # Events API — Postman Test Cases
 
 Base URL (adjust to your environment):
-- Local dev (recommended): `http://localhost:5000/api/v1`
+ Local dev (recommended): `http://localhost:5000/api/v1`
 
 Notes on `baseUrl`:
 - The API is mounted under `/api/v1` in the backend. You can either set `baseUrl` to include the `/api/v1` prefix (recommended), e.g. `http://localhost:5000/api/v1`, or set `baseUrl` to your host and include `/api/v1` in each request path.

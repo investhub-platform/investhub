@@ -7,8 +7,9 @@ Pre-checks
 - Ensure `backend/.env` contains: `MONGO_URI`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `PAYHERE_MERCHANT_ID`, `PAYHERE_SECRET`, `BACKEND_URL`, `FRONTEND_URL`.
 - MongoDB reachable.
 
-Postman environment variables (recommended)
-- `baseUrl` = http://localhost:5000
+- Postman environment variables (recommended)
+- set `baseUrl` to include the API prefix for convenience:
+- `baseUrl` = http://localhost:5000/api/v1
 - `accessToken` = (set after login)
 - `refreshToken` = (cookie; optional)
 - `PAYHERE_MERCHANT_ID`, `PAYHERE_SECRET`
@@ -39,8 +40,8 @@ Notes
 - Cookie: send `refreshToken` cookie returned on login (Postman will store cookie automatically if you use Chrome cookie jar).
 - Response: new tokens; update `accessToken` in Postman.
 
-4) Get current user
-- GET `{{baseUrl}}/api/v1/auth/me` (if available) or use `data.user` from login response
+- 4) Get current user
+- GET `{{baseUrl}}/users/me` (protected) or use `data.user` from login response
 - Header: `Authorization: Bearer {{accessToken}}`
 
 5) Get / Create Wallet
@@ -78,7 +79,9 @@ const md5sig = crypto.createHash('md5')
   .toUpperCase();
 console.log(md5sig);
 ```
-
+- cd backend
+node --env-file=.env script/simulate_payhere.js --orderId=ORDER_1771568280211 --amount=5000.00
+ 
 - Webhook payload (Postman body):
   {
     "merchant_id": "YOUR_MERCHANT_ID",
@@ -88,8 +91,10 @@ console.log(md5sig);
     "status_code": "2",
     "md5sig": "<computed-md5sig>"
   }
-- POST to `{{baseUrl}}/api/v1/wallets/notify` (no auth header required).
-- Expected: 200 OK. After that, GET `/api/v1/wallets/me` and `/api/v1/wallets/transactions` should show updated balance and a transaction with `status: Completed` and `completedAt` set.
+ - POST to `{{baseUrl}}/wallets/notify` (no auth header required).
+ - Expected: 200 OK. After that, GET `/wallets/me` and `/wallets/transactions` should show updated balance and a transaction with `status: Completed` and `completedAt` set (when using `baseUrl` that includes `/api/v1`).
+
+Note: A convenience webhook simulator is provided at `backend/script/simulate_payhere.js` — you can run it against your local backend to avoid crafting the MD5 manually.
 
 9) Invest in Startup (atomic transfer)
 - POST `{{baseUrl}}/api/v1/wallets/invest`
