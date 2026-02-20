@@ -106,10 +106,10 @@ export const updateExistingStartup = async (id, payload, userId) => {
   try {
     // Validate status if provided
     if (payload.status) {
-      const validStatuses = [\"Approved\", \"NotApproved\", \"pending\"];
+      const validStatuses = ["Approved", "NotApproved", "pending"];
       if (!validStatuses.includes(payload.status)) {
         throw new AppError(
-          `Invalid status. Must be one of: ${validStatuses.join(\", \")}`,
+          `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
           400
         );
       }
