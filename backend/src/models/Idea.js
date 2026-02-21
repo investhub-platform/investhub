@@ -68,6 +68,16 @@ const IdeaSchema = new Schema(
       default: "pending_review"
     },
 
+    aiSummary: {
+      type: String,
+      default: null
+    },
+
+    aiGeneratedAt: {
+      type: Date,
+      default: null
+    },
+
     //Base Fields Directly Added Here
 
     createdUtc: {
