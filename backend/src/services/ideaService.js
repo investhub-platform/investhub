@@ -1,6 +1,7 @@
 import * as ideaRepository from "../repositories/ideaRepository.js";
 import AppError from "../utils/AppError.js";
 import mongoose from "mongoose";
+import { generateIdeaSummary } from "./aiService.js";
 
 /**
  * Idea Service
@@ -62,6 +63,15 @@ export const createNewIdea = async ({ userId, ...data }) => {
     throw new AppError("Missing required fields", 400);
   }
 
+  // Generate AI Summary
+  let aiSummary = null;
+
+  try {
+    aiSummary = await generateIdeaSummary(data);
+  } catch (error) {
+    console.error("AI summary generation failed:", error.message);
+  }
+
   const ideaPayload = {
     ...data,
     createdBy: userId,
@@ -70,6 +80,8 @@ export const createNewIdea = async ({ userId, ...data }) => {
     updatedUtc: new Date(),
     currentVersion: 1,
     status: "pending_review",
+    aiSummary,
+    aiGeneratedAt: aiSummary ? new Date() : null
   };
 
   return await ideaRepository.create(ideaPayload);
@@ -78,10 +90,16 @@ export const createNewIdea = async ({ userId, ...data }) => {
 /**
  * Update an existing idea
  */
-export const updateIdea = async (id, { userId, ...data }) => {
+export const updateIdea = async (id, { userId, regenerateAI, ...data }) => {
+  // Fetch the idea
   const idea = await ideaRepository.findById(id);
   if (!idea) throw new AppError("Idea not found", 404);
 
+  // Keep track of which fields are updated
+  const keyFields = ["title", "description", "category", "budget", "timeline", "expectedOutcomes"];
+  const isKeyFieldUpdated = keyFields.some((field) => field in data);
+
+  // Apply updates
   Object.assign(idea, data);
 
   idea.updatedBy = userId;
@@ -89,6 +107,30 @@ export const updateIdea = async (id, { userId, ...data }) => {
   idea.currentVersion += 1;
   idea.status = "pending_review";
 
+  //   Regenerate AI summary if:
+  // - Frontend explicitly requested it, OR
+  // - Any key field has changed, OR
+  // - AI summary is missing (null)
+  if (regenerateAI || isKeyFieldUpdated || !idea.aiSummary) {
+    try {
+      const aiSummary = await generateIdeaSummary({
+        title: idea.title,
+        description: idea.description,
+        category: idea.category,
+        budget: idea.budget,
+        timeline: idea.timeline,
+        expectedOutcomes: idea.expectedOutcomes,
+      });
+
+      idea.aiSummary = aiSummary;
+      idea.aiGeneratedAt = new Date();
+    } catch (error) {
+      console.error("AI regeneration failed:", error.response?.data || error.message);
+      // Do not fail the update if AI fails — just leave old summary
+    }
+  }
+
+  // Save updated idea
   return await ideaRepository.save(idea);
 };
 
