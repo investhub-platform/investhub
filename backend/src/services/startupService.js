@@ -88,14 +88,14 @@ export const createNewStartup = async (payload, userId) => {
       BR: payload.BR || null,
       UserID: UserID || userId,
       status: payload.status || "pending",
-      createdBy: createdBy || userId,
-      updatedBy: createdBy || userId
+      createdBy: createdBy || userId
+      // updatedBy: createdBy || userId
     };
 
     return await startupRepository.create(startupData);
   } catch (error) {
-    if (error instanceof AppError) throw error;
-    throw new AppError("Failed to create startup", 500);
+    console.error("CREATE STARTUP ERROR:", error);
+    throw error; // temporarily throw original error
   }
 };
 
