@@ -2,7 +2,8 @@ import * as ideaRepository from "../repositories/ideaRepository.js";
 import AppError from "../utils/AppError.js";
 import mongoose from "mongoose";
 import { generateIdeaSummary } from "./aiService.js";
-
+import * as notificationService from "./notificationService.js";
+import * as userRepo from "../repositories/userRepository.js";
 /**
  * Idea Service
  * Handles business logic for Idea operations
@@ -84,7 +85,33 @@ export const createNewIdea = async ({ userId, ...data }) => {
     aiGeneratedAt: aiSummary ? new Date() : null
   };
 
-  return await ideaRepository.create(ideaPayload);
+  const createdIdea = await ideaRepository.create(ideaPayload);
+
+  // ✅ Notify Admins + Matching Mentors (by category = expertise)
+  const [admins, mentors] = await Promise.all([
+    userRepo.findByRole("admin"),
+    userRepo.findActiveMentorsByExpertise(createdIdea.category),
+  ]);
+
+  const recipients = [...admins, ...mentors]
+    .filter((u, i, arr) => arr.findIndex(x => x._id.toString() === u._id.toString()) === i)
+    .filter((u) => u._id.toString() !== userId.toString());
+
+  await Promise.all(
+    recipients.map((u) =>
+      notificationService.notifyUser({
+        recipientUserId: u._id,
+        type: "idea_submitted",
+        title: "New idea pending review",
+        message: `New idea "${createdIdea.title}" is pending review (Category: ${createdIdea.category}).`,
+        relatedId: createdIdea._id,
+        actionUrl: `/ideas/${createdIdea._id}`,
+        createdBy: userId,
+      })
+       )
+  );
+
+  return createdIdea;
 };
 
 /**
@@ -165,5 +192,20 @@ export const setMentorDecision = async (id, { decision, userId }) => {
   idea.updatedBy = userId;
   idea.updatedUtc = new Date();
 
-  return await ideaRepository.save(idea);
+  await ideaRepository.save(idea);
+
+  // 🔔 Notify idea owner
+await notificationService.notifyUser({
+  recipientUserId: idea.createdBy,
+  type: "idea_reviewed",
+  title: decision === "approved"
+    ? "Your idea was approved 🎉"
+    : "Your idea was rejected",
+  message: `Your idea "${idea.title}" was ${decision} by a mentor.`,
+  relatedId: idea._id,
+  actionUrl: `/ideas/${idea._id}`,
+  createdBy: userId,
+});
+
+return idea;
 };

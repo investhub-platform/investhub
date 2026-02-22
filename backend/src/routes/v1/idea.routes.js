@@ -10,13 +10,14 @@ router.use(requireAuth);
 
 // Routes
 router.get("/", ideaController.listIdeas);
-router.get("/:id", ideaController.getIdea);
 router.get("/startup/:StartupId", ideaController.getIdeasByStartup);
+router.get("/:id", ideaController.getIdea);
+ 
 router.post("/", ideaController.createIdea);
 router.put("/:id", ideaController.updateIdea);
 router.delete("/:id", ideaController.deleteIdea);
 
 // Mentor review route (only mentors)
-router.patch("/:id/mentor-decision", requireRole("user"), ideaController.mentorDecision);
+router.patch("/:id/mentor-decision", requireRole("mentor"), ideaController.mentorDecision);
 
 export default router;
