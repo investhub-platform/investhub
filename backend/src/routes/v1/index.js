@@ -17,6 +17,7 @@ import {
 import authRoutes from "./auth.routes.js";
 import userRoutes from "./user.routes.js";
 import adminRoutes from "./admin.routes.js";
+import ideaRoutes from "./idea.routes.js";
 
 //notification management
 import notificationRoutes from "./notification.routes.js";
@@ -30,6 +31,19 @@ router.get("/health", (_req, res) => res.json({ ok: true }));
 // Startup routes
 router.get("/startups", listStartups);
 router.post("/startups", createStartup);
+
+import wallets from './wallets.js';
+import eventsRoutes from './events.routes.js';
+import evaluationsRoutes from './evaluations.routes.js';
+
+// Wallet routes
+router.use('/wallets', wallets);
+
+// Event routes
+router.use('/events', eventsRoutes);
+
+// Evaluation routes
+router.use('/evaluations', evaluationsRoutes);
 
 // Request routes
 router.get("/requests", listRequests); // list all requests
@@ -50,5 +64,8 @@ router.use("/admin", adminRoutes);
 //notification
 router.use("/notifications", notificationRoutes);
 router.use("/admin", adminNotificationRoutes);
+// Idea routes
+router.use("/ideas", ideaRoutes);
 
+  
 export default router;
