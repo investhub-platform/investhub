@@ -24,7 +24,7 @@ export const findById = async (id) => {
  * Find startups by UserID
  */
 export const findByUserId = async (userId) => {
-  return await Startup.find({ UserID: userId, deletedUtc: null }).lean();
+  return await Startup.find({ createdBy: userId, deletedUtc: null }).lean();
 };
 
 /**
@@ -58,9 +58,9 @@ export const findByIdForUpdate = async (id) => {
 /**
  * Save a startup document
  */
-export const save = async (doc) => {
-  return await doc.save();
-};
+// export const save = async (doc) => {
+//   return await doc.save();
+// };
 
 /**
  * Delete (soft delete) a startup by ID
