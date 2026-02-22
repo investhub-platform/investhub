@@ -16,7 +16,6 @@ const StartupSchema = new Schema(
   { versionKey: false }
 );
 
-// Add base fields (createdUtc, createdBy, updatedUtc, updatedBy, deletedUtc, deletedBy, status)
 // Note: status from BaseSchema will be overridden by the status field above
 StartupSchema.add(BaseSchema);
 
