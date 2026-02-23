@@ -51,3 +51,13 @@ export const findByRole = async (role) => {
     .select("_id email preferences")
     .lean();
 };
+
+// repositories/userRepository.js
+export const listActiveUsersForNotification = async () => {
+  return User.find({
+    status: "active",
+    deletedUtc: null,
+  })
+    .select("_id email preferences")
+    .lean();
+};

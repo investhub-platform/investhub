@@ -1,4 +1,5 @@
 import * as eventRepo from '../repositories/eventRepository.js';
+import { notifyAllUsers } from "./notificationService.js";
 import AppError from '../utils/AppError.js';
 
 /**
@@ -8,9 +9,21 @@ import AppError from '../utils/AppError.js';
  */
 
 /** Create a new event for an organizer. */
-export const createEvent = async (organizerId, { title, description, eventType, date, link, bannerImage }) =>
-  eventRepo.create({ organizerId, title, description, eventType, date, link, bannerImage });
+export const createEvent = async (organizerId, payload) => {
+  const event = await eventRepo.create({ organizerId, ...payload });
 
+  await notifyAllUsers({
+    excludeUserId: organizerId,
+    type: "event_created",
+    title: `New Event: ${event.title}`,
+    message: `A new ${event.eventType} was scheduled on ${new Date(event.date).toLocaleString()}.`,
+    relatedId: event._id,
+    actionUrl: `/events/${event._id}`,
+    createdBy: organizerId,
+  });
+
+  return event;
+};
 /** Return all upcoming (future) events with organizer info. */
 export const getUpcomingEvents = async () => eventRepo.findUpcoming();
 
