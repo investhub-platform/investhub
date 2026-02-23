@@ -29,3 +29,35 @@ export const list = ({ q, status, role, page = 1, limit = 20 }) => {
 };
 export const findPublicById = (id) =>
   User.findById(id).select("-passwordHash -refreshTokenHash -emailOtpHash -resetOtpHash");
+
+
+export const findActiveMentorsByExpertise = async (expertise) => {
+  return User.find({
+    roles: "mentor",
+    status: "active",
+    deletedUtc: null,
+    "profile.Expertise": expertise,
+  })
+    .select("_id email preferences profile.Expertise")
+    .lean();
+};
+
+export const findByRole = async (role) => {
+  return User.find({
+    roles: role,
+    status: "active",
+    deletedUtc: null,
+  })
+    .select("_id email preferences")
+    .lean();
+};
+
+// repositories/userRepository.js
+export const listActiveUsersForNotification = async () => {
+  return User.find({
+    status: "active",
+    deletedUtc: null,
+  })
+    .select("_id email preferences")
+    .lean();
+};
