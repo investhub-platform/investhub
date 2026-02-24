@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import AppError from "../utils/AppError.js";
 import * as ideaRepository from "../repositories/ideaRepository.js";
 import { generateIdeaSummary } from "./aiService.js";
-
+import { notifyAllUsers } from "./notificationService.js";
 /**
  * Idea Service
  * Handles business logic for Idea operations
@@ -90,7 +90,21 @@ export const createNewIdea = async ({ userId, ...data }) => {
     aiGeneratedAt: aiSummary ? new Date() : null
   };
 
-  return await ideaRepository.create(payload);
+    const created = await ideaRepository.create(payload);
+
+  // Notify everyone except the creator
+  await notifyAllUsers({
+    excludeUserId: userId,
+    type: "idea_created",
+    title: `New Idea Posted: ${created.title}`,
+    message: `A new idea was posted in ${created.category}. Check it out!`,
+    relatedId: created._id,
+    actionUrl: `/ideas/${created._id}`, // your frontend route
+    startupId: created.StartupId ?? null, // optional, but useful for filtering
+    createdBy: userId,
+  });
+
+  return created;
 };
 
 /**
