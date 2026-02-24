@@ -6,7 +6,7 @@ const IdeaSchema = new Schema(
     StartupId: {
       type: Schema.Types.ObjectId,
       ref: "Startup",
-      required: true
+      required: false
     },
 
     title: {
@@ -57,9 +57,9 @@ const IdeaSchema = new Schema(
       default: 1
     },
 
-    IsIdea: {
+    isIdea: {               
       type: Boolean,
-      default: true
+      default: true    // true = idea, false = investment plan
     },
 
     status: {
@@ -77,8 +77,6 @@ const IdeaSchema = new Schema(
       type: Date,
       default: null
     },
-
-    //Base Fields Directly Added Here
 
     createdUtc: {
       type: Date,
@@ -116,8 +114,19 @@ const IdeaSchema = new Schema(
   { versionKey: false }
 );
 
-//Validation for Other category
-IdeaSchema.pre("validate", async function () {
+IdeaSchema.pre("validate", function () {
+
+  // If it's an Idea → StartupId required
+  if (this.isIdea && !this.StartupId) {
+    throw new Error("StartupId is required when posting an Idea");
+  }
+
+  // If it's Investment Plan → StartupId must NOT exist
+  if (!this.isIdea && this.StartupId) {
+    throw new Error("Investment Plan should not have StartupId");
+  }
+
+  // Category validation
   if (this.category === "Other" && !this.customCategory) {
     throw new Error("Custom category is required when category is 'Other'");
   }

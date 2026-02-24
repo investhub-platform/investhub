@@ -23,8 +23,12 @@ const openai = new OpenAI({
  */
 export const generateIdeaSummary = async (ideaData) => {
   try {
+
+    //ADDED dynamic type
+    const typeLabel = ideaData.isIdea ? "Startup Idea" : "Investment Plan";
+
     const prompt = `
-    Generate a professional idea summary (max 150 words).
+    Generate a professional ${typeLabel} (max 150 words).
 
     Title: ${ideaData.title}
     Description: ${ideaData.description}
