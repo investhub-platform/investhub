@@ -87,3 +87,41 @@ export const deleteNotification = async ({ userId, notificationId }) => {
   if (!deleted) throw new AppError("Notification not found", 404);
   return { message: "Notification deleted" };
 };
+
+export const notifyAllUsers = async ({
+  excludeUserId = null,
+  type,
+  title,
+  message,
+  relatedId = null,
+  actionUrl = null,
+  startupId = null,
+  createdBy = null,
+}) => {
+  const users = await userRepo.listActiveUsersForNotification();
+
+  const recipients = excludeUserId
+    ? users.filter((u) => String(u._id) !== String(excludeUserId))
+    : users;
+
+  // Send/store notifications in parallel (but not too crazy)
+  const results = await Promise.allSettled(
+    recipients.map((u) =>
+      notifyUser({
+        recipientUserId: u._id,
+        type,
+        title,
+        message,
+        relatedId,
+        actionUrl,
+        startupId,
+        createdBy,
+      })
+    )
+  );
+
+  const success = results.filter((r) => r.status === "fulfilled").length;
+  const failed = results.length - success;
+
+  return { total: results.length, success, failed };
+};
