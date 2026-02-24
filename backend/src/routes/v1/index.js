@@ -36,6 +36,9 @@ import wallets from './wallets.js';
 import eventsRoutes from './events.routes.js';
 import evaluationsRoutes from './evaluations.routes.js';
 
+//ProgressReport routes
+import progressReportRoutes from './progressReport.routes.js';
+
 // Wallet routes
 router.use('/wallets', wallets);
 
@@ -64,8 +67,12 @@ router.use("/admin", adminRoutes);
 //notification
 router.use("/notifications", notificationRoutes);
 router.use("/admin", adminNotificationRoutes);
+
 // Idea routes
 router.use("/ideas", ideaRoutes);
+
+// Progress Reports
+router.use("/progress-reports", progressReportRoutes);
 
   
 export default router;
