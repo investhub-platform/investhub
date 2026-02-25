@@ -1,7 +1,7 @@
 import AppError from "../utils/AppError.js";
 import * as notificationRepo from "../repositories/notificationRepository.js";
 import * as userRepo from "../repositories/userRepository.js";
-import { sendEmail } from "./emailService.js";
+import { sendEmail, buildTemplate } from "./emailService.js";
 
 export const notifyUser = async ({
   recipientUserId,
@@ -21,7 +21,7 @@ export const notifyUser = async ({
     await sendEmail({
       to: user.email,
       subject: `[InvestHub] ${title}`,
-      html: `<h3>${title}</h3><p>${message}</p>${actionUrl ? `<p>Open: ${actionUrl}</p>` : ""}`,
+      html: buildTemplate({ title, message, actionUrl }),
     });
   }
 
