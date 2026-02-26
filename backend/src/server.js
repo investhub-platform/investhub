@@ -1,12 +1,13 @@
-import dotenv from 'dotenv';
+// src/server.js
+import dotenv from "dotenv";
 dotenv.config();
 console.log("SMTP_HOST:", process.env.SMTP_HOST);
 console.log("SMTP_PORT:", process.env.SMTP_PORT);
 
 
-import http from 'http';
-import app from './app.js';
-import connectDB from './config/db.js';
+import http from "http";
+import app from "./app.js";
+import connectDB from "./config/db.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -20,7 +21,7 @@ async function start() {
     });
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error('Failed to start server', err);
+    console.error("Failed to start server", err);
     process.exit(1);
   }
 }
