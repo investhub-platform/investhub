@@ -1,3 +1,20 @@
+# Frontend — InvestHub
+
+This folder contains the React frontend built with Vite and Tailwind.
+
+**Quick start**
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+The dev server runs on port `5173` by default. Update API endpoints to point to the backend at `http://localhost:5000` (or your `BACKEND_URL`).
+
+**Main files**
+- `src/main.jsx` — SPA entry
+- `src/App.jsx` — main application component
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
