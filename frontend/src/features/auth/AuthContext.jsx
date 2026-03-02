@@ -36,7 +36,9 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try {
       await api.post("/v1/auth/logout");
-    } catch {}
+    } catch (e) {
+      // ignore logout errors
+    }
     setAccessToken("");
     setUser(null);
   };
