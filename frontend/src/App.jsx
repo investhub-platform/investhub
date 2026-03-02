@@ -1,9 +1,5 @@
-import LandingPage from './pages/marketing/LandingPage'
+import AppRoutes from "./routes/AppRoutes";
 
-const App = () => {
-  return (
-    <LandingPage />
-  )
+export default function App() {
+  return <AppRoutes />;
 }
-
-export default App

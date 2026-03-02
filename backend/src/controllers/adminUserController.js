@@ -3,7 +3,16 @@ import AppError from "../utils/AppError.js";
 
 export const listUsers = async (req, res, next) => {
   try {
-    const users = await userRepo.list({});
+    const { q, status, role, page = 1, limit = 20 } = req.query;
+
+    const users = await userRepo.list({
+      q,
+      status,
+      role,
+      page: Number(page),
+      limit: Number(limit),
+    });
+
     res.json({ success: true, data: users });
   } catch (err) {
     next(err);

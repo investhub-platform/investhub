@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from "react-router-dom";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false)
@@ -6,10 +7,10 @@ const Navbar = () => {
   return (
     <header className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 w-full flex justify-center pointer-events-none">
       <div className="pointer-events-auto flex items-center gap-4 px-3 py-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full shadow-lg max-w-4xl w-full mx-4">
-        <a href="/" className="flex items-center gap-3">
+        <Link to="/" className="flex items-center gap-3">
           <img src="/logo.png" alt="InvestHub" width={28} height={28} style={{ maxWidth: '100%', display: 'block' }} className="h-6 w-6 md:h-7 md:w-7 rounded-md object-contain" />
           <span className="text-white font-semibold tracking-wide text-sm md:text-base">InvestHub</span>
-        </a>
+        </Link>
 
         <nav className="flex-1 flex justify-center gap-6 text-sm text-slate-300 hidden md:flex">
           <a href="#product" className="hover:text-white transition-colors">Product</a>
@@ -19,8 +20,11 @@ const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-3 ml-auto md:ml-0">
-          <a href="/get-started" className="hidden md:inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow-lg hover:scale-[1.02] transition-transform">Get Started</a>
-
+          <Link to="/auth/register" className="hidden md:inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow-lg hover:scale-[1.02] transition-transform">Get Started</Link>
+          
+          <Link to="/auth/login" className="hidden md:inline-flex text-slate-200 hover:text-white text-sm">
+  Login
+</Link>
           <button
             aria-label={open ? 'Close menu' : 'Open menu'}
             aria-expanded={open}
@@ -42,7 +46,7 @@ const Navbar = () => {
             <a onClick={() => setOpen(false)} href="#pricing" className="block px-3 py-2 rounded hover:bg-white/3">Pricing</a>
             <a onClick={() => setOpen(false)} href="#resources" className="block px-3 py-2 rounded hover:bg-white/3">Resources</a>
             <a onClick={() => setOpen(false)} href="#company" className="block px-3 py-2 rounded hover:bg-white/3">Company</a>
-            <a onClick={() => setOpen(false)} href="/get-started" className="mt-2 inline-flex items-center justify-center w-full px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow">Get Started</a>
+            <a onClick={() => setOpen(false)} href="/auth/register" className="mt-2 inline-flex items-center justify-center w-full px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow">Get Started</a>
           </nav>
         </div>
       )}
