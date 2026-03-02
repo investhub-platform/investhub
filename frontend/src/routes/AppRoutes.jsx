@@ -7,6 +7,8 @@ import RegisterPage from "../features/auth/pages/RegisterPage";
 import VerifyEmailPage from "../features/auth/pages/VerifyEmailPage";
 import DashboardPage from "../pages/app/DashboardPage";
 import ProfilePage from "../pages/app/ProfilePage";
+import ForgotPasswordPage from "../features/auth/pages/ForgotPasswordPage";
+import ResetPasswordPage from "../features/auth/pages/ResetPasswordPage";
 
 export default function AppRoutes() {
   return (
@@ -14,16 +16,15 @@ export default function AppRoutes() {
       {/* Public */}
       <Route path="/" element={<LandingPage />} />
 
-      {/* Auth pages (we will create next) */}
+      {/* Auth pages ( create next) */}
        <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/auth/register" element={<RegisterPage />} />
       <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
-      <Route path="/auth/forgot-password" element={<div className="min-h-screen bg-[#020617] text-white p-6">Forgot Password</div>} />
-      <Route path="/auth/reset-password" element={<div className="min-h-screen bg-[#020617] text-white p-6">Reset Password</div>} />
-
+      <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
       {/* Protected */}
       <Route element={<ProtectedRoute />}>
-         
+           
         <Route path="/app" element={<DashboardPage />} />
         <Route path="/app/profile" element={<ProfilePage />} />
         

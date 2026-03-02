@@ -46,17 +46,18 @@ export function AuthProvider({ children }) {
   // 2) If /me fails with 401, axios interceptor will try refresh and retry automatically
   useEffect(() => {
     const start = async () => {
-      try {
-        if (accessToken) setAuthToken(accessToken);
-        await fetchMe(); // if token expired, interceptor refreshes and repeats
-      } catch {
-        setAccessToken("");
-        setUser(null);
-      } finally {
-        setBooting(false);
-      }
-    };
-    start();
+    try {
+      if (!accessToken) return;        // ✅ don't call /me without token
+      setAuthToken(accessToken);
+      await fetchMe();
+    } catch {
+      setAccessToken("");
+      setUser(null);
+    } finally {
+      setBooting(false);
+    }
+  };
+  start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
