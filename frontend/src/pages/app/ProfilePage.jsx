@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import api from "../../lib/axios";
 import { useAuth } from "../../features/auth/AuthContext";
+import AppNavbar from "../../components/layout/AppNavbar";
+
 
 export default function ProfilePage() {
   const { fetchMe, user, setUser } = useAuth();
@@ -86,8 +88,9 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[#020617] text-white">
-      <div className="max-w-5xl mx-auto px-6 py-10">
-        <h1 className="text-3xl font-bold">My Profile</h1>
+      <AppNavbar />
+      <div className="max-w-5xl mx-auto px-6 pt-28 pb-10">
+         <h1 className="text-3xl font-bold">My Profile</h1>
         <p className="text-slate-400 mt-1">Update your profile & preferences.</p>
 
         {err && (

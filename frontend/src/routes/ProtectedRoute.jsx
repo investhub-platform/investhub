@@ -12,5 +12,5 @@ export default function ProtectedRoute() {
     );
   }
 
-  return isAuthed ? <Outlet /> : <Navigate to="/auth/login" replace />;
+  return isAuthed ? <Outlet /> : <Navigate to="/" replace />;
 }
