@@ -1,9 +1,13 @@
-import LandingPage from './pages/marketing/LandingPage'
+import { BrowserRouter } from "react-router-dom";
+import AppRoutes from "./routes/AppRoutes";
+import { AuthProvider } from "./features/auth/AuthContext";
 
-const App = () => {
+export default function App() {
   return (
-    <LandingPage />
-  )
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
+  );
 }
-
-export default App
