@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { User, LogOut, Menu, X } from "lucide-react";
-import { useAuth } from "../../features/auth/AuthContext";
+import { useAuth } from "../../features/auth/useAuth";
 
 export default function AppNavbar() {
   const { user, logout } = useAuth();

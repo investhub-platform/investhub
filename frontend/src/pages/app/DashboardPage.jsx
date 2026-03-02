@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { useAuth } from "../../features/auth/AuthContext";
-import AppNavbar from "../../components/layout/AppNavbar";
+import { useAuth } from "../../features/auth/useAuth";
+import AppNavbar from "../../components/layout/AppNavBar";
 
 export default function DashboardPage() {
   const { user } = useAuth();

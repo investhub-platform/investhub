@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../../lib/axios";
-import { useAuth } from "../../features/auth/AuthContext";
-import AppNavbar from "../../components/layout/AppNavbar";
+import { useAuth } from "../../features/auth/useAuth";
+import AppNavbar from "../../components/layout/AppNavBar";
 
 
 export default function ProfilePage() {
