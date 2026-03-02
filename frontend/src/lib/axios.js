@@ -55,6 +55,7 @@ api.interceptors.response.use(
       if (!newToken) throw new Error("Refresh did not return token");
 
       setAuthToken(newToken);
+      localStorage.setItem("accessToken", newToken);
       original.headers.Authorization = `Bearer ${newToken}`;
 
       flushPending(null, newToken);

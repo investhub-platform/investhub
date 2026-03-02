@@ -5,6 +5,8 @@ import AdminRoute from "./AdminRoute";
 import LoginPage from "../features/auth/pages/LoginPage";
 import RegisterPage from "../features/auth/pages/RegisterPage";
 import VerifyEmailPage from "../features/auth/pages/VerifyEmailPage";
+import DashboardPage from "../pages/app/DashboardPage";
+import ProfilePage from "../pages/app/ProfilePage";
 
 export default function AppRoutes() {
   return (
@@ -21,8 +23,10 @@ export default function AppRoutes() {
 
       {/* Protected */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/app" element={<div className="min-h-screen bg-[#020617] text-white p-6">Dashboard</div>} />
-        <Route path="/app/profile" element={<div className="min-h-screen bg-[#020617] text-white p-6">Profile</div>} />
+         
+        <Route path="/app" element={<DashboardPage />} />
+        <Route path="/app/profile" element={<ProfilePage />} />
+        
         <Route path="/app/settings" element={<div className="min-h-screen bg-[#020617] text-white p-6">Settings</div>} />
       </Route>
 

@@ -4,78 +4,84 @@ import api, { setAuthToken } from "../../lib/axios";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [accessToken, setAccessToken] = useState(null);
-  const [user, setUser] = useState(null);
   const [booting, setBooting] = useState(true);
+  const [user, setUser] = useState(null);
 
-  // Attach token to axios whenever it changes
-  useEffect(() => {
-    setAuthToken(accessToken);
-  }, [accessToken]);
+  // access token stored locally for page refreshes
+  const [accessToken, setAccessTokenState] = useState(() => localStorage.getItem("accessToken") || "");
 
-  // Bootstrap session on app load:
-  // tries refresh -> if ok, fetch /users/me
+  const setAccessToken = (token) => {
+    const t = token || "";
+    setAccessTokenState(t);
+    setAuthToken(t);
+    if (t) localStorage.setItem("accessToken", t);
+    else localStorage.removeItem("accessToken");
+  };
+
+  const fetchMe = async () => {
+    const res = await api.get("/v1/users/me");
+    const me = res.data?.data || null;
+    setUser(me);
+    return me;
+  };
+
+  const login = async ({ email, password }) => {
+    const res = await api.post("/v1/auth/login", { email, password });
+    const token = res.data?.data?.accessToken;
+    if (!token) throw new Error("Login did not return access token");
+    setAccessToken(token);
+    await fetchMe();
+  };
+
+  const logout = async () => {
+    try {
+      await api.post("/v1/auth/logout");
+    } catch {}
+    setAccessToken("");
+    setUser(null);
+  };
+
+  // Boot session:
+  // 1) If   have an access token, try /me
+  // 2) If /me fails with 401, axios interceptor will try refresh and retry automatically
   useEffect(() => {
-    const bootstrap = async () => {
+    const start = async () => {
       try {
-        const r = await api.post("/v1/auth/refresh");
-        const token = r?.data?.data?.accessToken;
-        if (!token) throw new Error("No token from refresh");
-        setAccessToken(token);
-
-        const me = await api.get("/v1/users/me");
-        setUser(me?.data?.data ?? null);
+        if (accessToken) setAuthToken(accessToken);
+        await fetchMe(); // if token expired, interceptor refreshes and repeats
       } catch {
-        setAccessToken(null);
+        setAccessToken("");
         setUser(null);
       } finally {
         setBooting(false);
       }
     };
-
-    bootstrap();
+    start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Login
-  const login = async ({ email, password }) => {
-    const r = await api.post("/v1/auth/login", { email, password });
-    const token = r?.data?.data?.accessToken;
-    const u = r?.data?.data?.user;
-    setAccessToken(token);
-    setUser(u);
-    return u;
-  };
-
-  // Logout (clears refresh cookie server-side + local state)
-  const logout = async () => {
-    try {
-      await api.post("/v1/auth/logout");
-    } finally {
-      setAccessToken(null);
-      setUser(null);
-    }
-  };
+  const isAuthed = !!user;
 
   const value = useMemo(
     () => ({
       booting,
-      accessToken,
+      isAuthed,
       user,
-      isAuthed: Boolean(accessToken),
-      isAdmin: Boolean(user?.roles?.includes("admin")),
-      setUser,
+      accessToken,
       login,
       logout,
+      fetchMe,
+      setUser,
       setAccessToken,
     }),
-    [booting, accessToken, user]
+    [booting, isAuthed, user, accessToken]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export const useAuth = () => {
+export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
-};
+}
