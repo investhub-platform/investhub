@@ -30,21 +30,19 @@ export function DesktopSidebar() {
 
   return (
     <aside
-      className={`hidden lg:flex flex-col min-h-screen bg-card/50 border-r border-white/[0.07] p-4 pt-24 transition-all duration-200 ${
+      className={`hidden lg:flex relative flex-col min-h-screen bg-card/50 border-r border-white/[0.07] p-4 pt-24 transition-all duration-200 ${
         collapsed ? "w-20" : "w-60"
       }`}
     >
-      <div className="mb-2 flex justify-end">
-        <button
-          type="button"
-          onClick={() => setCollapsed((v) => !v)}
-          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label={collapsed ? "Expand sidebar" : "Minimize sidebar"}
-          title={collapsed ? "Expand sidebar" : "Minimize sidebar"}
-        >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => setCollapsed((v) => !v)}
+        className="absolute top-24 right-0 translate-x-1/2 p-2 rounded-lg bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors z-[60]"
+        aria-label={collapsed ? "Expand sidebar" : "Minimize sidebar"}
+        title={collapsed ? "Expand sidebar" : "Minimize sidebar"}
+      >
+        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+      </button>
 
       <div className="flex flex-col gap-1 flex-1">
         {sidebarItems.map((item) => {
