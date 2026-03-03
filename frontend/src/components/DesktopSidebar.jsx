@@ -27,11 +27,12 @@ export function DesktopSidebar() {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all outline-none ${
                 active
-                  ? "bg-primary/15 text-primary border border-primary/30"
+                  ? "sidebar-item-active"
                   : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
               }`}
+              aria-current={active ? "page" : undefined}
             >
               <item.icon className="w-4 h-4" />
               {item.label}
