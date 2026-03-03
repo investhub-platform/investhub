@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../useAuth";
+import AuthHeader from "../../../components/layout/AuthHeader";
 
 export default function LoginPage() {
   const nav = useNavigate();
@@ -40,7 +41,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#020617] text-white flex items-center justify-center px-4 pt-24">
+      <AuthHeader />
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur">
         <h1 className="text-2xl font-bold">Welcome back</h1>
         <p className="mt-1 text-sm text-slate-400">Login to continue to InvestHub.</p>
@@ -78,7 +80,7 @@ export default function LoginPage() {
 
           <button
             disabled={loading}
-            className="w-full rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-60 px-4 py-2.5 font-semibold"
+            className="w-full rounded-2xl gradient-blue hover:opacity-95 disabled:opacity-60 px-4 py-2.5 font-semibold"
           >
             {loading ? "Logging in..." : "Login"}
           </button>
