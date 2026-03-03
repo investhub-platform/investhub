@@ -14,18 +14,22 @@ const sidebarItems = [
 export function DesktopSidebar() {
   const location = useLocation();
 
+  // normalize by comparing the main app segment (e.g. '/app/mentor' -> 'mentor')
+  const currentSegment = location.pathname.split("/")[2] || "";
+
   return (
     <aside className="hidden lg:flex flex-col w-60 min-h-screen bg-card/50 border-r border-white/[0.07] p-4 pt-24">
       <div className="flex flex-col gap-1 flex-1">
         {sidebarItems.map((item) => {
-          const active = location.pathname === item.path;
+          const itemSegment = item.path.split("/")[2] || "";
+          const active = currentSegment === itemSegment || location.pathname.startsWith(item.path);
           return (
             <Link
               key={item.path}
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 active
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-primary/10 text-foreground"
                   : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
               }`}
             >

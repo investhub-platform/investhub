@@ -13,7 +13,7 @@ export function StartupCard({ startup, index }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08, duration: 0.4 }}
     >
-      <Link to={`/startup/${startup.id}`} className="block">
+      <Link to={`/app/startup/${startup.id}`} className="block">
         <div className="obsidian-card p-5 md:p-6 card-hover group">
           {/* Header */}
           <div className="flex items-start gap-3 mb-4">
@@ -74,16 +74,18 @@ export function StartupCard({ startup, index }) {
 
           {/* Footer */}
           <div className="flex items-center justify-between">
-            <div className="flex -space-x-2">
-              {startup.founders.map((f) => (
-                <div
-                  key={f.name}
-                  className="w-7 h-7 rounded-full bg-secondary border-2 border-card flex items-center justify-center text-[10px] font-medium text-muted-foreground"
-                >
-                  {f.avatar}
-                </div>
-              ))}
-            </div>
+            <div className="flex items-center gap-2">
+                {startup.founders.map((f, i) => (
+                  <div
+                      key={f.name}
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-medium ${
+                        i === 0 ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white" : "bg-white/5 text-white"
+                      } border-2 border-white/10`}
+                    >
+                      {f.avatar}
+                    </div>
+                ))}
+              </div>
             <div className="flex items-center gap-2 text-sm font-medium text-primary group-hover:gap-3 transition-all">
               View Analysis
               <ArrowRight className="w-4 h-4" />

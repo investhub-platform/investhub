@@ -36,7 +36,7 @@ export default function AppRoutes() {
         <Route path="/app/messages" element={<MessagesPage />} />
         <Route path="/app/mentor" element={<MentorDashboard />} />
         <Route path="/app/founder" element={<StartupOwnerDashboard />} />
-        <Route path="/startup/:id" element={<StartupDetails />} />
+        <Route path="/app/startup/:id" element={<StartupDetails />} />
         <Route path="/app/profile" element={<ProfilePage />} />
         <Route path="/app/settings" element={<SettingsPage />} />
       </Route>
