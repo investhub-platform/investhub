@@ -1,13 +1,7 @@
-import {
-  createContext,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import api, { setAuthToken } from "../../lib/axios";
-
-export const AuthContext = createContext(null);
+import { AuthContext } from "./authCreate";
+export { AuthContext };
 
 export function AuthProvider({ children }) {
   const [booting, setBooting] = useState(true);

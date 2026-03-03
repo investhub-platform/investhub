@@ -250,7 +250,7 @@ function CreateStartupForm({ onClose }) {
         <CheckCircle2 className="w-12 h-12 text-accent mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">Startup Submitted!</h2>
         <p className="text-muted-foreground text-sm mb-6">
-          Your startup has been submitted for review. You'll be notified once approved.
+          Your startup has been submitted for review. You&apos;ll be notified once approved.
         </p>
         <button onClick={onClose} className="pill-filter pill-filter-active">
           Back to Dashboard
