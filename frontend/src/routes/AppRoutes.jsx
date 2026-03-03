@@ -1,4 +1,4 @@
-import { Navigate, Routes, Route } from "react-router-dom";
+import { Navigate, Routes, Route, useLocation } from "react-router-dom";
 import LandingPage from "../pages/marketing/LandingPage";
 import ProtectedRoute from "./ProtectedRoute";
 import AdminRoute from "./AdminRoute";
@@ -12,13 +12,19 @@ import InvestorDashboard from "../pages/InvestorDashboard";
 import MentorDashboard from "../pages/MentorDashboard";
 import StartupOwnerDashboard from "../pages/StartupOwnerDashboard";
 import StartupDetails from "../pages/StartupDetails";
+import StartupModal from "../pages/StartupModal";
 import PortfolioPage from "../pages/app/PortfolioPage";
 import MessagesPage from "../pages/app/MessagesPage";
 import SettingsPage from "../pages/app/SettingsPage";
 
 export default function AppRoutes() {
+  const location = useLocation();
+  const state = location.state;
+  const background = state && state.background;
+
   return (
-    <Routes>
+    <>
+      <Routes location={background || location}>
       {/* Public */}
       <Route path="/" element={<LandingPage />} />
 
@@ -49,6 +55,13 @@ export default function AppRoutes() {
 
       {/* 404 */}
       <Route path="*" element={<div className="min-h-screen bg-[#020617] text-white p-6">404</div>} />
-    </Routes>
+      </Routes>
+
+      {background && (
+        <Routes>
+          <Route path="/app/startup/:id" element={<StartupModal />} />
+        </Routes>
+      )}
+    </>
   );
 }

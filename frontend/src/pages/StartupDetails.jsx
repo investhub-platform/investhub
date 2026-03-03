@@ -1,6 +1,6 @@
 // StartupDetail.jsx
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -17,15 +17,16 @@ import AppNavbar from "../components/layout/AppNavBar";
 
 const tabs = ["Summary & Pitch", "AI Analysis", "Milestones", "Team"];
 
-const StartupDetail = () => {
+const StartupDetail = ({ isModal = false }) => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const startup = startups.find((s) => s.id === id);
   const [activeTab, setActiveTab] = useState(0);
   const [investAmount, setInvestAmount] = useState("");
 
   if (!startup) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className={`${isModal ? "" : "min-h-screen"} bg-background flex items-center justify-center p-6`}>
         <p className="text-muted-foreground">Startup not found</p>
       </div>
     );
@@ -36,20 +37,27 @@ const StartupDetail = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppNavbar />
+    <div className={`${isModal ? "" : "min-h-screen"} bg-background`}> 
+      {!isModal && <AppNavbar />}
 
       {/* Hero */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-28 pb-8 md:pb-12 relative">
-          <Link
-            to="/app/explore"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Explore
-          </Link>
+        <div className={`max-w-7xl mx-auto px-4 md:px-8 ${isModal ? "pt-6 pb-6" : "pt-28 pb-8 md:pb-12"} relative`}>
+          {isModal ? (
+            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+              Close
+            </button>
+          ) : (
+            <Link
+              to="/app/explore"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Explore
+            </Link>
+          )}
 
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div className="flex items-center gap-4">

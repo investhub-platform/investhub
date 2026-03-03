@@ -1,11 +1,13 @@
 // StartupCard.jsx
 import { Brain, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { formatCurrency } from "@/data/mockData";
 
 export function StartupCard({ startup, index }) {
   const fundingPercent = Math.round((startup.currentFunding / startup.fundingGoal) * 100);
+
+  const location = useLocation();
 
   return (
     <motion.div
@@ -13,7 +15,7 @@ export function StartupCard({ startup, index }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08, duration: 0.4 }}
     >
-      <Link to={`/app/startup/${startup.id}`} className="block">
+      <Link to={`/app/startup/${startup.id}`} state={{ background: location }} className="block">
         <div className="obsidian-card p-5 md:p-6 card-hover group">
           {/* Header */}
           <div className="flex items-start gap-3 mb-4">
