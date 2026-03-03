@@ -17,9 +17,9 @@ body {
 	--foreground: #E6EEF8;
 	--card: rgba(255,255,255,0.02);
 	--text-muted: rgba(255,255,255,0.6);
-	--accent-from: #3b82f6; /* blue-500 */
-	--accent-to: #7c3aed;   /* violet-600 */
-	--primary: #7c3aed;
+	--accent-from: #1E40AF; /* blue-800 */
+	--accent-to: #1D4ED8;   /* blue-700 */
+	--primary: #3b82f6;
 }
 
 /* Small utility helpers used in pages */
@@ -46,7 +46,7 @@ body {
 
 /* Gradient animated text flow */
 .gradient-flow{
-	background: linear-gradient(92deg, var(--accent-from), var(--accent-to), #7c3aed);
+	background: linear-gradient(92deg, var(--accent-from), var(--accent-to), #60a5fa);
 	background-size: 200% 200%;
 	-webkit-background-clip: text;
 	background-clip: text;
