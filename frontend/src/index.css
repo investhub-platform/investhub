@@ -4,7 +4,33 @@
 html, body, #root {
 	background: #020617;
 	min-height: 100%;
+	color: var(--foreground);
 }
+
+body {
+	color-scheme: dark;
+}
+
+/* Theme variables used across components (fallbacks for Tailwind tokens) */
+:root{
+	--background: #020617;
+	--foreground: #E6EEF8;
+	--card: rgba(255,255,255,0.02);
+	--text-muted: rgba(255,255,255,0.6);
+	--accent-from: #3b82f6; /* blue-500 */
+	--accent-to: #7c3aed;   /* violet-600 */
+	--primary: #7c3aed;
+}
+
+/* Small utility helpers used in pages */
+.bg-background{ background-color: var(--background) !important; }
+.text-foreground{ color: var(--foreground) !important; }
+.text-muted-foreground{ color: var(--text-muted) !important; }
+.heading-tight{ font-weight:700; line-height:1.05; }
+.obsidian-card{ background: var(--card); border: 1px solid rgba(255,255,255,0.04); box-shadow: 0 6px 20px rgba(2,6,23,0.6); color: var(--foreground); }
+.gradient-blue{ background: linear-gradient(90deg, var(--accent-from), var(--accent-to)); }
+.glow-blue{ box-shadow: 0 6px 20px rgba(59,130,246,0.12); }
+
 
 /* Aurora glow behind hero */
 .aurora {

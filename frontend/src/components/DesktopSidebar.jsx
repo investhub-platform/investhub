@@ -3,19 +3,19 @@ import { Compass, Briefcase, MessageSquare, BarChart3, Settings, TrendingUp } fr
 import { Link, useLocation } from "react-router-dom";
 
 const sidebarItems = [
-  { icon: Compass, label: "Explore", path: "/" },
-  { icon: Briefcase, label: "Portfolio", path: "/portfolio" },
-  { icon: MessageSquare, label: "Messages", path: "/messages" },
-  { icon: BarChart3, label: "Mentor Hub", path: "/mentor" },
-  { icon: TrendingUp, label: "Founder Hub", path: "/founder" },
-  { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: Compass, label: "Explore", path: "/app/explore" },
+  { icon: Briefcase, label: "Portfolio", path: "/app/portfolio" },
+  { icon: MessageSquare, label: "Messages", path: "/app/messages" },
+  { icon: BarChart3, label: "Mentor Hub", path: "/app/mentor" },
+  { icon: TrendingUp, label: "Founder Hub", path: "/app/founder" },
+  { icon: Settings, label: "Settings", path: "/app/settings" },
 ];
 
 export function DesktopSidebar() {
   const location = useLocation();
 
   return (
-    <aside className="hidden lg:flex flex-col w-60 min-h-[calc(100vh-5rem)] bg-card/50 border-r border-white/[0.07] p-4">
+    <aside className="hidden lg:flex flex-col w-60 min-h-screen bg-card/50 border-r border-white/[0.07] p-4 pt-24">
       <div className="flex flex-col gap-1 flex-1">
         {sidebarItems.map((item) => {
           const active = location.pathname === item.path;

@@ -13,7 +13,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { startups, formatCurrency } from "@/data/mockData";
-import { TopNav } from "@/components/TopNav";
+import AppNavbar from "../components/layout/AppNavBar";
 
 const tabs = ["Summary & Pitch", "AI Analysis", "Milestones", "Team"];
 
@@ -37,16 +37,14 @@ const StartupDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="pt-4 pb-6">
-        <TopNav />
-      </div>
+      <AppNavbar />
 
       {/* Hero */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12 relative">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-28 pb-8 md:pb-12 relative">
           <Link
-            to="/"
+            to="/app/explore"
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

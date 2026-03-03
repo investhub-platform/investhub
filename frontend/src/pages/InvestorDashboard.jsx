@@ -1,12 +1,12 @@
-// index.jsx
+// InvestorDashboard.jsx
 import { useState, useMemo } from "react";
-import { TopNav } from "@/components/TopNav";
+import AppNavbar from "../components/layout/AppNavBar";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { FilterBar } from "@/components/FilterBar";
 import { StartupCard } from "@/components/StartupCard";
 import { startups } from "@/data/mockData";
 
-const Index = () => {
+const InvestorDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState([]);
 
@@ -41,14 +41,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="pt-4 pb-8">
-        <TopNav />
-      </div>
+      <AppNavbar />
 
       <div className="flex">
         <DesktopSidebar />
 
-        <main className="flex-1 px-4 md:px-8 pb-12 max-w-7xl">
+        <main className="flex-1 px-4 md:px-8 pt-28 pb-12 max-w-7xl">
           {/* Section Header */}
           <div className="hidden md:block mb-8">
             <h1 className="text-3xl heading-tight">Explore Opportunities</h1>
@@ -85,4 +83,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default InvestorDashboard;
