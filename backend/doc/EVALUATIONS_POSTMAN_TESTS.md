@@ -147,6 +147,7 @@ Failure cases
 
 ## Postman environment variables recommended
 - `baseUrl` — `http://localhost:5000/api/v1`
+ - `baseUrl` — `http://localhost:5000/api/v1` (local) or `https://investhub-backend.onrender.com/api/v1` (deployed)
 - `accessToken` — Bearer token for authenticated user (admin for update/delete)
 - `startupId` — example startup id to use
 
