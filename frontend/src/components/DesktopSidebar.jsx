@@ -7,6 +7,8 @@ import {
   BarChart3,
   Settings,
   TrendingUp,
+  Wallet,
+  List,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -16,8 +18,10 @@ const sidebarItems = [
   { icon: Compass, label: "Explore", path: "/app/explore" },
   { icon: Briefcase, label: "Portfolio", path: "/app/portfolio" },
   { icon: MessageSquare, label: "Messages", path: "/app/messages" },
+  { icon: Wallet, label: "Wallet", path: "/app/wallet" },
   { icon: BarChart3, label: "Mentor Hub", path: "/app/mentor" },
   { icon: TrendingUp, label: "Founder Hub", path: "/app/founder" },
+  { icon: List, label: "Transactions", path: "/app/wallet/transactions" },
   { icon: Settings, label: "Settings", path: "/app/settings" },
 ];
 
