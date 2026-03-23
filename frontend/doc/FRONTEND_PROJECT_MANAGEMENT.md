@@ -24,7 +24,7 @@ Summary
   - **Notifications Center:** Real-time toast + notification page, mark read/unread. **Owner:** Rukshan. **Est:** 3d. **Priority:** Medium.
 
 - **Payments & Wallet Integration:**
-  - **Top-up / Payment Flow UI:** Integrate PayHere popup flow, UX for failures. **Owner:** Shalon. **Est:** 3d. **Priority:** High.
+  - **Top-up / Payment Flow UI:** Integrate PayHere popup flow, UX for failures. **Owner:** Shalon. **Est:** 3d. **Priority:** High. **Status:** Implemented (sandbox popup, failure handling, status polling).
   - **Withdraw / Refund UI:** Request withdraw flow + validations. **Owner:** Migara. **Est:** 3d. **Priority:** Medium.
 
 - **Admin / Moderation UI:**
@@ -77,6 +77,7 @@ Estimates assume focused work and small bugfix overhead; adjust per team velocit
 **Communication & Handover**
 - Add short PR descriptions explaining changes and relevant env settings.
 - Link designs and mockups in PRs where applicable.
+- Payment setup reference: see `frontend/doc/PAYHERE_WALLET_SETUP.md` for sandbox credentials, env vars, webhook URL, and test checklist.
 - Use this doc as the source of truth and update it after each sprint planning meeting.
 
 **Ownership Summary**

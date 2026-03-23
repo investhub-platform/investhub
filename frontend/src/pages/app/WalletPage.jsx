@@ -14,7 +14,7 @@ function extractPayload(responseData) {
   return responseData;
 }
 
-function openPayHerePopup(payload) {
+function openPayHereFormFallback(payload) {
   const required = [
     "merchant_id",
     "return_url",
@@ -51,6 +51,30 @@ function openPayHerePopup(payload) {
   document.body.removeChild(form);
 }
 
+function loadPayHereScript() {
+  return new Promise((resolve, reject) => {
+    if (window.payhere) {
+      resolve(window.payhere);
+      return;
+    }
+
+    const existing = document.querySelector('script[data-payhere="checkout"]');
+    if (existing) {
+      existing.addEventListener("load", () => resolve(window.payhere));
+      existing.addEventListener("error", () => reject(new Error("Failed to load PayHere SDK")));
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://www.payhere.lk/lib/payhere.js";
+    script.async = true;
+    script.dataset.payhere = "checkout";
+    script.onload = () => resolve(window.payhere);
+    script.onerror = () => reject(new Error("Failed to load PayHere SDK"));
+    document.body.appendChild(script);
+  });
+}
+
 export default function WalletPage() {
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,6 +82,50 @@ export default function WalletPage() {
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
   const [initiating, setInitiating] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState("");
+  const [payhereLoaded, setPayhereLoaded] = useState(false);
+
+  const markDepositFailed = async (orderId, reason) => {
+    if (!orderId) return;
+    try {
+      await api.post("/v1/wallets/deposit/fail", {
+        orderId,
+        reason,
+      });
+    } catch (err) {
+      console.error("Failed to mark deposit as failed", err);
+    }
+  };
+
+  const pollDepositStatus = async (orderId) => {
+    const maxAttempts = 10;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        const res = await api.get(`/v1/wallets/deposit/status/${encodeURIComponent(orderId)}`);
+        const statusPayload = extractPayload(res?.data) || res?.data;
+        const status = statusPayload?.status;
+
+        if (status === "Completed") {
+          setMsg("Top-up completed successfully and wallet has been updated.");
+          await load();
+          setPendingOrderId("");
+          return;
+        }
+
+        if (status === "Failed") {
+          setError("Payment was not completed. Please try again.");
+          setPendingOrderId("");
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to fetch deposit status", err);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+    }
+
+    setMsg("Payment is still processing. Please check transaction history in a few moments.");
+  };
 
   const load = async () => {
     setLoading(true);
@@ -78,6 +146,21 @@ export default function WalletPage() {
     load();
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    loadPayHereScript()
+      .then(() => {
+        if (mounted) setPayhereLoaded(true);
+      })
+      .catch((err) => {
+        console.warn("PayHere SDK unavailable, fallback form submit will be used.", err);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const initiateDeposit = async () => {
     setMsg("");
     setError("");
@@ -90,7 +173,33 @@ export default function WalletPage() {
     try {
       const r = await api.post("/v1/wallets/deposit/initiate", { amount });
       const payload = extractPayload(r?.data);
-      openPayHerePopup(payload);
+      const orderId = payload?.order_id;
+      setPendingOrderId(orderId || "");
+
+      if (window.payhere) {
+        window.payhere.onCompleted = async function onCompleted(completedOrderId) {
+          setMsg("Payment completed. Verifying with gateway...");
+          setError("");
+          await pollDepositStatus(completedOrderId || orderId);
+        };
+
+        window.payhere.onDismissed = async function onDismissed() {
+          const failedOrderId = orderId;
+          await markDepositFailed(failedOrderId, "Payment popup dismissed by user");
+          setError("Payment was cancelled before completion.");
+        };
+
+        window.payhere.onError = async function onError(errorText) {
+          const failedOrderId = orderId;
+          await markDepositFailed(failedOrderId, `Payment popup error: ${errorText || "Unknown error"}`);
+          setError(`Payment failed: ${errorText || "Unknown error"}`);
+        };
+
+        window.payhere.startPayment(payload);
+      } else {
+        openPayHereFormFallback(payload);
+      }
+
       setMsg("Payment popup opened. Complete payment to finalize top-up.");
     } catch (err) {
       console.error(err);
@@ -151,10 +260,23 @@ export default function WalletPage() {
               >
                 {initiating ? "Opening..." : "Top-up"}
               </button>
+              {pendingOrderId && (
+                <button
+                  onClick={() => pollDepositStatus(pendingOrderId)}
+                  className="rounded-xl border border-white/20 px-4 py-2 text-sm"
+                >
+                  Check Status
+                </button>
+              )}
               <Link to="/app/wallet/transactions" className="ml-auto text-sm text-primary hover:underline">
                 View Transactions
               </Link>
             </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              {payhereLoaded
+                ? "PayHere popup SDK loaded (sandbox/production controlled by merchant account + backend hash)."
+                : "PayHere popup SDK is unavailable right now. Browser form fallback will be used."}
+            </p>
           </div>
         </div>
       </main>

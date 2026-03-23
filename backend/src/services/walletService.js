@@ -27,11 +27,15 @@ export const getOrCreateWallet = async (userId) => {
  * Fetch the transaction history for a user with optional filters.
  * Supported query keys: type, status, startDate, endDate.
  */
-export const getTransactionHistory = async (userId, { type, status, startDate, endDate } = {}) => {
+export const getTransactionHistory = async (
+  userId,
+  { type, status, startDate, endDate, paymentId } = {}
+) => {
   const filter = {};
 
   if (type)   filter.type   = type;
   if (status) filter.status = status;
+  if (paymentId) filter.paymentId = paymentId;
 
   if (startDate || endDate) {
     filter.createdAt = {};
@@ -62,7 +66,7 @@ export const initiateDeposit = async (userId, user, amount) => {
     throw new AppError('Invalid amount', 400);
   }
 
-  const orderId         = `ORDER_${Date.now()}`;
+  const orderId         = `ORDER_${Date.now()}_${String(userId).slice(-6)}`;
   const hashedSecret    = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
   const amountFormatted = amt.toFixed(2);
   const hash = crypto
@@ -96,7 +100,9 @@ export const initiateDeposit = async (userId, user, amount) => {
     amount:      amountFormatted,
     hash,
     first_name:  user.name  || '',
+    last_name:   '',
     email:       user.email || '',
+    custom_1:    String(userId),
   };
 };
 
@@ -115,7 +121,20 @@ export const processPayhereNotify = async ({
   status_code,
   md5sig,
 }) => {
+  if (!merchant_id || !order_id || !payhere_amount || !payhere_currency || !status_code || !md5sig) {
+    throw new AppError('Missing payment notification fields', 400);
+  }
+
   const merchantSecret = process.env.PAYHERE_SECRET;
+  const expectedMerchantId = process.env.PAYHERE_MERCHANT_ID;
+  if (!merchantSecret || !expectedMerchantId) {
+    throw new AppError('Payment gateway not configured', 500);
+  }
+
+  if (String(merchant_id) !== String(expectedMerchantId)) {
+    throw new AppError('Invalid merchant id', 400);
+  }
+
   const hashedSecret   = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
 
   const localMd5sig = crypto
@@ -128,11 +147,21 @@ export const processPayhereNotify = async ({
     throw new AppError('Invalid Signature', 400);
   }
 
-  if (status_code !== '2') return; // Not a success notification — nothing to do
-
   const transaction = await txRepo.findByPaymentId(order_id);
-  if (!transaction || transaction.status !== 'Pending') {
+  if (!transaction) {
+    console.warn('[WalletService] Transaction not found', { order_id });
+    return;
+  }
+
+  if (transaction.status !== 'Pending') {
     console.warn('[WalletService] Transaction not found or already processed', { order_id });
+    return;
+  }
+
+  if (status_code !== '2') {
+    transaction.status = 'Failed';
+    transaction.description = `PayHere payment failed/cancelled (status: ${status_code})`;
+    await txRepo.save(transaction);
     return;
   }
 
@@ -168,6 +197,54 @@ export const processPayhereNotify = async ({
   }
 };
 
+// ─── Deposit Failure + Status ───────────────────────────────────────────────
+
+/**
+ * Mark a pending deposit as failed from frontend callback events.
+ * This is best-effort and idempotent; completed payments are not altered.
+ */
+export const markDepositFailed = async (userId, orderId, reason = 'Payment dismissed or failed in popup') => {
+  if (!orderId) {
+    throw new AppError('orderId is required', 400);
+  }
+
+  const transaction = await txRepo.findOneByUserAndPaymentId(userId, orderId);
+  if (!transaction) {
+    throw new AppError('Deposit transaction not found', 404);
+  }
+
+  if (transaction.status === 'Completed') {
+    return transaction;
+  }
+
+  transaction.status = 'Failed';
+  transaction.description = reason;
+  return txRepo.save(transaction);
+};
+
+/**
+ * Return current status of a deposit order for the requesting user.
+ */
+export const getDepositStatus = async (userId, orderId) => {
+  if (!orderId) {
+    throw new AppError('orderId is required', 400);
+  }
+
+  const transaction = await txRepo.findOneByUserAndPaymentId(userId, orderId);
+  if (!transaction) {
+    throw new AppError('Deposit transaction not found', 404);
+  }
+
+  return {
+    orderId,
+    status: transaction.status,
+    amount: transaction.amount,
+    currency: transaction.currency,
+    completedAt: transaction.completedAt,
+    createdAt: transaction.createdAt,
+  };
+};
+
 // ─── Investment (Atomic Transfer) ─────────────────────────────────────────────
 
 /**
@@ -175,26 +252,38 @@ export const processPayhereNotify = async ({
  * Creates two transaction records (debit + credit) in the same Mongo session.
  */
 export const executeInvestment = async (investor, amount, startupId, startupOwnerId) => {
+  const numericAmount = Number(amount);
+  if (!startupId || !startupOwnerId) {
+    throw new AppError('startupId and startupOwnerId are required', 400);
+  }
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    throw new AppError('Invalid investment amount', 400);
+  }
+  if (String(investor.id) === String(startupOwnerId)) {
+    throw new AppError('You cannot invest in your own startup', 400);
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     const investorWallet = await walletRepo.findByUser(investor.id, session);
-    if (!investorWallet || investorWallet.balance < amount) {
+    if (!investorWallet || investorWallet.balance < numericAmount) {
       throw new AppError('Insufficient funds', 400);
     }
 
-    const startupWallet = await walletRepo.findByUser(startupOwnerId, session);
+    let startupWallet = await walletRepo.findByUser(startupOwnerId, session);
     if (!startupWallet) {
-      throw new AppError('Startup wallet not initialized', 400);
+      const [createdWallet] = await walletRepo.create([{ userId: startupOwnerId }], { session });
+      startupWallet = createdWallet;
     }
 
     // Debit investor
-    investorWallet.balance -= amount;
+    investorWallet.balance -= numericAmount;
     await walletRepo.save(investorWallet, session);
 
     // Credit startup
-    startupWallet.balance += Number(amount);
+    startupWallet.balance += numericAmount;
     await walletRepo.save(startupWallet, session);
 
     // Record both sides of the transfer
@@ -203,7 +292,7 @@ export const executeInvestment = async (investor, amount, startupId, startupOwne
         walletId:         investorWallet._id,
         userId:           investor.id,
         type:             'Investment',
-        amount:           -amount,
+        amount:           -numericAmount,
         status:           'Completed',
         description:      `Investment in Startup ${startupId}`,
         relatedStartupId: startupId,
@@ -212,7 +301,7 @@ export const executeInvestment = async (investor, amount, startupId, startupOwne
         walletId:         startupWallet._id,
         userId:           startupOwnerId,
         type:             'Deposit',
-        amount,
+        amount:           numericAmount,
         status:           'Completed',
         description:      `Investment received from ${investor.name}`,
         relatedStartupId: startupId,
