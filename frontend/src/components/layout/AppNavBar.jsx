@@ -6,13 +6,22 @@ import { useAuth } from "../../features/auth/useAuth";
 const navLinks = [
   { label: "Explore", path: "/app/explore" },
   { label: "Portfolio", path: "/app/portfolio" },
+  { label: "Wallet", path: "/app/wallet" },
   { label: "Messages", path: "/app/messages" },
 ];
+
+function getActivePath(pathname, links) {
+  const match = links
+    .filter((link) => pathname === link.path || pathname.startsWith(`${link.path}/`))
+    .sort((a, b) => b.path.length - a.path.length)[0];
+  return match?.path || "";
+}
 
 export default function AppNavbar() {
   const { user, logout } = useAuth();
   const nav = useNavigate();
   const location = useLocation();
+  const activePath = getActivePath(location.pathname, navLinks);
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -78,7 +87,7 @@ export default function AppNavbar() {
                 key={link.path}
                 to={link.path}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                  location.pathname.startsWith(link.path)
+                  activePath === link.path
                     ? "gradient-blue text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -173,7 +182,7 @@ export default function AppNavbar() {
                   to={link.path}
                   onClick={() => setMobileOpen(false)}
                   className={`px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                    location.pathname.startsWith(link.path)
+                    activePath === link.path
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                   }`}
