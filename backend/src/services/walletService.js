@@ -91,8 +91,8 @@ export const initiateDeposit = async (userId, user, amount) => {
 
   return {
     merchant_id: merchantId,
-    return_url:  `${process.env.FRONTEND_URL || ''}/wallet`,
-    cancel_url:  `${process.env.FRONTEND_URL || ''}/wallet`,
+    return_url:  `${process.env.FRONTEND_URL || ''}/app/wallet`,
+    cancel_url:  `${process.env.FRONTEND_URL || ''}/app/wallet`,
     notify_url:  `${process.env.BACKEND_URL || ''}/api/v1/wallets/notify`,
     order_id:    orderId,
     items:       'Wallet Top-up',

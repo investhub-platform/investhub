@@ -44,9 +44,12 @@ Set these in `frontend/.env`.
 ```env
 VITE_API_BASE=http://localhost:5000
 VITE_PAYHERE_CHECKOUT_URL=https://sandbox.payhere.lk/pay/checkout
+VITE_PAYHERE_USE_SDK=false
 ```
 
 If `VITE_PAYHERE_CHECKOUT_URL` is not set, the app defaults to sandbox checkout URL.
+If `VITE_PAYHERE_USE_SDK` is `false`, checkout uses form-popup mode (recommended for localhost sandbox).
+Set `VITE_PAYHERE_USE_SDK=true` only if your environment supports PayHere SDK popup flow without CORS problems.
 
 ## PayHere Dashboard Configuration (Sandbox)
 
