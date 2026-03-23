@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import api from "../../lib/axios";
 import { formatCurrency } from "@/data/mockData";
+import AppNavbar from "../../components/layout/AppNavBar";
+import { DesktopSidebar } from "../../components/DesktopSidebar";
 
 function toCSV(rows) {
   const headers = ["id", "type", "amount", "status", "createdAt", "completedAt", "meta"];
@@ -32,11 +34,20 @@ export default function TransactionsPage() {
     setLoading(true);
     try {
       const res = await api.get("/v1/wallets/transactions", { params: { page, limit, q: filter } });
-      const data = res?.data?.data || {};
-      setTransactions(data.items || data || []);
-      setTotal(data.total || (data.items ? data.items.length : transactions.length));
+      const data = res?.data?.data;
+
+      // Normalize response to an array of transactions
+      let items = [];
+      if (Array.isArray(data)) items = data;
+      else if (data && Array.isArray(data.items)) items = data.items;
+      else items = [];
+
+      setTransactions(items);
+      setTotal((data && typeof data.total === "number" && data.total) || items.length);
     } catch (e) {
       console.error("Failed to load transactions", e);
+      setTransactions([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -59,59 +70,63 @@ export default function TransactionsPage() {
   };
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-semibold">Transaction History</h1>
-          <div className="flex items-center gap-2">
-            <input
-              placeholder="Search"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-white/5 border border-white/10"
-            />
-            <button onClick={exportCSV} className="text-sm text-primary hover:underline">
-              Export CSV
-            </button>
-          </div>
-        </div>
-
-        <div className="obsidian-card p-4">
-          {loading ? (
-            <div>Loading...</div>
-          ) : transactions.length === 0 ? (
-            <div className="p-6 text-sm text-muted-foreground">No transactions found.</div>
-          ) : (
-            <div className="space-y-3">
-              {transactions.map((t) => (
-                <div key={t._id || t.id} className="flex justify-between items-center p-3 bg-white/2 rounded-lg">
-                  <div>
-                    <div className="text-sm font-medium">{t.type || t.txType}</div>
-                    <div className="text-xs text-muted-foreground">{new Date(t.createdAt).toLocaleString()}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-medium">{formatCurrency(t.amount || t.value)}</div>
-                    <div className="text-xs text-muted-foreground">{t.status || t.state}</div>
-                  </div>
-                </div>
-              ))}
+    <div className="min-h-screen bg-background text-foreground flex">
+      <DesktopSidebar />
+      <main className="flex-1 w-full">
+        <AppNavbar />
+        <div className="max-w-4xl mx-auto px-6 pt-28 pb-10 w-full">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-semibold">Transaction History</h1>
+            <div className="flex items-center gap-2">
+              <input
+                placeholder="Search"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="px-3 py-2 rounded-xl bg-white/5 border border-white/10"
+              />
+              <button onClick={exportCSV} className="text-sm text-primary hover:underline">
+                Export CSV
+              </button>
             </div>
-          )}
-        </div>
+          </div>
 
-        <div className="flex items-center justify-between mt-4">
-          <div className="text-sm text-muted-foreground">Total: {total}</div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-1 rounded-xl bg-white/5">
-              Prev
-            </button>
-            <div className="px-3">{page}</div>
-            <button onClick={() => setPage((p) => p + 1)} className="px-3 py-1 rounded-xl bg-white/5">
-              Next
-            </button>
+          <div className="obsidian-card p-4">
+            {loading ? (
+              <div>Loading...</div>
+            ) : transactions.length === 0 ? (
+              <div className="p-6 text-sm text-muted-foreground">No transactions found.</div>
+            ) : (
+              <div className="space-y-3">
+                {transactions.map((t) => (
+                  <div key={t._id || t.id} className="flex justify-between items-center p-3 bg-white/2 rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium">{t.type || t.txType}</div>
+                      <div className="text-xs text-muted-foreground">{new Date(t.createdAt).toLocaleString()}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">{formatCurrency(t.amount || t.value)}</div>
+                      <div className="text-xs text-muted-foreground">{t.status || t.state}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-muted-foreground">Total: {total}</div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-1 rounded-xl bg-white/5">
+                Prev
+              </button>
+              <div className="px-3">{page}</div>
+              <button onClick={() => setPage((p) => p + 1)} className="px-3 py-1 rounded-xl bg-white/5">
+                Next
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
