@@ -53,9 +53,9 @@ export const getTransactionHistory = async (
  * Returns the payload the frontend needs to open the PayHere popup.
  */
 export const initiateDeposit = async (userId, user, amount) => {
-  const merchantId     = process.env.PAYHERE_MERCHANT_ID;
-  const merchantSecret = process.env.PAYHERE_SECRET;
-  const currency       = process.env.PAYHERE_CURRENCY || 'LKR';
+  const merchantId     = (process.env.PAYHERE_MERCHANT_ID || '').trim();
+  const merchantSecret = (process.env.PAYHERE_SECRET || '').trim();
+  const currency       = (process.env.PAYHERE_CURRENCY || 'LKR').trim().toUpperCase();
   const frontendUrl    = (process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
   const backendUrl     = (process.env.BACKEND_URL || '').trim().replace(/\/$/, '');
 
@@ -73,7 +73,14 @@ export const initiateDeposit = async (userId, user, amount) => {
   }
 
   const orderId         = `ORDER_${Date.now()}_${String(userId).slice(-6)}`;
-  const hashedSecret    = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
+  const secretHashOverride = (process.env.PAYHERE_SECRET_HASH || '').trim().toUpperCase();
+  const hashedSecret =
+    secretHashOverride || crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
+
+  if (!/^[A-F0-9]{32}$/.test(hashedSecret)) {
+    throw new AppError('Invalid PAYHERE secret/hash configuration', 500);
+  }
+
   const amountFormatted = amt.toFixed(2);
   const hash = crypto
     .createHash('md5')
@@ -143,8 +150,8 @@ export const processPayhereNotify = async ({
     throw new AppError('Missing payment notification fields', 400);
   }
 
-  const merchantSecret = process.env.PAYHERE_SECRET;
-  const expectedMerchantId = process.env.PAYHERE_MERCHANT_ID;
+  const merchantSecret = (process.env.PAYHERE_SECRET || '').trim();
+  const expectedMerchantId = (process.env.PAYHERE_MERCHANT_ID || '').trim();
   if (!merchantSecret || !expectedMerchantId) {
     throw new AppError('Payment gateway not configured', 500);
   }
@@ -153,7 +160,13 @@ export const processPayhereNotify = async ({
     throw new AppError('Invalid merchant id', 400);
   }
 
-  const hashedSecret   = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
+  const secretHashOverride = (process.env.PAYHERE_SECRET_HASH || '').trim().toUpperCase();
+  const hashedSecret =
+    secretHashOverride || crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
+
+  if (!/^[A-F0-9]{32}$/.test(hashedSecret)) {
+    throw new AppError('Invalid PAYHERE secret/hash configuration', 500);
+  }
 
   const localMd5sig = crypto
     .createHash('md5')

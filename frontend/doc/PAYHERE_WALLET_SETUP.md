@@ -125,6 +125,14 @@ npm run dev
   - Confirm `PAYHERE_MERCHANT_ID` and `PAYHERE_SECRET` are correct sandbox values.
   - Confirm backend is using the same account as checkout.
 
+- Unauthorized payment request (shown by PayHere page):
+  - Usually means merchant credentials/hash mismatch.
+  - Confirm merchant ID and secret are from sandbox account, not production account.
+  - Restart backend after changing `.env` values.
+  - Ensure no leading/trailing spaces in `PAYHERE_MERCHANT_ID` / `PAYHERE_SECRET`.
+  - Optionally set `PAYHERE_SECRET_HASH` (32-char uppercase MD5 of your merchant secret) in backend env if your secret format is ambiguous.
+  - Keep `VITE_PAYHERE_USE_SDK=false` in local environment.
+
 - Payment popup not loading:
   - The page attempts PayHere JS popup first.
   - If SDK load fails, it falls back to form-based checkout in a new tab.
