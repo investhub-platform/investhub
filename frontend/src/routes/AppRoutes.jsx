@@ -16,6 +16,8 @@ import StartupModal from "../pages/StartupModal";
 import PortfolioPage from "../pages/app/PortfolioPage";
 import MessagesPage from "../pages/app/MessagesPage";
 import SettingsPage from "../pages/app/SettingsPage";
+import WalletPage from "../pages/app/WalletPage";
+import TransactionsPage from "../pages/app/TransactionsPage";
 
 export default function AppRoutes() {
   const location = useLocation();
@@ -44,6 +46,8 @@ export default function AppRoutes() {
         <Route path="/app/founder" element={<StartupOwnerDashboard />} />
         <Route path="/app/startup/:id" element={<StartupDetails />} />
         <Route path="/app/profile" element={<ProfilePage />} />
+        <Route path="/app/wallet" element={<WalletPage />} />
+        <Route path="/app/wallet/transactions" element={<TransactionsPage />} />
         <Route path="/app/settings" element={<SettingsPage />} />
       </Route>
 
