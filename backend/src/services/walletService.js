@@ -56,9 +56,15 @@ export const initiateDeposit = async (userId, user, amount) => {
   const merchantId     = process.env.PAYHERE_MERCHANT_ID;
   const merchantSecret = process.env.PAYHERE_SECRET;
   const currency       = process.env.PAYHERE_CURRENCY || 'LKR';
+  const frontendUrl    = (process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
+  const backendUrl     = (process.env.BACKEND_URL || '').trim().replace(/\/$/, '');
 
   if (!merchantId || !merchantSecret) {
     throw new AppError('Payment gateway not configured', 500);
+  }
+
+  if (!frontendUrl || !backendUrl || !/^https?:\/\//i.test(frontendUrl) || !/^https?:\/\//i.test(backendUrl)) {
+    throw new AppError('FRONTEND_URL and BACKEND_URL must be valid absolute URLs for PayHere', 500);
   }
 
   const amt = parseFloat(amount);
@@ -89,19 +95,31 @@ export const initiateDeposit = async (userId, user, amount) => {
     description: 'Top-up via PayHere',
   });
 
+  const [firstNameRaw = '', ...restName] = String(user?.name || '').trim().split(/\s+/);
+  const firstName = firstNameRaw || 'InvestHub';
+  const lastName = restName.join(' ') || 'User';
+  const phone = String(user?.profile?.phone || process.env.PAYHERE_DEFAULT_PHONE || '0770000000');
+  const city = process.env.PAYHERE_DEFAULT_CITY || 'Colombo';
+  const address = process.env.PAYHERE_DEFAULT_ADDRESS || 'InvestHub';
+  const country = process.env.PAYHERE_DEFAULT_COUNTRY || 'Sri Lanka';
+
   return {
     merchant_id: merchantId,
-    return_url:  `${process.env.FRONTEND_URL || ''}/app/wallet`,
-    cancel_url:  `${process.env.FRONTEND_URL || ''}/app/wallet`,
-    notify_url:  `${process.env.BACKEND_URL || ''}/api/v1/wallets/notify`,
+    return_url:  `${frontendUrl}/app/wallet`,
+    cancel_url:  `${frontendUrl}/app/wallet`,
+    notify_url:  `${backendUrl}/api/v1/wallets/notify`,
     order_id:    orderId,
     items:       'Wallet Top-up',
     currency,
     amount:      amountFormatted,
     hash,
-    first_name:  user.name  || '',
-    last_name:   '',
+    first_name:  firstName,
+    last_name:   lastName,
     email:       user.email || '',
+    phone,
+    address,
+    city,
+    country,
     custom_1:    String(userId),
   };
 };
