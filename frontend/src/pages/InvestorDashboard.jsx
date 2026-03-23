@@ -6,6 +6,12 @@ import { FilterBar } from "@/components/FilterBar";
 import { StartupCard } from "@/components/StartupCard";
 import api from "@/lib/axios";
 
+const arrayify = (value) => {
+  if (Array.isArray(value)) return value;
+  if (value == null || value === "") return [];
+  return [value];
+};
+
 const InvestorDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState([]);
@@ -29,13 +35,17 @@ const InvestorDashboard = () => {
           _id: it._id || it.id,
           name: it.title || it.name || "Untitled",
           tagline: (it.description && String(it.description).split(". ")[0]) || (it.aiSummary ? it.aiSummary.split("\n")[0] : ""),
-          tags: it.category ? [it.category] : it.tags || [],
+          tags: arrayify(it.category ? [it.category] : it.tags),
+          industry: it.category || it.industry || "",
+          stage: it.stage || "",
           fundingGoal: it.budget || it.fundingGoal || 0,
           currentFunding: it.currentFunding || 0,
           logo: it.ImgURL ? "" : (it.logo || ""),
           aiRiskLevel: it.aiRiskLevel || "UNKNOWN",
           aiRiskScore: it.aiRiskScore || 0,
-          founders: it.createdBy ? [{ name: "Founder", avatar: (it.createdBy && String(it.createdBy).slice(0,2).toUpperCase()) }] : (it.founders || []),
+          founders: it.createdBy
+            ? [{ name: "Founder", avatar: (it.createdBy && String(it.createdBy).slice(0, 2).toUpperCase()) }]
+            : arrayify(it.founders),
           // keep original payload for further details
           raw: it,
         }));

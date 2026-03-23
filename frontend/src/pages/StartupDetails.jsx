@@ -1,6 +1,6 @@
 // StartupDetail.jsx
-import { useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -12,22 +12,82 @@ import {
   Shield,
   TrendingUp,
 } from "lucide-react";
-import { startups, formatCurrency } from "@/data/mockData";
+import { formatCurrency } from "@/data/mockData";
+import api from "@/lib/axios";
 import AppNavbar from "../components/layout/AppNavBar";
+import { useAuth } from "@/features/auth/useAuth";
 
 const tabs = ["Summary & Pitch", "AI Analysis", "Milestones", "Team"];
 
 const StartupDetail = ({ isModal = false }) => {
+  const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
-  const startup = startups.find((s) => s.id === id);
+  const location = useLocation();
+
+  // Use startup passed in route state if available (faster, avoids refetch)
+  const passed = location.state?.startup || null;
+
+  const [startup, setStartup] = useState(
+    passed ? normalize(passed, passed.isIdea ? "idea" : "startup") : null
+  );
+  const [loading, setLoading] = useState(!passed);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      if (passed) return;
+      setLoading(true);
+      try {
+        // Try idea endpoint first
+        const resIdea = await api.get(`/v1/ideas/${id}`);
+        if (!mounted) return;
+        const data = resIdea?.data?.data;
+        setStartup(normalize(data, "idea"));
+      } catch (e) {
+        try {
+          // Fallback to startup endpoint
+          const res = await api.get(`/v1/startups/${id}`);
+          if (!mounted) return;
+          const data = res?.data?.data;
+          setStartup(normalize(data, "startup"));
+        } catch (err) {
+          console.error("Failed to load detail", err);
+          if (mounted) setError("Record not found");
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [id, passed]);
+
+  // If a passed object exists, ensure it's normalized
+  useEffect(() => {
+    if (passed) setStartup(normalize(passed, passed.isIdea ? "idea" : "startup"));
+  }, [passed]);
   const [activeTab, setActiveTab] = useState(0);
   const [investAmount, setInvestAmount] = useState("");
+  const [investMessage, setInvestMessage] = useState("");
+  const [isInvestOpen, setIsInvestOpen] = useState(false);
+  const [investStep, setInvestStep] = useState("input");
+  const [investSubmitting, setInvestSubmitting] = useState(false);
+  const [investError, setInvestError] = useState("");
+  const [investSuccess, setInvestSuccess] = useState(null);
 
-  if (!startup) {
+  if (loading) {
+    return <div className={`${isModal ? "" : "min-h-screen"} bg-background flex items-center justify-center p-6`}>Loading…</div>;
+  }
+
+  if (error || !startup) {
     return (
       <div className={`${isModal ? "" : "min-h-screen"} bg-background flex items-center justify-center p-6`}>
-        <p className="text-muted-foreground">Startup not found</p>
+        <p className="text-muted-foreground">{error || "Record not found"}</p>
       </div>
     );
   }
@@ -35,6 +95,51 @@ const StartupDetail = ({ isModal = false }) => {
   const fundingPercent = Math.round(
     (startup.currentFunding / startup.fundingGoal) * 100
   );
+
+  const amountNumber = Number(investAmount || 0);
+  const minAmount = 10000;
+
+  const openInvestModal = () => {
+    setInvestError("");
+    setInvestSuccess(null);
+    setInvestStep("input");
+    setIsInvestOpen(true);
+  };
+
+  const submitInvestment = async () => {
+    setInvestError("");
+
+    const investorId = user?._id || user?.id;
+    if (!investorId) {
+      setInvestError("You must be logged in to invest.");
+      return;
+    }
+    if (!amountNumber || amountNumber < minAmount) {
+      setInvestError(`Minimum investment is ${formatCurrency(minAmount)}.`);
+      return;
+    }
+
+    try {
+      setInvestSubmitting(true);
+      const payload = {
+        investorId,
+        createdBy: investorId,
+        ideaId: startup?.raw?._id || startup?.id,
+        StartupsId: startup?.raw?.StartupId || null,
+        amount: amountNumber,
+        message: investMessage || null,
+      };
+
+      const res = await api.post("/v1/requests", payload);
+      setInvestSuccess(res?.data?.data || { amount: amountNumber });
+      setInvestStep("done");
+    } catch (e) {
+      const msg = e?.response?.data?.message || "Failed to submit investment request.";
+      setInvestError(msg);
+    } finally {
+      setInvestSubmitting(false);
+    }
+  };
 
   return (
     <div className={`${isModal ? "" : "min-h-screen"} bg-background`}> 
@@ -113,6 +218,7 @@ const StartupDetail = ({ isModal = false }) => {
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 whileHover={{ scale: 1.02 }}
+                onClick={openInvestModal}
                 className="w-full py-3.5 rounded-full gradient-blue text-sm font-semibold glow-blue transition-all"
               >
                 Commit Investment ($10k min)
@@ -128,7 +234,7 @@ const StartupDetail = ({ isModal = false }) => {
               <div className="space-y-3 text-sm">
                 {[
                   ["Stage", startup.stage],
-                  ["Tech Stack", startup.techStack.join(", ")],
+                  ["Tech Stack", startup.techStack?.length ? startup.techStack.join(", ") : "N/A"],
                   ["Industry", startup.industry],
                   ["Milestones", `${startup.milestonesCompleted}/${startup.milestonesTotal} Completed`],
                 ].map(([label, value]) => (
@@ -198,6 +304,125 @@ const StartupDetail = ({ isModal = false }) => {
           </div>
         </div>
       </div>
+
+      {/* Invest modal with confirmation flow */}
+      {isInvestOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70" onClick={() => !investSubmitting && setIsInvestOpen(false)} />
+          <div className="relative w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a1020] p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Invest in {startup.name}</h3>
+              <button className="text-sm text-muted-foreground" onClick={() => !investSubmitting && setIsInvestOpen(false)}>
+                Close
+              </button>
+            </div>
+
+            {investStep === "input" && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Amount (USD)</label>
+                  <input
+                    type="text"
+                    value={investAmount}
+                    onChange={(e) => setInvestAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                    placeholder="10000"
+                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-foreground"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Minimum {formatCurrency(minAmount)}</p>
+                </div>
+
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Message (optional)</label>
+                  <textarea
+                    value={investMessage}
+                    onChange={(e) => setInvestMessage(e.target.value)}
+                    rows={3}
+                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-foreground"
+                    placeholder="Add a short note for the founder"
+                  />
+                </div>
+
+                {investError && <p className="text-sm text-red-400">{investError}</p>}
+
+                <div className="flex justify-end gap-2">
+                  <button className="px-4 py-2 rounded-lg border border-white/15" onClick={() => setIsInvestOpen(false)}>
+                    Cancel
+                  </button>
+                  <button
+                    className="px-4 py-2 rounded-lg gradient-blue font-medium"
+                    onClick={() => {
+                      if (!amountNumber || amountNumber < minAmount) {
+                        setInvestError(`Minimum investment is ${formatCurrency(minAmount)}.`);
+                        return;
+                      }
+                      setInvestError("");
+                      setInvestStep("confirm");
+                    }}
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {investStep === "confirm" && (
+              <div className="space-y-4">
+                <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+                  <p className="text-sm text-muted-foreground">Confirm Investment</p>
+                  <p className="text-xl font-semibold mt-1">{formatCurrency(amountNumber)}</p>
+                  <p className="text-sm text-muted-foreground mt-2">to {startup.name}</p>
+                </div>
+
+                {investMessage && (
+                  <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+                    <p className="text-sm text-muted-foreground">Message</p>
+                    <p className="text-sm mt-1">{investMessage}</p>
+                  </div>
+                )}
+
+                {investError && <p className="text-sm text-red-400">{investError}</p>}
+
+                <div className="flex justify-end gap-2">
+                  <button className="px-4 py-2 rounded-lg border border-white/15" onClick={() => setInvestStep("input")}>
+                    Back
+                  </button>
+                  <button
+                    className="px-4 py-2 rounded-lg gradient-blue font-medium disabled:opacity-60"
+                    onClick={submitInvestment}
+                    disabled={investSubmitting}
+                  >
+                    {investSubmitting ? "Submitting..." : "Confirm Investment"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {investStep === "done" && (
+              <div className="space-y-4">
+                <div className="rounded-xl bg-accent/10 border border-accent/30 p-4">
+                  <p className="font-medium">Investment request submitted</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Amount: {formatCurrency(investSuccess?.amount || amountNumber)}
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    className="px-4 py-2 rounded-lg gradient-blue font-medium"
+                    onClick={() => {
+                      setIsInvestOpen(false);
+                      setInvestAmount("");
+                      setInvestMessage("");
+                      setInvestStep("input");
+                    }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -355,3 +580,82 @@ function TeamTab({ startup }) {
 }
 
 export default StartupDetail;
+
+// Normalize backend records into the shape expected by this view
+function normalize(record, type = "idea") {
+  if (!record) return null;
+
+  if (type === "idea") {
+    const tags = arrayify(record.customCategory ? [record.customCategory] : (record.category ? [record.category] : record.tags));
+    const milestones = arrayify(record.milestones);
+    const techStack = arrayify(record.techStack);
+    const team = arrayify(record.team);
+    const aiInsights = record.aiInsights && typeof record.aiInsights === "object" ? record.aiInsights : {};
+
+    return {
+      id: record._id || record.id,
+      name: record.title || "Untitled",
+      tagline: record.description || (record.aiSummary ? String(record.aiSummary).split("\n")[0] : ""),
+      logo: record.ImgURL || record.logo || "",
+      mentorName: record.mentorName || "Mentor",
+      stage: record.stage || "",
+      techStack,
+      milestones,
+      milestonesCompleted: milestones.filter((m) => m?.completed).length,
+      milestonesTotal: milestones.length,
+      currentFunding: record.currentFunding || 0,
+      fundingGoal: record.budget || record.fundingGoal || 0,
+      fundingGoalDisplay: record.budget || record.fundingGoal || 0,
+      pitchSummary: record.aiSummary || record.description || "",
+      tags,
+      industry: record.category || record.industry || "",
+      aiRiskScore: record.aiRiskScore || 0,
+      aiRiskLevel: record.aiRiskLevel || "UNKNOWN",
+      aiInsights: {
+        summary: arrayify(aiInsights.summary),
+        marketSentiment: aiInsights.marketSentiment || "",
+      },
+      team: team.length
+        ? team
+        : (record.createdBy
+          ? [{ name: "Founder", role: "Founder", avatar: String(record.createdBy).slice(0, 2).toUpperCase() }]
+          : []),
+      raw: record,
+    };
+  }
+
+  // startup type
+  const milestones = arrayify(record.milestones);
+  const aiInsights = record.aiInsights && typeof record.aiInsights === "object" ? record.aiInsights : {};
+  return {
+    id: record._id || record.id,
+    name: record.name || record.title || "Untitled",
+    tagline: record.tagline || record.description || "",
+    logo: record.logo || "",
+    mentorName: record.mentorName || "Mentor",
+    stage: record.stage || "",
+    techStack: arrayify(record.techStack),
+    milestones,
+    milestonesCompleted: milestones.filter((m) => m?.completed).length,
+    milestonesTotal: milestones.length,
+    currentFunding: record.currentFunding || 0,
+    fundingGoal: record.fundingGoal || 0,
+    pitchSummary: record.pitchSummary || record.description || "",
+    tags: arrayify(record.tags),
+    industry: record.industry || "",
+    aiRiskScore: record.aiRiskScore || 0,
+    aiRiskLevel: record.aiRiskLevel || "UNKNOWN",
+    aiInsights: {
+      summary: arrayify(aiInsights.summary),
+      marketSentiment: aiInsights.marketSentiment || "",
+    },
+    team: arrayify(record.team),
+    raw: record,
+  };
+}
+
+function arrayify(value) {
+  if (Array.isArray(value)) return value;
+  if (value == null || value === "") return [];
+  return [value];
+}

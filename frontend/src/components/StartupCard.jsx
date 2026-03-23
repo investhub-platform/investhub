@@ -5,7 +5,11 @@ import { motion } from "framer-motion";
 import { formatCurrency } from "@/data/mockData";
 
 export function StartupCard({ startup, index }) {
-  const fundingPercent = Math.round((startup.currentFunding / startup.fundingGoal) * 100);
+  const tags = Array.isArray(startup.tags) ? startup.tags : [];
+  const founders = Array.isArray(startup.founders) ? startup.founders : [];
+  const goal = Number(startup.fundingGoal || 0);
+  const current = Number(startup.currentFunding || 0);
+  const fundingPercent = goal > 0 ? Math.round((current / goal) * 100) : 0;
 
   const location = useLocation();
 
@@ -15,7 +19,7 @@ export function StartupCard({ startup, index }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08, duration: 0.4 }}
     >
-      <Link to={`/app/startup/${startup.id}`} state={{ background: location }} className="block">
+      <Link to={`/app/startup/${startup._id || startup.id}`} state={{ background: location, startup }} className="block">
         <div className="obsidian-card p-5 md:p-6 card-hover group">
           {/* Header */}
           <div className="flex items-start gap-3 mb-4">
@@ -30,7 +34,7 @@ export function StartupCard({ startup, index }) {
 
           {/* Tags */}
           <div className="flex flex-wrap gap-1.5 mb-4">
-            {startup.tags.map((tag) => (
+            {tags.map((tag) => (
               <span key={tag} className="pill-filter text-xs py-1 px-2.5">
                 {tag}
               </span>
@@ -77,14 +81,14 @@ export function StartupCard({ startup, index }) {
           {/* Footer */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-                {startup.founders.map((f, i) => (
+                {founders.map((f, i) => (
                   <div
-                      key={f.name}
+                      key={f.name || i}
                       className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-medium ${
                         i === 0 ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white" : "bg-white/5 text-white"
                       } border-2 border-white/10`}
                     >
-                      {f.avatar}
+                      {f.avatar || "--"}
                     </div>
                 ))}
               </div>
