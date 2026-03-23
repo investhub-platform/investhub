@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../../lib/axios";
 import { formatCurrency } from "@/data/mockData";
 import AppNavbar from "../../components/layout/AppNavBar";
 import { DesktopSidebar } from "../../components/DesktopSidebar";
+import { useAuth } from "../../features/auth/useAuth";
 
 function toCSV(rows) {
   const headers = ["id", "type", "amount", "status", "createdAt", "completedAt", "meta"];
@@ -23,48 +24,83 @@ function toCSV(rows) {
 }
 
 export default function TransactionsPage() {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-  const [total, setTotal] = useState(0);
-  const [filter, setFilter] = useState("");
+  const [search, setSearch] = useState("");
+  const [type, setType] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [error, setError] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
-      const res = await api.get("/v1/wallets/transactions", { params: { page, limit, q: filter } });
-      const data = res?.data?.data;
+      const params = {
+        ...(type !== "all" ? { type } : {}),
+        ...(status !== "all" ? { status } : {}),
+        ...(startDate ? { startDate } : {}),
+        ...(endDate ? { endDate } : {}),
+        ...(user?._id || user?.id ? { userId: user?._id || user?.id } : {}),
+      };
 
-      // Normalize response to an array of transactions
-      let items = [];
-      if (Array.isArray(data)) items = data;
-      else if (data && Array.isArray(data.items)) items = data.items;
-      else items = [];
-
+      const res = await api.get("/v1/wallets/transactions", { params });
+      const raw = res?.data?.data ?? res?.data;
+      const items = Array.isArray(raw) ? raw : Array.isArray(raw?.items) ? raw.items : [];
       setTransactions(items);
-      setTotal((data && typeof data.total === "number" && data.total) || items.length);
     } catch (e) {
       console.error("Failed to load transactions", e);
       setTransactions([]);
-      setTotal(0);
+      setError(e?.response?.data?.message || "Failed to load transactions");
     } finally {
       setLoading(false);
     }
-  };
+  }, [endDate, startDate, status, type, user?._id, user?.id]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, filter]);
+  }, [load]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, type, status, startDate, endDate]);
+
+  const filteredTransactions = useMemo(() => {
+    if (!search.trim()) return transactions;
+    const q = search.trim().toLowerCase();
+    return transactions.filter((t) => {
+      const haystack = [
+        t.type,
+        t.status,
+        t.description,
+        t.currency,
+        t.paymentId,
+        t._id,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [transactions, search]);
+
+  const total = filteredTransactions.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const safePage = Math.min(page, totalPages);
+  const startIndex = (safePage - 1) * limit;
+  const currentPageItems = filteredTransactions.slice(startIndex, startIndex + limit);
 
   const exportCSV = () => {
-    const csv = toCSV(transactions);
+    const csv = toCSV(filteredTransactions);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `transactions_page_${page}.csv`;
+    a.download = `transactions_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -80,8 +116,8 @@ export default function TransactionsPage() {
             <div className="flex items-center gap-2">
               <input
                 placeholder="Search"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="px-3 py-2 rounded-xl bg-white/5 border border-white/10"
               />
               <button onClick={exportCSV} className="text-sm text-primary hover:underline">
@@ -90,18 +126,64 @@ export default function TransactionsPage() {
             </div>
           </div>
 
+          <div className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-2">
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="px-3 py-2 rounded-xl bg-white/5 border border-white/10"
+            >
+              <option value="all">All Types</option>
+              <option value="Deposit">Deposit</option>
+              <option value="Investment">Investment</option>
+              <option value="Withdrawal">Withdrawal</option>
+              <option value="Refund">Refund</option>
+            </select>
+
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="px-3 py-2 rounded-xl bg-white/5 border border-white/10"
+            >
+              <option value="all">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Completed">Completed</option>
+              <option value="Failed">Failed</option>
+            </select>
+
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-3 py-2 rounded-xl bg-white/5 border border-white/10"
+            />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-3 py-2 rounded-xl bg-white/5 border border-white/10"
+            />
+          </div>
+
+          {error && (
+            <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-red-200">
+              {error}
+            </div>
+          )}
+
           <div className="obsidian-card p-4">
             {loading ? (
               <div>Loading...</div>
-            ) : transactions.length === 0 ? (
+            ) : currentPageItems.length === 0 ? (
               <div className="p-6 text-sm text-muted-foreground">No transactions found.</div>
             ) : (
               <div className="space-y-3">
-                {transactions.map((t) => (
+                {currentPageItems.map((t) => (
                   <div key={t._id || t.id} className="flex justify-between items-center p-3 bg-white/2 rounded-lg">
                     <div>
                       <div className="text-sm font-medium">{t.type || t.txType}</div>
-                      <div className="text-xs text-muted-foreground">{new Date(t.createdAt).toLocaleString()}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {t.createdAt ? new Date(t.createdAt).toLocaleString() : "-"}
+                      </div>
                     </div>
                     <div className="text-right">
                       <div className="font-medium">{formatCurrency(t.amount || t.value)}</div>
@@ -116,11 +198,21 @@ export default function TransactionsPage() {
           <div className="flex items-center justify-between mt-4">
             <div className="text-sm text-muted-foreground">Total: {total}</div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-1 rounded-xl bg-white/5">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage <= 1}
+                className="px-3 py-1 rounded-xl bg-white/5 disabled:opacity-50"
+              >
                 Prev
               </button>
-              <div className="px-3">{page}</div>
-              <button onClick={() => setPage((p) => p + 1)} className="px-3 py-1 rounded-xl bg-white/5">
+              <div className="px-3">
+                {safePage} / {totalPages}
+              </div>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage >= totalPages}
+                className="px-3 py-1 rounded-xl bg-white/5 disabled:opacity-50"
+              >
                 Next
               </button>
             </div>

@@ -25,12 +25,17 @@ const sidebarItems = [
   { icon: Settings, label: "Settings", path: "/app/settings" },
 ];
 
+function getActivePath(pathname, items) {
+  const match = items
+    .filter((item) => pathname === item.path || pathname.startsWith(`${item.path}/`))
+    .sort((a, b) => b.path.length - a.path.length)[0];
+  return match?.path || "";
+}
+
 export function DesktopSidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-
-  // normalize by comparing the main app segment (e.g. '/app/mentor' -> 'mentor')
-  const currentSegment = location.pathname.split("/")[2] || "";
+  const activePath = getActivePath(location.pathname, sidebarItems);
 
   return (
     <aside
@@ -50,8 +55,7 @@ export function DesktopSidebar() {
 
       <div className="flex flex-col gap-1 flex-1">
         {sidebarItems.map((item) => {
-          const itemSegment = item.path.split("/")[2] || "";
-          const active = currentSegment === itemSegment || location.pathname.startsWith(item.path);
+          const active = activePath === item.path;
           return (
             <Link
               key={item.path}
