@@ -45,7 +45,7 @@ const StartupDetail = ({ isModal = false }) => {
         if (!mounted) return;
         const data = resIdea?.data?.data;
         setStartup(normalize(data, "idea"));
-      } catch (e) {
+      } catch {
         try {
           // Fallback to startup endpoint
           const res = await api.get(`/v1/startups/${id}`);
