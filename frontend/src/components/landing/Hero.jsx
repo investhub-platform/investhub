@@ -88,11 +88,11 @@ const Hero = () => {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center w-full sm:w-auto px-4"
         >
-          <button className="group relative w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base rounded-full bg-blue-600 text-white font-semibold shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] hover:bg-blue-500 transition-all hover:scale-105 active:scale-95">
-            <span className="flex items-center gap-2">
-              Start Funding <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </span>
-          </button>
+         <a href="/auth/register" className="group relative w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base rounded-full bg-blue-600 text-white font-semibold shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] hover:bg-blue-500 transition-all hover:scale-105 active:scale-95">
+  <span className="flex items-center gap-2">
+    Start Funding <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+  </span>
+</a>
           
           <button className="group w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base rounded-full border border-white/10 bg-white/5 backdrop-blur-sm text-white font-medium hover:bg-white/10 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
             <Play className="w-4 h-4 fill-white" /> View Demo

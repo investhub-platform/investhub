@@ -39,6 +39,10 @@ export const findByUser = (userId, filter = {}) =>
 export const findByPaymentId = (paymentId) =>
   Transaction.findOne({ paymentId });
 
+/** Look up transaction by user + payment order id. */
+export const findOneByUserAndPaymentId = (userId, paymentId) =>
+  Transaction.findOne({ userId, paymentId });
+
 /** Persist changes to an existing transaction document. */
 export const save = (doc, session = null) =>
   session ? doc.save({ session }) : doc.save();

@@ -9,7 +9,7 @@ Pre-checks
 
 - Postman environment variables (recommended)
 - set `baseUrl` to include the API prefix for convenience:
-- `baseUrl` = http://localhost:5000/api/v1
+- `baseUrl` = http://localhost:5000/api/v1 (local) or https://investhub-backend.onrender.com/api/v1 (deployed)
 - `accessToken` = (set after login)
 - `refreshToken` = (cookie; optional)
 - `PAYHERE_MERCHANT_ID`, `PAYHERE_SECRET`

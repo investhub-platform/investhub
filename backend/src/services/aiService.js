@@ -2,9 +2,14 @@
 import OpenAI from "openai";
 import dotenv from "dotenv";
 dotenv.config();
-
+// Provide a safe fallback for non-production environments so tests don't fail
 if (!process.env.OPENROUTER_API_KEY) {
-  console.warn("⚠️ OPENROUTER_API_KEY is missing!");
+  if (process.env.NODE_ENV !== 'production') {
+    process.env.OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || 'dummy-test-api-key';
+    console.warn('⚠️ OPENROUTER_API_KEY missing — using dummy key for non-production environment');
+  } else {
+    console.warn('⚠️ OPENROUTER_API_KEY is missing!');
+  }
 }
 
 const openai = new OpenAI({

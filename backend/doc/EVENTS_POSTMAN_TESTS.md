@@ -178,7 +178,7 @@ Failure cases to test
 ---
 
 ## Postman environment variables recommended
-- `baseUrl` — `http://localhost:3000/api/v1` (adjust)
+- `baseUrl` — `http://localhost:3000/api/v1` (local) or `https://investhub-backend.onrender.com/api/v1` (deployed)
 - `accessToken` — Bearer token for authorized user (mentor for create)
 - `mentorId` — (optional) ID of mentor user
 - `eventId` — (optional) set from create response to use in RSVP

@@ -1,6 +1,6 @@
 # InvestHub Platform
 
-InvestHub is a web application that connects startups with technical mentors and investors. The project uses a MERN stack (MongoDB, Express, React, Node) and is split into `backend` and `frontend` folders.
+## InvestHub is a web application that connects startups with technical mentors and investors. The project uses a MERN stack (MongoDB, Express, React, Node) and is split into `backend` and `frontend` folders.
 
 **Quick Overview**
 - **Project:** InvestHub

@@ -18,8 +18,8 @@ export const findById = (id, session = null) => {
   return session ? query.session(session) : query;
 };
 
-/** Create a new wallet document. */
-export const create = (payload) => Wallet.create(payload);
+/** Create a new wallet document (supports optional mongoose options e.g. session). */
+export const create = (payload, options = undefined) => Wallet.create(payload, options);
 
 /** Persist changes to an existing wallet document. */
 export const save = (doc, session = null) =>
