@@ -52,6 +52,34 @@ export const payhereNotify = async (req, res) => {
   }
 };
 
+// @desc    Mark a pending deposit as failed/cancelled from frontend popup events
+// @route   POST /api/v1/wallets/deposit/fail
+// @access  Private
+export const markDepositFailed = async (req, res, next) => {
+  try {
+    const { orderId, reason } = req.body;
+    const transaction = await walletService.markDepositFailed(req.user.id, orderId, reason);
+    res.status(200).json({
+      message: 'Deposit status updated',
+      data: transaction,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get status of a deposit order
+// @route   GET /api/v1/wallets/deposit/status/:orderId
+// @access  Private
+export const getDepositStatus = async (req, res, next) => {
+  try {
+    const data = await walletService.getDepositStatus(req.user.id, req.params.orderId);
+    res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Invest in a Startup (Atomic Transfer)
 // @route   POST /api/v1/wallets/invest
 // @access  Private

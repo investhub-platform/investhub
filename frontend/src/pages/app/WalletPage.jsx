@@ -5,8 +5,10 @@ import { formatCurrency } from "@/data/mockData";
 import AppNavbar from "../../components/layout/AppNavBar";
 import { DesktopSidebar } from "../../components/DesktopSidebar";
 
-const PAYHERE_CHECKOUT_URL =
-  import.meta.env.VITE_PAYHERE_CHECKOUT_URL || "https://sandbox.payhere.lk/pay/checkout";
+const DEFAULT_CHECKOUT_URL = "https://sandbox.payhere.lk/pay/checkout";
+const PAYHERE_CHECKOUT_URL_RAW = import.meta.env.VITE_PAYHERE_CHECKOUT_URL || DEFAULT_CHECKOUT_URL;
+const PAYHERE_CHECKOUT_URL = PAYHERE_CHECKOUT_URL_RAW.replace(/\/+$/, "");
+const PAYHERE_USE_SDK = import.meta.env.VITE_PAYHERE_USE_SDK === "true";
 
 function extractPayload(responseData) {
   if (!responseData) return null;
@@ -14,7 +16,7 @@ function extractPayload(responseData) {
   return responseData;
 }
 
-function openPayHerePopup(payload) {
+function openPayHereFormFallback(payload) {
   const required = [
     "merchant_id",
     "return_url",
@@ -32,10 +34,15 @@ function openPayHerePopup(payload) {
     throw new Error(`Payment payload missing required fields: ${missing.join(", ")}`);
   }
 
+  const popup = window.open("", "payhere_checkout", "width=920,height=780");
+  if (!popup) {
+    throw new Error("Popup blocked by browser. Please allow popups and try again.");
+  }
+
   const form = document.createElement("form");
   form.method = "POST";
   form.action = PAYHERE_CHECKOUT_URL;
-  form.target = "_blank";
+  form.target = "payhere_checkout";
 
   Object.entries(payload).forEach(([key, value]) => {
     if (value === undefined || value === null || value === "") return;
@@ -51,6 +58,37 @@ function openPayHerePopup(payload) {
   document.body.removeChild(form);
 }
 
+function getApiErrorMessage(err, fallback) {
+  if (err?.response?.status === 401) {
+    return "Session expired or unauthorized. Please login again and retry.";
+  }
+  return err?.response?.data?.message || err?.message || fallback;
+}
+
+function loadPayHereScript() {
+  return new Promise((resolve, reject) => {
+    if (window.payhere) {
+      resolve(window.payhere);
+      return;
+    }
+
+    const existing = document.querySelector('script[data-payhere="checkout"]');
+    if (existing) {
+      existing.addEventListener("load", () => resolve(window.payhere));
+      existing.addEventListener("error", () => reject(new Error("Failed to load PayHere SDK")));
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://www.payhere.lk/lib/payhere.js";
+    script.async = true;
+    script.dataset.payhere = "checkout";
+    script.onload = () => resolve(window.payhere);
+    script.onerror = () => reject(new Error("Failed to load PayHere SDK"));
+    document.body.appendChild(script);
+  });
+}
+
 export default function WalletPage() {
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,6 +96,58 @@ export default function WalletPage() {
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
   const [initiating, setInitiating] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState("");
+  const [payhereLoaded, setPayhereLoaded] = useState(false);
+
+  const markDepositFailed = async (orderId, reason) => {
+    if (!orderId) return;
+    try {
+      await api.post("/v1/wallets/deposit/fail", {
+        orderId,
+        reason,
+      });
+    } catch (err) {
+      console.error("Failed to mark deposit as failed", err);
+      if (err?.response?.status === 401) {
+        setError("Session expired while updating payment status. Please login again.");
+      }
+    }
+  };
+
+  const pollDepositStatus = async (orderId) => {
+    const maxAttempts = 10;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        const res = await api.get(`/v1/wallets/deposit/status/${encodeURIComponent(orderId)}`);
+        const statusPayload = extractPayload(res?.data) || res?.data;
+        const status = statusPayload?.status;
+
+        if (status === "Completed") {
+          setMsg("Top-up completed successfully and wallet has been updated.");
+          await load();
+          setPendingOrderId("");
+          return;
+        }
+
+        if (status === "Failed") {
+          setError("Payment was not completed. Please try again.");
+          setPendingOrderId("");
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to fetch deposit status", err);
+        if (err?.response?.status === 401) {
+          setError("Session expired while checking payment status. Please login again.");
+          setPendingOrderId("");
+          return;
+        }
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+    }
+
+    setMsg("Payment is still processing. Please check transaction history in a few moments.");
+  };
 
   const load = async () => {
     setLoading(true);
@@ -68,7 +158,7 @@ export default function WalletPage() {
       setWallet(data || null);
     } catch (e) {
       console.error("Failed to load wallet", e);
-      setError(e?.response?.data?.message || "Failed to load wallet");
+      setError(getApiErrorMessage(e, "Failed to load wallet"));
     } finally {
       setLoading(false);
     }
@@ -76,6 +166,23 @@ export default function WalletPage() {
 
   useEffect(() => {
     load();
+  }, []);
+
+  useEffect(() => {
+    if (!PAYHERE_USE_SDK) return;
+
+    let mounted = true;
+    loadPayHereScript()
+      .then(() => {
+        if (mounted) setPayhereLoaded(true);
+      })
+      .catch((err) => {
+        console.warn("PayHere SDK unavailable, fallback form submit will be used.", err);
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const initiateDeposit = async () => {
@@ -90,11 +197,37 @@ export default function WalletPage() {
     try {
       const r = await api.post("/v1/wallets/deposit/initiate", { amount });
       const payload = extractPayload(r?.data);
-      openPayHerePopup(payload);
+      const orderId = payload?.order_id;
+      setPendingOrderId(orderId || "");
+
+      if (PAYHERE_USE_SDK && window.payhere) {
+        window.payhere.onCompleted = async function onCompleted(completedOrderId) {
+          setMsg("Payment completed. Verifying with gateway...");
+          setError("");
+          await pollDepositStatus(completedOrderId || orderId);
+        };
+
+        window.payhere.onDismissed = async function onDismissed() {
+          const failedOrderId = orderId;
+          await markDepositFailed(failedOrderId, "Payment popup dismissed by user");
+          setError("Payment was cancelled before completion.");
+        };
+
+        window.payhere.onError = async function onError(errorText) {
+          const failedOrderId = orderId;
+          await markDepositFailed(failedOrderId, `Payment popup error: ${errorText || "Unknown error"}`);
+          setError(`Payment failed: ${errorText || "Unknown error"}`);
+        };
+
+        window.payhere.startPayment(payload);
+      } else {
+        openPayHereFormFallback(payload);
+      }
+
       setMsg("Payment popup opened. Complete payment to finalize top-up.");
     } catch (err) {
       console.error(err);
-      setError(err?.response?.data?.message || err?.message || "Failed to initiate deposit");
+      setError(getApiErrorMessage(err, "Failed to initiate deposit"));
     } finally {
       setInitiating(false);
     }
@@ -151,10 +284,25 @@ export default function WalletPage() {
               >
                 {initiating ? "Opening..." : "Top-up"}
               </button>
+              {pendingOrderId && (
+                <button
+                  onClick={() => pollDepositStatus(pendingOrderId)}
+                  className="rounded-xl border border-white/20 px-4 py-2 text-sm"
+                >
+                  Check Status
+                </button>
+              )}
               <Link to="/app/wallet/transactions" className="ml-auto text-sm text-primary hover:underline">
                 View Transactions
               </Link>
             </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              {PAYHERE_USE_SDK
+                ? payhereLoaded
+                  ? "PayHere SDK mode enabled."
+                  : "PayHere SDK requested but not loaded. Form popup fallback will be used."
+                : "PayHere form-popup mode enabled (recommended for local sandbox to avoid browser CORS issues)."}
+            </p>
           </div>
         </div>
       </main>

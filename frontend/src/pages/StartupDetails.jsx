@@ -79,6 +79,29 @@ const StartupDetail = ({ isModal = false }) => {
   const [investSubmitting, setInvestSubmitting] = useState(false);
   const [investError, setInvestError] = useState("");
   const [investSuccess, setInvestSuccess] = useState(null);
+  const [walletBalance, setWalletBalance] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadWallet = async () => {
+      if (!user?._id && !user?.id) return;
+      try {
+        const res = await api.get("/v1/wallets/me");
+        const payload = res?.data?.data || res?.data || {};
+        if (mounted) {
+          setWalletBalance(Number(payload?.balance || 0));
+        }
+      } catch (err) {
+        console.error("Failed to load wallet balance", err);
+      }
+    };
+
+    loadWallet();
+    return () => {
+      mounted = false;
+    };
+  }, [user?._id, user?.id]);
 
   if (loading) {
     return <div className={`${isModal ? "" : "min-h-screen"} bg-background flex items-center justify-center p-6`}>Loading…</div>;
@@ -109,8 +132,7 @@ const StartupDetail = ({ isModal = false }) => {
   const submitInvestment = async () => {
     setInvestError("");
 
-    const investorId = user?._id || user?.id;
-    if (!investorId) {
+    if (!user?._id && !user?.id) {
       setInvestError("You must be logged in to invest.");
       return;
     }
@@ -118,23 +140,37 @@ const StartupDetail = ({ isModal = false }) => {
       setInvestError(`Minimum investment is ${formatCurrency(minAmount)}.`);
       return;
     }
+    if (amountNumber > walletBalance) {
+      setInvestError("Insufficient wallet balance. Please top up your wallet first.");
+      return;
+    }
+
+    const ownerCandidate =
+      startup?.raw?.createdBy || startup?.raw?.UserID || startup?.raw?.userId || startup?.raw?.ownerId;
+    const startupOwnerId =
+      ownerCandidate && typeof ownerCandidate === "object"
+        ? ownerCandidate._id || ownerCandidate.id
+        : ownerCandidate;
+    const startupId = startup?.raw?.StartupId || startup?.raw?._id || startup?.id;
+
+    if (!startupOwnerId || !startupId) {
+      setInvestError("Startup owner details are missing. Please contact support.");
+      return;
+    }
 
     try {
       setInvestSubmitting(true);
-      const payload = {
-        investorId,
-        createdBy: investorId,
-        ideaId: startup?.raw?._id || startup?.id,
-        StartupsId: startup?.raw?.StartupId || null,
+      await api.post("/v1/wallets/invest", {
         amount: amountNumber,
-        message: investMessage || null,
-      };
+        startupId,
+        startupOwnerId,
+      });
 
-      const res = await api.post("/v1/requests", payload);
-      setInvestSuccess(res?.data?.data || { amount: amountNumber });
+      setWalletBalance((prev) => Math.max(0, prev - amountNumber));
+      setInvestSuccess({ amount: amountNumber });
       setInvestStep("done");
     } catch (e) {
-      const msg = e?.response?.data?.message || "Failed to submit investment request.";
+      const msg = e?.response?.data?.message || "Failed to complete investment.";
       setInvestError(msg);
     } finally {
       setInvestSubmitting(false);
@@ -212,7 +248,7 @@ const StartupDetail = ({ isModal = false }) => {
                     className="w-full pl-8 pr-4 py-3 rounded-xl bg-white/5 border border-white/[0.07] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
                   />
                 </div>
-                <p className="text-xs text-accent">$14,500 Available in Wallet</p>
+                <p className="text-xs text-accent">{formatCurrency(walletBalance)} Available in Wallet</p>
               </div>
 
               <motion.button
@@ -224,7 +260,7 @@ const StartupDetail = ({ isModal = false }) => {
                 Commit Investment ($10k min)
               </motion.button>
               <p className="text-[11px] text-muted-foreground text-center mt-3">
-                Transaction powered by InvestHub Virtual Ledger
+                Wallet transfer is recorded instantly in transaction history.
               </p>
             </div>
 
@@ -400,7 +436,7 @@ const StartupDetail = ({ isModal = false }) => {
             {investStep === "done" && (
               <div className="space-y-4">
                 <div className="rounded-xl bg-accent/10 border border-accent/30 p-4">
-                  <p className="font-medium">Investment request submitted</p>
+                  <p className="font-medium">Investment completed successfully</p>
                   <p className="text-sm text-muted-foreground mt-1">
                     Amount: {formatCurrency(investSuccess?.amount || amountNumber)}
                   </p>
