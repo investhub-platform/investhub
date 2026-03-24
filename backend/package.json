@@ -7,7 +7,9 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "lint": "echo \"No linter configured\"",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config ./jest.config.cjs --runInBand",
+    "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config ./jest.config.cjs --watch",
+    "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config ./jest.config.cjs --coverage"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +30,11 @@
     "openai": "^6.22.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "autocannon": "^8.0.0",
+    "cross-env": "^10.1.0",
+    "jest": "^30.2.0",
+    "mongodb-memory-server": "^10.2.3",
+    "nodemon": "^3.1.11",
+    "supertest": "^7.1.4"
   }
 }
