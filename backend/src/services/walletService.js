@@ -74,8 +74,14 @@ export const initiateDeposit = async (userId, user, amount) => {
 
   const orderId         = `ORDER_${Date.now()}_${String(userId).slice(-6)}`;
   const secretHashOverride = (process.env.PAYHERE_SECRET_HASH || '').trim().toUpperCase();
+  const derivedHashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
+  const trustSecretHashOverride = String(process.env.PAYHERE_TRUST_SECRET_HASH || '').toLowerCase() === 'true';
   const hashedSecret =
-    secretHashOverride || crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
+    trustSecretHashOverride && secretHashOverride ? secretHashOverride : derivedHashedSecret;
+
+  if (secretHashOverride && secretHashOverride !== derivedHashedSecret && !trustSecretHashOverride) {
+    console.warn('[PayHere] PAYHERE_SECRET_HASH does not match PAYHERE_SECRET. Ignoring override.');
+  }
 
   if (!/^[A-F0-9]{32}$/.test(hashedSecret)) {
     throw new AppError('Invalid PAYHERE secret/hash configuration', 500);
@@ -161,8 +167,14 @@ export const processPayhereNotify = async ({
   }
 
   const secretHashOverride = (process.env.PAYHERE_SECRET_HASH || '').trim().toUpperCase();
+  const derivedHashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
+  const trustSecretHashOverride = String(process.env.PAYHERE_TRUST_SECRET_HASH || '').toLowerCase() === 'true';
   const hashedSecret =
-    secretHashOverride || crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
+    trustSecretHashOverride && secretHashOverride ? secretHashOverride : derivedHashedSecret;
+
+  if (secretHashOverride && secretHashOverride !== derivedHashedSecret && !trustSecretHashOverride) {
+    console.warn('[PayHere] PAYHERE_SECRET_HASH does not match PAYHERE_SECRET. Ignoring override.');
+  }
 
   if (!/^[A-F0-9]{32}$/.test(hashedSecret)) {
     throw new AppError('Invalid PAYHERE secret/hash configuration', 500);
