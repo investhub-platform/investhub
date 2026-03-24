@@ -1,0 +1,65 @@
+name: CI Tests
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Set OPENROUTER_API_KEY from secrets
+        if: ${{ secrets.OPENROUTER_API_KEY != '' }}
+        run: echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> $GITHUB_ENV
+
+      - name: Set OPENROUTER_API_KEY dummy fallback
+        if: ${{ secrets.OPENROUTER_API_KEY == '' }}
+        run: echo "OPENROUTER_API_KEY=dummy-test-api-key" >> $GITHUB_ENV
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint || true
+
+      - name: Run frontend tests
+        working-directory: frontend
+        env:
+          VITE_API_BASE: ${{ secrets.E2E_BASE_URL || 'http://localhost:5000' }}
+        run: npm test --silent
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Run backend tests
+        working-directory: backend
+        env:
+          OPENROUTER_API_KEY: ${{ env.OPENROUTER_API_KEY }}
+        run: npm test --silent
+
+      - name: Run Playwright E2E (optional)
+        if: ${{ secrets.E2E_USER_EMAIL && secrets.E2E_USER_PASSWORD && secrets.E2E_BASE_URL }}
+        working-directory: frontend
+        env:
+          E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+          E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+        run: |
+          npx playwright install --with-deps
+          npm run test:e2e
