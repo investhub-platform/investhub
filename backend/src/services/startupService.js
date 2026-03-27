@@ -82,11 +82,13 @@ export const createNewStartup = async (payload, userId) => {
   }
 
   try {
+    const resolvedUserId = UserID || userId;
     const startupData = {
       name: name.trim(),
       description: payload.description || null,
       BR: payload.BR || null,
-      UserID: UserID || userId,
+      UserID: resolvedUserId,
+      userId: resolvedUserId,
       status: payload.status || "pending",
       createdBy: createdBy || userId
       // updatedBy: createdBy || userId
@@ -115,8 +117,12 @@ export const updateExistingStartup = async (id, payload, userId) => {
       }
     }
 
+    const resolvedUserId = payload.userId || payload.UserID;
     const updateData = {
       ...payload,
+      ...(resolvedUserId
+        ? { UserID: resolvedUserId, userId: resolvedUserId }
+        : {}),
       updatedUtc: new Date(),
       updatedBy: userId
     };
