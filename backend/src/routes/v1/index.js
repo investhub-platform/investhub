@@ -48,21 +48,21 @@ router.patch("/startups/:id/approve", approveStartup); // approve a startup
 router.patch("/startups/:id/reject", rejectStartup); // reject a startup
 router.delete("/startups/:id", deleteStartup); // soft delete a startup
 
-import wallets from './wallets.js';
-import eventsRoutes from './events.routes.js';
-import evaluationsRoutes from './evaluations.routes.js';
+import wallets from "./wallets.js";
+import eventsRoutes from "./events.routes.js";
+import evaluationsRoutes from "./evaluations.routes.js";
 
 //ProgressReport routes
-import progressReportRoutes from './progressReport.routes.js';
+import progressReportRoutes from "./progressReport.routes.js";
 
 // Wallet routes
-router.use('/wallets', wallets);
+router.use("/wallets", wallets);
 
 // Event routes
-router.use('/events', eventsRoutes);
+router.use("/events", eventsRoutes);
 
 // Evaluation routes
-router.use('/evaluations', evaluationsRoutes);
+router.use("/evaluations", evaluationsRoutes);
 
 // Request routes
 router.get("/requests", listRequests); // list all requests
@@ -90,5 +90,8 @@ router.use("/ideas", ideaRoutes);
 // Progress Reports
 router.use("/progress-reports", progressReportRoutes);
 
-  
+// Portfolio routes
+import portfolioRoutes from "./portfolio.routes.js";
+router.use("/portfolios", portfolioRoutes);
+
 export default router;
