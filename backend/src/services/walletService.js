@@ -52,12 +52,23 @@ export const getTransactionHistory = async (
  * Build the PayHere payment parameters and record a Pending transaction.
  * Returns the payload the frontend needs to open the PayHere popup.
  */
-export const initiateDeposit = async (userId, user, amount) => {
+export const initiateDeposit = async (userId, user, amount, options = {}) => {
   const merchantId     = (process.env.PAYHERE_MERCHANT_ID || '').trim();
   const merchantSecret = (process.env.PAYHERE_SECRET || '').trim();
   const currency       = (process.env.PAYHERE_CURRENCY || 'LKR').trim().toUpperCase();
-  const frontendUrl    = (process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
-  const backendUrl     = (process.env.BACKEND_URL || '').trim().replace(/\/$/, '');
+
+  // Primary sources for frontend/backend URLs are environment variables.
+  // For local reproduction you may pass `frontendUrl`/`backendUrl` in the
+  // request body and set `PAYHERE_ALLOW_LOCAL=true` in your env to allow
+  // developer overrides (safe for testing only).
+  const allowLocalOverrides = String(process.env.PAYHERE_ALLOW_LOCAL || '').toLowerCase() === 'true';
+  const frontendEnv = (process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
+  const backendEnv = (process.env.BACKEND_URL || '').trim().replace(/\/$/, '');
+
+  const frontendUrlRaw = allowLocalOverrides && options.frontendUrl ? String(options.frontendUrl).trim() : frontendEnv;
+  const backendUrlRaw = allowLocalOverrides && options.backendUrl ? String(options.backendUrl).trim() : backendEnv;
+  const frontendUrl = frontendUrlRaw ? frontendUrlRaw.replace(/\/$/, '') : '';
+  const backendUrl = backendUrlRaw ? backendUrlRaw.replace(/\/$/, '') : '';
 
   if (!merchantId || !merchantSecret) {
     throw new AppError('Payment gateway not configured', 500);
