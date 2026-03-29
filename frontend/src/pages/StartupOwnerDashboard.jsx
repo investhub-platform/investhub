@@ -243,14 +243,9 @@ function StartupManageCard({ startup, index, onUpdate, onDelete }) {
     (r) => r.status === "pending"
   ).length;
 
-  useEffect(() => {
-    setFormData({
-      name: startup.name,
-      description: startup.description,
-      BR: startup.BR,
-      status: startup.status
-    });
-  }, [startup]);
+  // Initialize form data from `startup` only when the user starts editing.
+  // Avoid calling setState synchronously inside an effect to prevent
+  // cascading renders (eslint: react-hooks/set-state-in-effect).
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -330,6 +325,15 @@ function StartupManageCard({ startup, index, onUpdate, onDelete }) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        // Populate the editable form with the latest startup values
+                        // when the user enters edit mode instead of doing this
+                        // inside a useEffect.
+                        setFormData({
+                          name: startup.name,
+                          description: startup.description,
+                          BR: startup.BR,
+                          status: startup.status
+                        });
                         setIsEditing(true);
                       }}
                       className="px-3 py-1.5 rounded-full bg-white/10 text-xs font-medium hover:bg-white/20 transition-colors"
