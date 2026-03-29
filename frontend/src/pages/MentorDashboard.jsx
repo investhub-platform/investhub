@@ -20,10 +20,23 @@ import toast, { Toaster } from "react-hot-toast";
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 const API_V1 = `${API_BASE}/api/v1`;
 
+const getId = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  return value._id || value.id || "";
+};
+
+const isOwnerEvent = (event, user) => {
+  const organizerId = getId(event?.organizerId);
+  const userId = getId(user);
+  return !!organizerId && !!userId && String(organizerId) === String(userId);
+};
+
 const MentorDashboard = () => {
   const { accessToken, user } = useAuth();
   const [activeView, setActiveView] = useState("browse");
-  const [filter, setFilter] = useState("all");
+  const [tab, setTab] = useState("all-events");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -55,9 +68,10 @@ const MentorDashboard = () => {
   };
 
   const filtered = events.filter((event) => {
-    const status = getEventStatus(event.date);
-    if (filter === "all") return true;
-    return status === filter;
+    const eventStatus = getEventStatus(event.date);
+    const ownerMatch = tab === "my-events" ? isOwnerEvent(event, user) : true;
+    const statusMatch = statusFilter === "all" ? true : eventStatus === statusFilter;
+    return ownerMatch && statusMatch;
   });
 
   return (
@@ -66,6 +80,7 @@ const MentorDashboard = () => {
       <div className="flex">
         <DesktopSidebar />
         <main className="flex-1 px-4 md:px-8 pt-28 pb-12 max-w-7xl">
+          <Toaster position="top-right" />
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
@@ -107,13 +122,29 @@ const MentorDashboard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
+                {/* Scope Tabs */}
+                <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide">
+                  {[
+                    { key: "all-events", label: "All Events" },
+                    { key: "my-events", label: "My Events" },
+                  ].map((item) => (
+                    <button
+                      key={item.key}
+                      onClick={() => setTab(item.key)}
+                      className={`pill-filter ${tab === item.key ? "pill-filter-active" : ""}`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+
                 {/* Filters */}
                 <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide">
                   {["all", "upcoming", "completed"].map((f) => (
                     <button
                       key={f}
-                      onClick={() => setFilter(f)}
-                      className={`pill-filter capitalize ${filter === f ? "pill-filter-active" : ""}`}
+                      onClick={() => setStatusFilter(f)}
+                      className={`pill-filter capitalize ${statusFilter === f ? "pill-filter-active" : ""}`}
                     >
                       {f}
                     </button>
@@ -150,7 +181,6 @@ const MentorDashboard = () => {
                 {/* Event Grid */}
                 {!loading && !error && (
                   <>
-                    <Toaster position="top-right" />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                       {filtered.map((event, i) => (
                         <EventCard
@@ -161,6 +191,7 @@ const MentorDashboard = () => {
                           currentUser={user}
                           onDeleted={() => fetchEvents()}
                           onUpdated={() => fetchEvents()}
+                          onRsvped={() => fetchEvents()}
                           index={i}
                         />
                       ))}
@@ -183,7 +214,7 @@ const MentorDashboard = () => {
   );
 };
 
-function EventCard({ event, status, index, accessToken, currentUser, onDeleted, onUpdated }) {
+function EventCard({ event, status, index, accessToken, currentUser, onDeleted, onUpdated, onRsvped }) {
   const statusColors = {
     upcoming: "bg-primary/20 text-primary border-primary/30",
     completed: "bg-accent/20 text-accent border-accent/30",
@@ -199,9 +230,13 @@ function EventCard({ event, status, index, accessToken, currentUser, onDeleted, 
 
   const getEventInitials = (organizer) => {
     if (!organizer) return "EV";
-    return organizer.firstName && organizer.lastName
-      ? (organizer.firstName[0] + organizer.lastName[0]).toUpperCase()
-      : "EV";
+    const name = organizer.name || "Event";
+    return name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase())
+      .join("") || "EV";
   };
 
   const eventDate = new Date(event.date);
@@ -266,7 +301,7 @@ function EventCard({ event, status, index, accessToken, currentUser, onDeleted, 
             {getEventInitials(event.organizerId)}
           </div>
           <span className="text-sm text-muted-foreground">
-            {event.organizerId?.firstName} {event.organizerId?.lastName}
+            {event.organizerId?.name || "Mentor"}
           </span>
         </div>
 
@@ -288,15 +323,17 @@ function EventCard({ event, status, index, accessToken, currentUser, onDeleted, 
         currentUser={currentUser}
         onDeleted={onDeleted}
         onUpdated={onUpdated}
+        onRsvped={onRsvped}
       />
     </motion.div>
   );
 }
 
 // Enhanced EventCard with edit/delete when owner
-function EventCardActions({ event, accessToken, currentUser, onDeleted, onUpdated }) {
+function EventCardActions({ event, accessToken, currentUser, onDeleted, onUpdated, onRsvped }) {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [rsvpLoading, setRsvpLoading] = useState(false);
   const [form, setForm] = useState({
     title: event.title || "",
     description: event.description || "",
@@ -312,6 +349,10 @@ function EventCardActions({ event, accessToken, currentUser, onDeleted, onUpdate
   };
 
   const isOwner = currentUser && String(getOrganizerId(event.organizerId)) === String(currentUser._id || currentUser.id);
+  const isUpcoming = new Date(event.date) > new Date();
+  const hasRsvped = !!currentUser && Array.isArray(event.attendees)
+    ? event.attendees.some((attendee) => String(getId(attendee)) === String(getId(currentUser)))
+    : false;
 
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
@@ -371,18 +412,108 @@ function EventCardActions({ event, accessToken, currentUser, onDeleted, onUpdate
     }
   };
 
-  if (!isOwner) return null;
+  const handleRsvp = async () => {
+    if (!accessToken) {
+      toast.error("Please log in to RSVP.");
+      return;
+    }
+
+    try {
+      setRsvpLoading(true);
+      const res = await fetch(`${API_V1}/events/${event._id}/rsvp`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.message || "Failed to RSVP");
+      }
+
+      toast.success(body.message || "RSVP successful");
+      onRsvped && onRsvped();
+    } catch (err) {
+      toast.error(err.message || "RSVP failed");
+    } finally {
+      setRsvpLoading(false);
+    }
+  };
+
+  if (!isOwner) {
+    if (!isUpcoming) return null;
+    return (
+      <div className="p-4 border-t border-white/[0.03]">
+        <button
+          type="button"
+          disabled={rsvpLoading || hasRsvped}
+          onClick={handleRsvp}
+          className="pill-filter pill-filter-active disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {hasRsvped ? "RSVP'd" : rsvpLoading ? "RSVPing..." : "RSVP"}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 border-t border-white/[0.03]">
       {editing ? (
         <form onSubmit={handleUpdate} className="space-y-3">
-          <input name="title" value={form.title} onChange={handleChange} className="w-full px-3 py-2 rounded" />
-          <input name="date" type="date" value={form.date} onChange={handleChange} className="px-3 py-2 rounded" />
-          <input name="time" type="time" value={form.time} onChange={handleChange} className="px-3 py-2 rounded" />
+          <input
+            name="title"
+            value={form.title}
+            onChange={handleChange}
+            className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/[0.07]"
+            placeholder="Event title"
+          />
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={handleChange}
+            className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/[0.07]"
+            placeholder="Event description"
+            rows={3}
+          />
+          <select
+            name="eventType"
+            value={form.eventType}
+            onChange={handleChange}
+            className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/[0.07]"
+          >
+            {["Webinar", "Workshop", "Pitch Day", "Networking", "Legal Session"].map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              name="date"
+              type="date"
+              value={form.date}
+              onChange={handleChange}
+              className="px-3 py-2 rounded-xl bg-white/5 border border-white/[0.07]"
+            />
+            <input
+              name="time"
+              type="time"
+              value={form.time}
+              onChange={handleChange}
+              className="px-3 py-2 rounded-xl bg-white/5 border border-white/[0.07]"
+            />
+          </div>
+          <input
+            name="link"
+            value={form.link}
+            onChange={handleChange}
+            className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/[0.07]"
+            placeholder="Meeting link"
+          />
           <div className="flex gap-2">
             <button disabled={loading} type="submit" className="pill-filter pill-filter-active">
-              Save
+              {loading ? "Saving..." : "Save"}
             </button>
             <button type="button" onClick={() => setEditing(false)} className="pill-filter">
               Cancel
