@@ -20,7 +20,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 const API_V1 = `${API_BASE}/api/v1`;
 
 const MentorDashboard = () => {
-  const { token } = useAuth();
+  const { accessToken } = useAuth();
   const [activeView, setActiveView] = useState("browse");
   const [filter, setFilter] = useState("all");
   const [events, setEvents] = useState([]);
@@ -92,7 +92,7 @@ const MentorDashboard = () => {
                 exit={{ opacity: 0, y: -20 }}
               >
                 <CreateEventForm
-                  token={token}
+                  accessToken={accessToken}
                   onSuccess={() => {
                     fetchEvents();
                     setActiveView("browse");
@@ -280,7 +280,7 @@ function EventCard({ event, status, index }) {
   );
 }
 
-function CreateEventForm({ token, onSuccess }) {
+function CreateEventForm({ accessToken, onSuccess }) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -306,6 +306,12 @@ function CreateEventForm({ token, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!accessToken) {
+      setError("Your session has expired. Please log in again.");
+      return;
+    }
+
     if (!formData.title || !formData.description || !formData.date || !formData.time || !formData.link) {
       setError("All fields are required");
       return;
@@ -331,7 +337,7 @@ function CreateEventForm({ token, onSuccess }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify(payload),
       });
