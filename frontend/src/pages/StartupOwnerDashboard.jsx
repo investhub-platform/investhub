@@ -567,7 +567,7 @@ function CreateStartupForm({ onClose, onSuccess }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const { user } = useAuth();
+  const { fetchMe } = useAuth();
 
   const inputClass =
     "w-full px-4 py-3 rounded-xl bg-white/5 border border-white/[0.07] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm";
@@ -583,19 +583,15 @@ function CreateStartupForm({ onClose, onSuccess }) {
     setError("");
 
     try {
-      const normalizedStatus =
-        formData.status === "approved"
-          ? "Approved"
-          : formData.status === "notapproved"
-            ? "NotApproved"
-            : "pending";
-
+      const me = await fetchMe();
+      console.log("Fetched user data:", me);
       const res = await api.post("/v1/startups", {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
         BR: formData.BR.trim() || null,
-        status: normalizedStatus,
-        userID: user?.id || user?._id
+        status: "pending",
+        UserID: me._id || me.id,
+        createdBy: me._id || me.id
       });
       setSubmitted(true);
       onSuccess?.(res.data?.data);
@@ -666,22 +662,6 @@ function CreateStartupForm({ onClose, onSuccess }) {
               setFormData((prev) => ({ ...prev, BR: e.target.value }))
             }
           />
-        </div>
-        <div>
-          <label className="text-sm text-muted-foreground mb-1.5 block">
-            Status
-          </label>
-          <select
-            className={inputClass}
-            value={formData.status}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, status: e.target.value }))
-            }
-          >
-            <option value="pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="NotApproved">NotApproved</option>
-          </select>
         </div>
       </div>
 
