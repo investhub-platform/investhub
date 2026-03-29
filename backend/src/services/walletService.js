@@ -305,6 +305,74 @@ export const getDepositStatus = async (userId, orderId) => {
   };
 };
 
+/**
+ * Local/sandbox fallback: confirm a deposit from client callback when
+ * PayHere notify_url is not reachable (e.g., localhost development).
+ * Disabled by default and must never be used in production.
+ */
+export const confirmDepositFromClientCallback = async (userId, orderId) => {
+  if (!orderId) {
+    throw new AppError('orderId is required', 400);
+  }
+
+  const allowClientConfirm = String(process.env.PAYHERE_ALLOW_CLIENT_CONFIRM || '').toLowerCase() === 'true';
+  const sandboxMode = String(process.env.PAYHERE_SANDBOX || '').toLowerCase() === 'true';
+
+  if (!allowClientConfirm || !sandboxMode) {
+    throw new AppError('Client-side payment confirmation is disabled', 403);
+  }
+
+  const transaction = await txRepo.findOneByUserAndPaymentId(userId, orderId);
+  if (!transaction) {
+    throw new AppError('Deposit transaction not found', 404);
+  }
+
+  if (transaction.status === 'Completed') {
+    return {
+      orderId,
+      status: transaction.status,
+      amount: transaction.amount,
+      currency: transaction.currency,
+      completedAt: transaction.completedAt,
+      createdAt: transaction.createdAt,
+    };
+  }
+
+  if (transaction.status !== 'Pending') {
+    throw new AppError(`Cannot confirm deposit from state: ${transaction.status}`, 400);
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    transaction.status = 'Completed';
+    transaction.completedAt = new Date();
+    transaction.description = 'Completed via local client callback fallback';
+    await txRepo.save(transaction, session);
+
+    const wallet = await walletRepo.findById(transaction.walletId, session);
+    wallet.balance += Number(transaction.amount);
+    await walletRepo.save(wallet, session);
+
+    await session.commitTransaction();
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+
+  return {
+    orderId,
+    status: transaction.status,
+    amount: transaction.amount,
+    currency: transaction.currency,
+    completedAt: transaction.completedAt,
+    createdAt: transaction.createdAt,
+  };
+};
+
 // ─── Investment (Atomic Transfer) ─────────────────────────────────────────────
 
 /**

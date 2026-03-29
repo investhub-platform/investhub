@@ -85,6 +85,19 @@ export const getDepositStatus = async (req, res, next) => {
   }
 };
 
+// @desc    Local/sandbox fallback confirmation from client callback
+// @route   POST /api/v1/wallets/deposit/confirm-client
+// @access  Private
+export const confirmDepositFromClient = async (req, res, next) => {
+  try {
+    const { orderId } = req.body;
+    const data = await walletService.confirmDepositFromClientCallback(req.user.id, orderId);
+    res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Invest in a Startup (Atomic Transfer)
 // @route   POST /api/v1/wallets/invest
 // @access  Private

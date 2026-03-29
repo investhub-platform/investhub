@@ -151,6 +151,16 @@ export default function WalletPage() {
     setMsg("Payment is still processing. Please check transaction history in a few moments.");
   };
 
+  const confirmDepositFromClient = async (orderId) => {
+    if (!orderId) return;
+    try {
+      await api.post("/v1/wallets/deposit/confirm-client", { orderId });
+    } catch (err) {
+      // Ignore in production/public flows where this fallback is disabled.
+      console.warn("Client confirmation fallback not applied", err?.response?.status || err?.message);
+    }
+  };
+
   const load = async () => {
     setLoading(true);
     setError("");
@@ -221,9 +231,11 @@ export default function WalletPage() {
         };
 
         window.payhere.onCompleted = async function onCompleted(completedOrderId) {
+          const resolvedOrderId = completedOrderId || orderId;
+          await confirmDepositFromClient(resolvedOrderId);
           setMsg("Payment completed. Verifying with gateway...");
           setError("");
-          await pollDepositStatus(completedOrderId || orderId);
+          await pollDepositStatus(resolvedOrderId);
         };
 
         window.payhere.onDismissed = async function onDismissed() {
