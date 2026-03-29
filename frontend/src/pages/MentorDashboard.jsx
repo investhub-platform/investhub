@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/features/auth/useAuth";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000/api/v1";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+const API_V1 = `${API_BASE}/api/v1`;
 
 const MentorDashboard = () => {
   const { token } = useAuth();
@@ -35,7 +36,7 @@ const MentorDashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_BASE}/events`);
+      const response = await fetch(`${API_V1}/events`);
       if (!response.ok) throw new Error("Failed to fetch events");
       const { data } = await response.json();
       setEvents(data || []);
@@ -326,7 +327,7 @@ function CreateEventForm({ token, onSuccess }) {
         bannerImage: formData.bannerImage,
       };
 
-      const response = await fetch(`${API_BASE}/events`, {
+      const response = await fetch(`${API_V1}/events`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
