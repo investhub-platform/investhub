@@ -19,6 +19,13 @@ Summary
   - **Startup Directory / Search & Filters:** Keyword search, tag filters, sorting. **Owner:** Dinil. **Est:** 4d. **Priority:** High.
   - **Startup Detail Page:** Team, traction, attachments, pitch deck viewer. **Owner:** Dinil. **Est:** 3d. **Priority:** High.
 
+- **Mentor Hub:**
+  - **Mentor Directory / Search & Filters:** Browse mentors by expertise, availability, and rating. **Owner:** Rukshan. **Est:** 4d. **Priority:** High.
+  - **Mentor Profile Page:** Bio, areas of expertise, session types, reviews. **Owner:** Rukshan. **Est:** 3d. **Priority:** High.
+  - **Booking / Scheduling UI:** Book sessions, calendar integration, confirmations. **Owner:** Rukshan. **Est:** 4d. **Priority:** High.
+  - **Event Creation & Management:** Create mentor events (webinars, workshops), display on mentor hub. **Owner:** Rukshan. **Est:** 3d. **Priority:** High. **Status:** UI wired to real endpoints.
+  - **Mentor Dashboard / Notes:** Session management, notes, and status. **Owner:** Rukshan. **Est:** 3d. **Priority:** Medium.
+
 - **Messaging & Notifications:**
   - **In-app Messaging UI:** Conversation list, message composer, attachments. **Owner:** Rukshan. **Est:** 5d. **Priority:** Medium.
   - **Notifications Center:** Real-time toast + notification page, mark read/unread. **Owner:** Rukshan. **Est:** 3d. **Priority:** Medium.
@@ -50,7 +57,7 @@ Summary
 - **Sprint 2 (2 weeks): Feature polish & testing**
   - Shalon: Payments top-up + unit tests (6d)
   - Dinil: Responsive polish + Portfolio view + bug fixes (6d)
-  - Rukshan: Messaging UI + finish E2E tests (8d)
+  - Rukshan: Messaging UI + Mentor Hub (directory, booking, events) + finish E2E tests (10d)
   - Migara: Accessibility, withdraw UI, Admin polish (6d)
 
 Estimates assume focused work and small bugfix overhead; adjust per team velocity.
@@ -83,7 +90,7 @@ Estimates assume focused work and small bugfix overhead; adjust per team velocit
 **Ownership Summary**
 - **Shalon (you):** Invest flow, account settings, wallet/transactions, unit tests.
 - **Dinil:** Startup directory, startup detail, responsive polish, portfolio view.
-- **Rukshan:** Messaging, notifications, E2E tests, evaluation review pages.
+- **Rukshan:** Messaging, notifications, Mentor Hub (directory, booking, events, dashboard), E2E tests, evaluation review pages.
 - **Migara:** Admin interfaces, OAuth/social login, accessibility and withdraw UI.
 
 --
