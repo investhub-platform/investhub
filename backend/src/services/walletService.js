@@ -52,12 +52,23 @@ export const getTransactionHistory = async (
  * Build the PayHere payment parameters and record a Pending transaction.
  * Returns the payload the frontend needs to open the PayHere popup.
  */
-export const initiateDeposit = async (userId, user, amount) => {
+export const initiateDeposit = async (userId, user, amount, options = {}) => {
   const merchantId     = (process.env.PAYHERE_MERCHANT_ID || '').trim();
   const merchantSecret = (process.env.PAYHERE_SECRET || '').trim();
   const currency       = (process.env.PAYHERE_CURRENCY || 'LKR').trim().toUpperCase();
-  const frontendUrl    = (process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
-  const backendUrl     = (process.env.BACKEND_URL || '').trim().replace(/\/$/, '');
+
+  // Primary sources for frontend/backend URLs are environment variables.
+  // For local reproduction you may pass `frontendUrl`/`backendUrl` in the
+  // request body and set `PAYHERE_ALLOW_LOCAL=true` in your env to allow
+  // developer overrides (safe for testing only).
+  const allowLocalOverrides = String(process.env.PAYHERE_ALLOW_LOCAL || '').toLowerCase() === 'true';
+  const frontendEnv = (process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
+  const backendEnv = (process.env.BACKEND_URL || '').trim().replace(/\/$/, '');
+
+  const frontendUrlRaw = allowLocalOverrides && options.frontendUrl ? String(options.frontendUrl).trim() : frontendEnv;
+  const backendUrlRaw = allowLocalOverrides && options.backendUrl ? String(options.backendUrl).trim() : backendEnv;
+  const frontendUrl = frontendUrlRaw ? frontendUrlRaw.replace(/\/$/, '') : '';
+  const backendUrl = backendUrlRaw ? backendUrlRaw.replace(/\/$/, '') : '';
 
   if (!merchantId || !merchantSecret) {
     throw new AppError('Payment gateway not configured', 500);
@@ -79,16 +90,10 @@ export const initiateDeposit = async (userId, user, amount) => {
     try { return new URL(backendUrl).host; } catch { return 'invalid'; }
   })();
 
-  const orderId         = `ORDER_${Date.now()}_${String(userId).slice(-6)}`;
-  const secretHashOverride = (process.env.PAYHERE_SECRET_HASH || '').trim().toUpperCase();
-  const derivedHashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
-  const trustSecretHashOverride = String(process.env.PAYHERE_TRUST_SECRET_HASH || '').toLowerCase() === 'true';
-  const hashedSecret =
-    trustSecretHashOverride && secretHashOverride ? secretHashOverride : derivedHashedSecret;
-
-  if (secretHashOverride && secretHashOverride !== derivedHashedSecret && !trustSecretHashOverride) {
-    console.warn('[PayHere] PAYHERE_SECRET_HASH does not match PAYHERE_SECRET. Ignoring override.');
-  }
+  const orderId = `ORDER_${Date.now()}_${String(userId).slice(-6)}`;
+  // Per PayHere SDK spec:
+  // hash = UPPER(MD5(merchant_id + order_id + amount + currency + UPPER(MD5(merchant_secret))))
+  const hashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
 
   if (!/^[A-F0-9]{32}$/.test(hashedSecret)) {
     throw new AppError('Invalid PAYHERE secret/hash configuration', 500);
@@ -109,8 +114,7 @@ export const initiateDeposit = async (userId, user, amount) => {
     merchantIdPresent: Boolean(merchantId),
     frontendHost,
     backendHost,
-    trustSecretHashOverride,
-    hasSecretHashOverride: Boolean(secretHashOverride),
+    hashSource: 'derived-from-merchant-secret',
   });
 
   // Ensure wallet exists before creating the pending transaction
@@ -185,15 +189,9 @@ export const processPayhereNotify = async ({
     throw new AppError('Invalid merchant id', 400);
   }
 
-  const secretHashOverride = (process.env.PAYHERE_SECRET_HASH || '').trim().toUpperCase();
-  const derivedHashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
-  const trustSecretHashOverride = String(process.env.PAYHERE_TRUST_SECRET_HASH || '').toLowerCase() === 'true';
-  const hashedSecret =
-    trustSecretHashOverride && secretHashOverride ? secretHashOverride : derivedHashedSecret;
-
-  if (secretHashOverride && secretHashOverride !== derivedHashedSecret && !trustSecretHashOverride) {
-    console.warn('[PayHere] PAYHERE_SECRET_HASH does not match PAYHERE_SECRET. Ignoring override.');
-  }
+  // Per PayHere notification verification spec:
+  // md5sig = UPPER(MD5(merchant_id + order_id + payhere_amount + payhere_currency + status_code + UPPER(MD5(merchant_secret))))
+  const hashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
 
   if (!/^[A-F0-9]{32}$/.test(hashedSecret)) {
     throw new AppError('Invalid PAYHERE secret/hash configuration', 500);
@@ -295,6 +293,74 @@ export const getDepositStatus = async (userId, orderId) => {
   const transaction = await txRepo.findOneByUserAndPaymentId(userId, orderId);
   if (!transaction) {
     throw new AppError('Deposit transaction not found', 404);
+  }
+
+  return {
+    orderId,
+    status: transaction.status,
+    amount: transaction.amount,
+    currency: transaction.currency,
+    completedAt: transaction.completedAt,
+    createdAt: transaction.createdAt,
+  };
+};
+
+/**
+ * Local/sandbox fallback: confirm a deposit from client callback when
+ * PayHere notify_url is not reachable (e.g., localhost development).
+ * Disabled by default and must never be used in production.
+ */
+export const confirmDepositFromClientCallback = async (userId, orderId) => {
+  if (!orderId) {
+    throw new AppError('orderId is required', 400);
+  }
+
+  const allowClientConfirm = String(process.env.PAYHERE_ALLOW_CLIENT_CONFIRM || '').toLowerCase() === 'true';
+  const sandboxMode = String(process.env.PAYHERE_SANDBOX || '').toLowerCase() === 'true';
+
+  if (!allowClientConfirm || !sandboxMode) {
+    throw new AppError('Client-side payment confirmation is disabled', 403);
+  }
+
+  const transaction = await txRepo.findOneByUserAndPaymentId(userId, orderId);
+  if (!transaction) {
+    throw new AppError('Deposit transaction not found', 404);
+  }
+
+  if (transaction.status === 'Completed') {
+    return {
+      orderId,
+      status: transaction.status,
+      amount: transaction.amount,
+      currency: transaction.currency,
+      completedAt: transaction.completedAt,
+      createdAt: transaction.createdAt,
+    };
+  }
+
+  if (transaction.status !== 'Pending') {
+    throw new AppError(`Cannot confirm deposit from state: ${transaction.status}`, 400);
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    transaction.status = 'Completed';
+    transaction.completedAt = new Date();
+    transaction.description = 'Completed via local client callback fallback';
+    await txRepo.save(transaction, session);
+
+    const wallet = await walletRepo.findById(transaction.walletId, session);
+    wallet.balance += Number(transaction.amount);
+    await walletRepo.save(wallet, session);
+
+    await session.commitTransaction();
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
   }
 
   return {

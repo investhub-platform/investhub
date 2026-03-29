@@ -12,6 +12,8 @@ dotenv.config();
 const app = express();
 
 app.use(express.json());
+// PayHere server callbacks are sent as application/x-www-form-urlencoded.
+app.use(express.urlencoded({ extended: false }));
 const normalizeOrigin = (value) => value?.trim().replace(/\/$/, "");
 const envOrigins = [
   ...(process.env.FRONTEND_URLS?.split(",") ?? []),

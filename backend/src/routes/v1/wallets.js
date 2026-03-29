@@ -5,6 +5,7 @@ import {
   payhereNotify,
   markDepositFailed,
   getDepositStatus,
+  confirmDepositFromClient,
   investInStartup,
   getWalletHistory,
 } from '../../controllers/walletController.js';
@@ -18,6 +19,7 @@ router.get('/transactions', protect, getWalletHistory);
 router.post('/deposit/initiate', protect, initiateDeposit);
 router.post('/deposit/fail', protect, markDepositFailed);
 router.get('/deposit/status/:orderId', protect, getDepositStatus);
+router.post('/deposit/confirm-client', protect, confirmDepositFromClient);
 router.post('/notify', payhereNotify);
 router.post('/invest', protect, investInStartup);
 
