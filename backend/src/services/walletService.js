@@ -90,16 +90,10 @@ export const initiateDeposit = async (userId, user, amount, options = {}) => {
     try { return new URL(backendUrl).host; } catch { return 'invalid'; }
   })();
 
-  const orderId         = `ORDER_${Date.now()}_${String(userId).slice(-6)}`;
-  const secretHashOverride = (process.env.PAYHERE_SECRET_HASH || '').trim().toUpperCase();
-  const derivedHashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
-  const trustSecretHashOverride = String(process.env.PAYHERE_TRUST_SECRET_HASH || '').toLowerCase() === 'true';
-  const hashedSecret =
-    trustSecretHashOverride && secretHashOverride ? secretHashOverride : derivedHashedSecret;
-
-  if (secretHashOverride && secretHashOverride !== derivedHashedSecret && !trustSecretHashOverride) {
-    console.warn('[PayHere] PAYHERE_SECRET_HASH does not match PAYHERE_SECRET. Ignoring override.');
-  }
+  const orderId = `ORDER_${Date.now()}_${String(userId).slice(-6)}`;
+  // Per PayHere SDK spec:
+  // hash = UPPER(MD5(merchant_id + order_id + amount + currency + UPPER(MD5(merchant_secret))))
+  const hashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
 
   if (!/^[A-F0-9]{32}$/.test(hashedSecret)) {
     throw new AppError('Invalid PAYHERE secret/hash configuration', 500);
@@ -120,8 +114,7 @@ export const initiateDeposit = async (userId, user, amount, options = {}) => {
     merchantIdPresent: Boolean(merchantId),
     frontendHost,
     backendHost,
-    trustSecretHashOverride,
-    hasSecretHashOverride: Boolean(secretHashOverride),
+    hashSource: 'derived-from-merchant-secret',
   });
 
   // Ensure wallet exists before creating the pending transaction
@@ -196,15 +189,9 @@ export const processPayhereNotify = async ({
     throw new AppError('Invalid merchant id', 400);
   }
 
-  const secretHashOverride = (process.env.PAYHERE_SECRET_HASH || '').trim().toUpperCase();
-  const derivedHashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
-  const trustSecretHashOverride = String(process.env.PAYHERE_TRUST_SECRET_HASH || '').toLowerCase() === 'true';
-  const hashedSecret =
-    trustSecretHashOverride && secretHashOverride ? secretHashOverride : derivedHashedSecret;
-
-  if (secretHashOverride && secretHashOverride !== derivedHashedSecret && !trustSecretHashOverride) {
-    console.warn('[PayHere] PAYHERE_SECRET_HASH does not match PAYHERE_SECRET. Ignoring override.');
-  }
+  // Per PayHere notification verification spec:
+  // md5sig = UPPER(MD5(merchant_id + order_id + payhere_amount + payhere_currency + status_code + UPPER(MD5(merchant_secret))))
+  const hashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
 
   if (!/^[A-F0-9]{32}$/.test(hashedSecret)) {
     throw new AppError('Invalid PAYHERE secret/hash configuration', 500);

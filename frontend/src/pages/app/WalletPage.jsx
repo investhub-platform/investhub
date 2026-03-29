@@ -9,6 +9,8 @@ const DEFAULT_CHECKOUT_URL = "https://sandbox.payhere.lk/pay/checkout";
 const PAYHERE_CHECKOUT_URL_RAW = import.meta.env.VITE_PAYHERE_CHECKOUT_URL || DEFAULT_CHECKOUT_URL;
 const PAYHERE_CHECKOUT_URL = PAYHERE_CHECKOUT_URL_RAW.replace(/\/+$/, "");
 const PAYHERE_USE_SDK = import.meta.env.VITE_PAYHERE_USE_SDK === "true";
+const PAYHERE_FRONTEND_URL_OVERRIDE = import.meta.env.VITE_PAYHERE_FRONTEND_URL_OVERRIDE;
+const PAYHERE_BACKEND_URL_OVERRIDE = import.meta.env.VITE_PAYHERE_BACKEND_URL_OVERRIDE;
 
 function extractPayload(responseData) {
   if (!responseData) return null;
@@ -195,7 +197,15 @@ export default function WalletPage() {
 
     setInitiating(true);
     try {
-      const r = await api.post("/v1/wallets/deposit/initiate", { amount });
+      const r = await api.post("/v1/wallets/deposit/initiate", {
+        amount,
+        ...(PAYHERE_FRONTEND_URL_OVERRIDE
+          ? { frontendUrl: PAYHERE_FRONTEND_URL_OVERRIDE }
+          : {}),
+        ...(PAYHERE_BACKEND_URL_OVERRIDE
+          ? { backendUrl: PAYHERE_BACKEND_URL_OVERRIDE }
+          : {}),
+      });
       const payload = extractPayload(r?.data);
       const orderId = payload?.order_id;
       setPendingOrderId(orderId || "");
@@ -205,6 +215,9 @@ export default function WalletPage() {
           ...payload,
           // PayHere SDK expects explicit sandbox mode for sandbox merchant flows.
           sandbox: true,
+          // For SDK popup mode, PayHere recommends leaving these undefined.
+          return_url: undefined,
+          cancel_url: undefined,
         };
 
         window.payhere.onCompleted = async function onCompleted(completedOrderId) {
