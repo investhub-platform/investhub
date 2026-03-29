@@ -201,6 +201,12 @@ export default function WalletPage() {
       setPendingOrderId(orderId || "");
 
       if (PAYHERE_USE_SDK && window.payhere) {
+        const sdkPayment = {
+          ...payload,
+          // PayHere SDK expects explicit sandbox mode for sandbox merchant flows.
+          sandbox: true,
+        };
+
         window.payhere.onCompleted = async function onCompleted(completedOrderId) {
           setMsg("Payment completed. Verifying with gateway...");
           setError("");
@@ -219,7 +225,7 @@ export default function WalletPage() {
           setError(`Payment failed: ${errorText || "Unknown error"}`);
         };
 
-        window.payhere.startPayment(payload);
+        window.payhere.startPayment(sdkPayment);
       } else {
         openPayHereFormFallback(payload);
       }

@@ -72,6 +72,13 @@ export const initiateDeposit = async (userId, user, amount) => {
     throw new AppError('Invalid amount', 400);
   }
 
+  const frontendHost = (() => {
+    try { return new URL(frontendUrl).host; } catch { return 'invalid'; }
+  })();
+  const backendHost = (() => {
+    try { return new URL(backendUrl).host; } catch { return 'invalid'; }
+  })();
+
   const orderId         = `ORDER_${Date.now()}_${String(userId).slice(-6)}`;
   const secretHashOverride = (process.env.PAYHERE_SECRET_HASH || '').trim().toUpperCase();
   const derivedHashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
@@ -93,6 +100,18 @@ export const initiateDeposit = async (userId, user, amount) => {
     .update(merchantId + orderId + amountFormatted + currency + hashedSecret)
     .digest('hex')
     .toUpperCase();
+
+  // Non-sensitive diagnostics to troubleshoot PayHere authorization issues in deployed environments.
+  console.info('[PayHere] initiateDeposit payload meta', {
+    orderId,
+    amount: amountFormatted,
+    currency,
+    merchantIdPresent: Boolean(merchantId),
+    frontendHost,
+    backendHost,
+    trustSecretHashOverride,
+    hasSecretHashOverride: Boolean(secretHashOverride),
+  });
 
   // Ensure wallet exists before creating the pending transaction
   const wallet = await getOrCreateWallet(userId);
