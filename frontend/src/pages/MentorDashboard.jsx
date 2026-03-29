@@ -15,12 +15,13 @@ import {
   Loader,
 } from "lucide-react";
 import { useAuth } from "@/features/auth/useAuth";
+import toast, { Toaster } from "react-hot-toast";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 const API_V1 = `${API_BASE}/api/v1`;
 
 const MentorDashboard = () => {
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const [activeView, setActiveView] = useState("browse");
   const [filter, setFilter] = useState("all");
   const [events, setEvents] = useState([]);
@@ -149,12 +150,17 @@ const MentorDashboard = () => {
                 {/* Event Grid */}
                 {!loading && !error && (
                   <>
+                    <Toaster position="top-right" />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                       {filtered.map((event, i) => (
                         <EventCard
                           key={event._id}
                           event={event}
                           status={getEventStatus(event.date)}
+                          accessToken={accessToken}
+                          currentUser={user}
+                          onDeleted={() => fetchEvents()}
+                          onUpdated={() => fetchEvents()}
                           index={i}
                         />
                       ))}
@@ -177,7 +183,7 @@ const MentorDashboard = () => {
   );
 };
 
-function EventCard({ event, status, index }) {
+function EventCard({ event, status, index, accessToken, currentUser, onDeleted, onUpdated }) {
   const statusColors = {
     upcoming: "bg-primary/20 text-primary border-primary/30",
     completed: "bg-accent/20 text-accent border-accent/30",
@@ -276,7 +282,122 @@ function EventCard({ event, status, index }) {
           </a>
         )}
       </div>
+      <EventCardActions
+        event={event}
+        accessToken={accessToken}
+        currentUser={currentUser}
+        onDeleted={onDeleted}
+        onUpdated={onUpdated}
+      />
     </motion.div>
+  );
+}
+
+// Enhanced EventCard with edit/delete when owner
+function EventCardActions({ event, accessToken, currentUser, onDeleted, onUpdated }) {
+  const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    title: event.title || "",
+    description: event.description || "",
+    eventType: event.eventType || "Webinar",
+    date: event.date ? new Date(event.date).toISOString().slice(0, 10) : "",
+    time: event.date ? new Date(event.date).toISOString().slice(11, 16) : "",
+    link: event.link || "",
+  });
+
+  const getOrganizerId = (organizer) => {
+    if (!organizer) return null;
+    return organizer._id || organizer.id || organizer;
+  };
+
+  const isOwner = currentUser && String(getOrganizerId(event.organizerId)) === String(currentUser._id || currentUser.id);
+
+  const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+
+  const handleDelete = async () => {
+    if (!accessToken) return toast.error("You must be logged in to delete events.");
+    if (!confirm("Delete this event? This action cannot be undone.")) return;
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_V1}/events/${event._id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.message || "Failed to delete event");
+      }
+      toast.success("Event deleted");
+      onDeleted && onDeleted();
+    } catch (err) {
+      toast.error(err.message || "Delete failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdate = async (e) => {
+    e && e.preventDefault();
+    if (!accessToken) return toast.error("You must be logged in to update events.");
+    try {
+      setLoading(true);
+      const datetime = new Date(`${form.date}T${form.time}`);
+      const payload = {
+        title: form.title,
+        description: form.description,
+        eventType: form.eventType,
+        date: datetime.toISOString(),
+        link: form.link,
+      };
+
+      const res = await fetch(`${API_V1}/events/${event._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.message || "Failed to update event");
+      }
+      toast.success("Event updated");
+      setEditing(false);
+      onUpdated && onUpdated();
+    } catch (err) {
+      toast.error(err.message || "Update failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOwner) return null;
+
+  return (
+    <div className="p-4 border-t border-white/[0.03]">
+      {editing ? (
+        <form onSubmit={handleUpdate} className="space-y-3">
+          <input name="title" value={form.title} onChange={handleChange} className="w-full px-3 py-2 rounded" />
+          <input name="date" type="date" value={form.date} onChange={handleChange} className="px-3 py-2 rounded" />
+          <input name="time" type="time" value={form.time} onChange={handleChange} className="px-3 py-2 rounded" />
+          <div className="flex gap-2">
+            <button disabled={loading} type="submit" className="pill-filter pill-filter-active">
+              Save
+            </button>
+            <button type="button" onClick={() => setEditing(false)} className="pill-filter">
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div className="flex gap-2">
+          <button onClick={() => setEditing(true)} className="pill-filter">Edit</button>
+          <button onClick={handleDelete} disabled={loading} className="pill-filter text-destructive">
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -348,11 +469,13 @@ function CreateEventForm({ accessToken, onSuccess }) {
       }
 
       setSubmitted(true);
+      toast.success("Event created");
       setTimeout(() => {
         onSuccess();
-      }, 2000);
+      }, 1000);
     } catch (err) {
       setError(err.message);
+      toast.error(err.message || "Failed to create event");
       console.error("Error creating event:", err);
     } finally {
       setLoading(false);
