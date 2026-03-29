@@ -31,7 +31,17 @@ export const updatePortfolio = async (id, userId, payload) => {
   if (portfolio.userId.toString() !== userId)
     throw new AppError("Access denied", 403);
 
-  const allowed = ["name", "description", "investments", "totalValue"];
+  const allowed = [
+    "name",
+    "description",
+    "investments",
+    "totalValue",
+    "category",
+    "riskLevel",
+    "visibility",
+    "status",
+    "isFavorite"
+  ];
   const safePayload = {};
 
   for (const k of allowed) {
