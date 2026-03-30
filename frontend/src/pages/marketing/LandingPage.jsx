@@ -1,5 +1,5 @@
-// React import removed (automatic JSX runtime) — prevents unused import TS6133
-import { motion } from 'framer-motion'
+// React import removed (automatic JSX runtime)
+import { useEffect } from 'react'
 import Navbar from '../../components/layout/Navbar'
 import Hero from '../../components/landing/Hero'
 import SocialProof from '../../components/landing/SocialProof'
@@ -8,47 +8,70 @@ import ValueCards from '../../components/landing/ValueCards'
 import HowItWorks from '../../components/landing/HowItWorks'
 import FAQAccordion from '../../components/landing/FAQAccordion'
 import Footer from '../../components/layout/Footer'
+import Pricing from '../../components/landing/Pricing'
+
+// GSAP Imports
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+gsap.registerPlugin(ScrollTrigger)
 
 const LandingPage = () => {
+
+  // Optional: Global GSAP reveal for sections
+  useEffect(() => {
+    const sections = gsap.utils.toArray('.gsap-fade-section');
+    sections.forEach((sec) => {
+      gsap.fromTo(sec, 
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1, 
+          y: 0,
+          duration: 0.8,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: sec,
+            start: "top 85%", // Trigger when the top of the section hits 85% of viewport
+          }
+        }
+      );
+    });
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#020617]">
+    <div className="min-h-screen bg-[#020617] font-sans selection:bg-blue-500/30">
       <Navbar />
+      
+      {/* 1. Hero (Awwwards WOW Upgrade) */}
       <Hero />
 
       <main className="pb-24">
-      {/* Background grid and grouped SocialProof + ValueCards */}
-      <div className="relative">
-        <motion.div
-          className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] mask-image-gradient pointer-events-none"
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.6 }}
-        />
-
-        <div className="max-w-5xl mx-auto px-6 relative z-10">
-          <div className="pt-12 pb-6">
+        
+        {/* 2. Grouped SocialProof + ValueCards (Clean & Simple) */}
+        <div className="relative z-10 gsap-fade-section">
+          <div className="max-w-7xl mx-auto px-6 pt-12">
             <SocialProof />
-          </div>
-
-          <div className="pb-6">
             <ValueCards />
           </div>
         </div>
-      </div>
 
-        {/* Feature Bento */}
-        {/* <div className="px-6">
-          <FeaturesBento />
-        </div> */}
-
-        {/* How it works */}
-        <div className="px-6">
-          <HowItWorks />
+        {/* 3. The Core Ecosystem Logic (How It Works) */}
+        <div className="gsap-fade-section relative">
+           {/* Global Background Grid (subtle) */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] mask-image-gradient pointer-events-none" />
+          
+          <div className="relative z-10 px-6">
+            <HowItWorks />
+          </div>
         </div>
 
-        {/* FAQ */}
-        <div className="px-6">
+        {/* 4. Pricing (Transparent Business Model) */}
+        <div className="relative z-10 px-6 gsap-fade-section">
+           <Pricing />
+        </div>
+
+        {/* 5. FAQ (Professional Vetting Questions) */}
+        <div className="relative z-10 px-6 gsap-fade-section">
           <FAQAccordion />
         </div>
       </main>

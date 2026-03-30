@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import path from "path";
 import router from "./routes/index.js";
 import errorHandler from "./middlewares/error.middleware.js";
 import cookieParser from "cookie-parser";
@@ -12,6 +13,8 @@ dotenv.config();
 const app = express();
 
 app.use(express.json());
+// PayHere server callbacks are sent as application/x-www-form-urlencoded.
+app.use(express.urlencoded({ extended: false }));
 const normalizeOrigin = (value) => value?.trim().replace(/\/$/, "");
 const envOrigins = [
   ...(process.env.FRONTEND_URLS?.split(",") ?? []),
@@ -45,9 +48,14 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 app.use(morgan("dev"));
 app.use(cookieParser());
+app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
 app.use("/api", router);
 
