@@ -27,7 +27,7 @@ const cards = [
 
 export default function ValueCards() {
   return (
-    <section className="w-full py-12 sm:py-16 md:py-24 bg-[#020617]"> {/* Matching your dark theme */}
+    <section id="startups" className="w-full py-12 sm:py-16 md:py-24 bg-[#020617] scroll-mt-36"> {/* Matching your dark theme */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {cards.map((card, i) => {

@@ -32,7 +32,7 @@ export default function FAQAccordion() {
   const [open, setOpen] = useState(0)
 
   return (
-    <section className="w-full py-12 sm:py-16 md:py-20">
+    <section id="pricing" className="w-full py-12 sm:py-16 md:py-20 scroll-mt-36">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6 sm:mb-8">Frequently Asked Questions</h2>
         <p className="text-sm sm:text-base text-slate-400 mb-6 sm:mb-8">Answers about joining, mentoring, and investing on InvestHub.</p>
