@@ -4,7 +4,7 @@ import api from "../../lib/axios";
 import { formatCurrency } from "@/data/mockData";
 import AppNavbar from "../../components/layout/AppNavBar";
 import { DesktopSidebar } from "../../components/DesktopSidebar";
-import { CreditCard, History, Wallet as WalletIcon, ArrowRight, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
+import { CreditCard, History, ArrowRight, RefreshCw, AlertCircle, CheckCircle2, Wifi } from "lucide-react";
 import { motion } from "framer-motion";
 
 const DEFAULT_CHECKOUT_URL = "https://sandbox.payhere.lk/pay/checkout";
@@ -70,6 +70,15 @@ function loadPayHereScript() {
     document.body.appendChild(script);
   });
 }
+
+// ---------------------------------------------------------
+// Helper for Card Number Formatting
+// ---------------------------------------------------------
+const formatCardNumber = (id) => {
+  if (!id) return "•••• •••• •••• ••••";
+  const clean = id.replace(/[^a-zA-Z0-9]/g, "").padEnd(16, "0").slice(0, 16).toUpperCase();
+  return clean.match(/.{1,4}/g).join(" ");
+};
 
 export default function WalletPage() {
   const [wallet, setWallet] = useState(null);
@@ -220,14 +229,14 @@ export default function WalletPage() {
         <main className="flex-1 w-full overflow-y-auto px-4 sm:px-8 py-8 lg:py-12 relative z-10 scroll-smooth">
           <div className="max-w-4xl mx-auto">
             
-            <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="mb-8 md:mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
               <div>
                 <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">Virtual Wallet</h1>
                 <p className="text-slate-400 text-sm md:text-base font-medium">Manage your funds and investment capacity.</p>
               </div>
               <Link 
                 to="/app/wallet/transactions" 
-                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-bold text-slate-300 hover:text-white"
+                className="flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-bold text-slate-300 hover:text-white shadow-lg w-full sm:w-auto"
               >
                 <History className="w-4 h-4" /> View Transactions
               </Link>
@@ -244,37 +253,81 @@ export default function WalletPage() {
               </motion.div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8">
               
-              {/* Balance Card */}
-              <div className="md:col-span-3 p-8 rounded-[2rem] bg-gradient-to-br from-blue-600/20 to-[#0B0D10] border border-blue-500/30 relative overflow-hidden shadow-2xl">
-                <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/20 blur-[60px] rounded-full pointer-events-none" />
-                
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
-                    <WalletIcon className="w-5 h-5 text-blue-400" />
+              {/* ----------------------------------------------------- */}
+              {/* REALISTIC E-CREDIT CARD DESIGN                        */}
+              {/* ----------------------------------------------------- */}
+              <div className="lg:col-span-3 perspective-1000 flex items-center justify-center">
+                <motion.div 
+                  initial={{ rotateY: -10, rotateX: 10, opacity: 0 }}
+                  animate={{ rotateY: 0, rotateX: 0, opacity: 1 }}
+                  transition={{ duration: 0.8, type: "spring" }}
+                  className="w-full max-w-[500px] aspect-[1.586/1] rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 flex flex-col justify-between relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/20 group mx-auto lg:mx-0"
+                  style={{
+                    background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #020617 100%)",
+                  }}
+                >
+                  {/* Subtle Noise Texture Overlay */}
+                  <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
+                  
+                  {/* Holographic Shine Effect on Hover */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-[100%] group-hover:translate-x-[100%] transition-all duration-1000 ease-in-out pointer-events-none" />
+
+                  {/* Top Row: Logo & NFC */}
+                  <div className="relative z-10 flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-lg overflow-hidden">
+                        <img src="/favicon.ico" alt="InvestHub" className="w-5 h-5 sm:w-6 sm:h-6 object-contain" />
+                      </div>
+                       <span className="text-white font-black tracking-widest text-xs sm:text-sm drop-shadow-md">InvestHub</span>
+                    </div>
+                    <Wifi className="w-5 h-5 sm:w-6 sm:h-6 text-slate-300/80 rotate-90 drop-shadow-md" />
                   </div>
-                  <span className="text-sm font-bold uppercase tracking-wider text-blue-400">Available Balance</span>
-                </div>
-                
-                <div className="text-5xl md:text-6xl font-black text-white tracking-tight mb-2">
-                  {loading ? (
-                     <div className="h-14 w-48 bg-white/10 animate-pulse rounded-lg" />
-                  ) : (
-                     formatCurrency(wallet?.balance)
-                  )}
-                </div>
-                
-                <div className="text-xs font-medium text-slate-400 mt-6 flex items-center gap-2">
-                  Wallet ID: <span className="font-mono bg-black/40 px-2 py-1 rounded text-slate-300">{wallet?.id || wallet?._id || "Loading..."}</span>
-                </div>
+
+                  {/* Middle Row: EMV Chip & Balance */}
+                  <div className="relative z-10 flex flex-col gap-3 sm:gap-4 my-auto">
+                    {/* Vector EMV Chip */}
+                    <div className="w-10 h-8 sm:w-12 sm:h-10 rounded-md bg-gradient-to-br from-yellow-200 via-yellow-400 to-yellow-600 border border-yellow-700/50 flex flex-col justify-between p-1 shadow-inner opacity-90">
+                      <div className="w-full h-px bg-yellow-700/30" />
+                      <div className="w-full h-px bg-yellow-700/30" />
+                      <div className="w-full h-px bg-yellow-700/30" />
+                    </div>
+
+                    <div>
+                      <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-400/80 mb-0.5 sm:mb-1 drop-shadow-sm">Available Capital</div>
+                      <div className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg truncate">
+                        {loading ? (
+                           <div className="h-8 sm:h-10 w-32 sm:w-48 bg-white/10 animate-pulse rounded-lg" />
+                        ) : (
+                           formatCurrency(wallet?.balance)
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom Row: Card Number & User Info */}
+                  <div className="relative z-10 flex items-end justify-between gap-4 mt-2">
+                    <div className="font-mono text-xs sm:text-base md:text-lg text-slate-200/90 tracking-widest sm:tracking-[0.15em] drop-shadow-md truncate">
+                      {loading ? "•••• •••• •••• ••••" : formatCardNumber(wallet?.id || wallet?._id)}
+                    </div>
+                    <div className="flex flex-col items-end shrink-0">
+                      <div className="text-[7px] sm:text-[8px] font-bold uppercase tracking-widest text-slate-400/80 drop-shadow-sm">Virtual</div>
+                      <div className="text-xs sm:text-sm font-black tracking-wider text-white uppercase drop-shadow-md">
+                        {loading ? "---" : "ACTIVE"}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
               </div>
 
-              {/* Top Up Card */}
-              <div className="md:col-span-2 p-8 rounded-[2rem] bg-[#0B0D10] border border-white/5 shadow-xl flex flex-col justify-between">
+              {/* ----------------------------------------------------- */}
+              {/* TOP UP ACTION CARD                                    */}
+              {/* ----------------------------------------------------- */}
+              <div className="lg:col-span-2 p-6 md:p-8 rounded-3xl bg-[#0B0D10] border border-white/5 shadow-2xl flex flex-col justify-between">
                 <div>
-                   <h2 className="text-xl font-bold text-white mb-2">Top-up Wallet</h2>
-                   <p className="text-sm text-slate-400 mb-6">Add funds to securely invest in validated startups.</p>
+                   <h2 className="text-xl font-bold text-white mb-2">Deposit Funds</h2>
+                   <p className="text-sm text-slate-400 mb-6">Add capital to securely invest in validated startups.</p>
                    
                    <div className="relative mb-6">
                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">$</span>
@@ -282,17 +335,17 @@ export default function WalletPage() {
                        type="number"
                        value={amount}
                        onChange={(e) => setAmount(Number(e.target.value))}
-                       className="w-full pl-8 pr-4 py-4 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-lg focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all"
+                       className="w-full pl-8 pr-4 py-4 rounded-xl bg-[#1A1D24] border border-white/5 text-white font-bold text-lg focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all shadow-inner"
                        min={1}
                      />
                    </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 mt-auto">
                    <button
                      onClick={initiateDeposit}
                      disabled={initiating}
-                     className="w-full group flex items-center justify-center gap-2 py-4 rounded-xl bg-white text-black font-bold hover:bg-slate-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-50"
+                     className="w-full group flex items-center justify-center gap-2 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] disabled:opacity-50"
                    >
                      {initiating ? "Processing..." : "Continue to Payment"}
                      {!initiating && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
@@ -312,14 +365,16 @@ export default function WalletPage() {
             </div>
 
             {/* Helper Text */}
-            <div className="mt-8 text-center">
-               <p className="text-xs text-slate-500 font-medium max-w-xl mx-auto flex items-center justify-center gap-2">
-                 <CreditCard className="w-4 h-4" />
-                 {PAYHERE_USE_SDK
-                   ? payhereLoaded
-                     ? "Secure payments powered by PayHere SDK."
-                     : "Secure payments loading fallback mode."
-                   : "PayHere sandbox mode active. Do not use real card details."}
+            <div className="mt-8 md:mt-10 text-center pb-10">
+               <p className="text-[10px] sm:text-xs text-slate-500 font-bold tracking-wide uppercase max-w-xl mx-auto flex items-center justify-center gap-2">
+                 <CreditCard className="w-4 h-4 shrink-0" />
+                 <span className="truncate">
+                   {PAYHERE_USE_SDK
+                     ? payhereLoaded
+                       ? "Secure payments powered by PayHere SDK"
+                       : "Secure payments loading fallback mode"
+                     : "Sandbox mode active. Do not use real cards."}
+                 </span>
                </p>
             </div>
 
