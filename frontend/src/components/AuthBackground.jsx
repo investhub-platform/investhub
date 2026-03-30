@@ -1,6 +1,12 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 
+const NODE_COUNT = 25;
+
+function getNodePercent(seed, multiplier, offset = 0) {
+  return `${(seed * multiplier + offset) % 100}%`;
+}
+
 export default function AuthBackground() {
   const containerRef = useRef(null);
   const networkRef = useRef(null);
@@ -48,11 +54,11 @@ export default function AuthBackground() {
     };
   }, []);
 
-  // Generate random fixed coordinates for network nodes
-  const nodes = Array.from({ length: 25 }).map((_, i) => ({
+  // Keep coordinates deterministic to satisfy React purity constraints.
+  const nodes = Array.from({ length: NODE_COUNT }).map((_, i) => ({
     id: i,
-    cx: `${Math.floor(Math.random() * 100)}%`,
-    cy: `${Math.floor(Math.random() * 100)}%`,
+    cx: getNodePercent(i, 37),
+    cy: getNodePercent(i, 53, 17),
   }));
 
   return (

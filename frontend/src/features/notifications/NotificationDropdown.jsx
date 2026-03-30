@@ -42,15 +42,19 @@ export default function NotificationDropdown() {
 
   // Initial load + auto refresh
   useEffect(() => {
-    loadNotifications();
-    loadUnread();
+    const refresh = () => {
+      void loadNotifications();
+      void loadUnread();
+    };
 
-    const interval = setInterval(() => {
-      loadNotifications();
-      loadUnread();
-    }, 10000); // every 10s
+    const initialTimeout = window.setTimeout(refresh, 0);
 
-    return () => clearInterval(interval);
+    const interval = window.setInterval(refresh, 10000); // every 10s
+
+    return () => {
+      window.clearTimeout(initialTimeout);
+      window.clearInterval(interval);
+    };
   }, []);
 
   // Toggle dropdown

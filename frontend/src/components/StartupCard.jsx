@@ -1,4 +1,4 @@
-import { Brain, ArrowRight, TrendingUp } from "lucide-react";
+import { Brain, ArrowRight } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { formatCurrency } from "@/data/mockData";

@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import AppNavbar from "../components/layout/AppNavBar";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import {
-  Video,
   Plus,
   Calendar,
   Clock,

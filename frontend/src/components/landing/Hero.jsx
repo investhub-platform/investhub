@@ -36,7 +36,7 @@ const Hero = () => {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="text-4xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-black tracking-tight mb-6 leading-[1.05]"
         >
-          <span className="block text-white">You don't need</span>
+          <span className="block text-white">You don&apos;t need</span>
           <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-400">
             to know someone.
           </span>
@@ -151,7 +151,7 @@ const Hero = () => {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-white">Code checked by experts</h3>
-                <p className="text-slate-400 text-sm">Real developers verify the startup's tech actually works before your money is released.</p>
+                <p className="text-slate-400 text-sm">Real developers verify the startup&apos;s tech actually works before your money is released.</p>
               </div>
             </div>
 
