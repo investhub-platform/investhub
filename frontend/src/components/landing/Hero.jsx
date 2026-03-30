@@ -4,7 +4,7 @@ import Aurora from './Aurora';
 
 const Hero = () => {
   return (
-    <section className="relative w-full min-h-screen overflow-hidden text-white selection:bg-blue-500/30">
+    <section id="hero" className="relative w-full min-h-screen overflow-hidden text-white selection:bg-blue-500/30 scroll-mt-36">
       
       {/* --- CIRCULAR GRADIENT BACKGROUND (commented out) --- */}
       
