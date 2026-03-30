@@ -308,7 +308,7 @@ const StartupOwnerDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppNavbar />
-      <div className="flex">
+      <div className="flex ml-70">
         <DesktopSidebar />
         <main className="flex-1 px-4 md:px-8 pt-28 pb-12 max-w-7xl">
           {/* Top tabs */}
