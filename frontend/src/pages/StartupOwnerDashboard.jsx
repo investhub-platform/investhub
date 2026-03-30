@@ -310,7 +310,7 @@ const StartupOwnerDashboard = () => {
       <AppNavbar />
       <div className="flex">
         <DesktopSidebar />
-        <main className="flex-1 px-4 md:px-8 pt-28 pb-12 max-w-7xl">
+        <main className="flex-1 w-full overflow-y-auto px-4 md:px-8 pt-28 pb-12 max-w-7xl lg:ml-64">
           {/* Top tabs */}
           <div className="flex items-center gap-2 mb-4">
             <button
