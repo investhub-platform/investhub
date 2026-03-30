@@ -194,7 +194,7 @@ export default function ProfilePage() {
         <DesktopSidebar />
 
         {/* Scrollable Content Area */}
-        <main className="flex-1 w-full overflow-y-auto px-4 sm:px-8 py-8 lg:py-12 relative z-10 scroll-smooth">
+        <main className="flex-1 w-full overflow-y-auto px-4 sm:px-8 py-8 lg:py-12 lg:ml-64 relative z-10 scroll-smooth">
           <div className="max-w-5xl mx-auto w-full">
             
             {/* Header Area */}

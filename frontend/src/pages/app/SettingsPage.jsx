@@ -181,8 +181,7 @@ export default function SettingsPage() {
 
         <DesktopSidebar />
 
-        {/* Removed lg:ml-64 to fix layout clash with flex container */}
-        <main className="flex-1 w-full overflow-y-auto px-4 sm:px-8 py-8 lg:py-12 relative z-10 scroll-smooth">
+        <main className="flex-1 w-full overflow-y-auto px-4 sm:px-8 py-8 lg:py-12 lg:ml-64 relative z-10 scroll-smooth">
           <div className="max-w-6xl mx-auto">
             
             <div className="mb-8 md:mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
