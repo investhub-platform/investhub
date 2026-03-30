@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { User, LogOut, Menu, X, Bell, Settings } from "lucide-react";
+import { User, LogOut, Menu, X, Settings } from "lucide-react";
 import { useAuth } from "../../features/auth/useAuth";
+import NotificationDropdown from "../../features/notifications/NotificationDropdown";
 
 const navLinks = [
   { label: "Explore", path: "/app/explore" },
@@ -65,7 +66,9 @@ export default function AppNavbar() {
     >
       {/* Logo Area */}
       <Link to="/app/explore" className="flex items-center gap-3 w-48">
-        <img src="/favicon.ico" alt="InvestHub" className="w-9 h-9 rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.3)] shrink-0" />
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.3)] shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
         <span className="text-white font-bold tracking-wide text-lg hidden sm:block">InvestHub</span>
       </Link>
 
@@ -88,10 +91,9 @@ export default function AppNavbar() {
 
       {/* Right Side Actions */}
       <div className="flex items-center gap-4 justify-end">
-        <button className="relative p-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 transition-colors text-slate-300 hover:text-white">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_#3b82f6]" />
-        </button>
+        
+        {/* Notification Dropdown (Restored from main branch) */}
+        <NotificationDropdown />
 
         {/* Avatar Dropdown */}
         <div className="relative">
@@ -102,7 +104,7 @@ export default function AppNavbar() {
             }}
             className="flex items-center gap-3 rounded-full border border-white/5 bg-white/5 hover:bg-white/10 px-2 py-1.5 transition-all"
           >
-            <div className="h-9 w-9 rounded-full overflow-hidden border border-white/10 bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-sm font-bold text-white shadow-inner">
+            <div className="h-9 w-9 rounded-full overflow-hidden bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-sm font-bold text-white shadow-inner">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
               ) : (
