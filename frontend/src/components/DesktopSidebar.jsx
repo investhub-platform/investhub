@@ -83,7 +83,7 @@ export function DesktopSidebar() {
 
   return (
     <aside
-      className={`hidden lg:flex fixed flex-col top-20 left-0 h-[calc(100vh-5rem)] bg-[#020617]/50 backdrop-blur-xl border-r border-white/5 pt-8 pb-6 transition-all duration-300 ease-in-out z-40 ${
+      className={`hidden lg:flex fixed flex-col top-20 left-0 h-[calc(100vh-5rem)] bg-[#020617]/50 backdrop-blur-xl border-r border-white/5 pt-4 pb-6 transition-all duration-300 ease-in-out z-40 ${
         collapsed ? "w-20" : "w-64"
       }`}
     >
