@@ -1,22 +1,24 @@
+// React import removed (automatic JSX runtime)
 import { useEffect } from 'react'
-import { motion } from 'framer-motion'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-
 import Navbar from '../../components/layout/Navbar'
 import Hero from '../../components/landing/Hero'
 import SocialProof from '../../components/landing/SocialProof'
+// import FeaturesBento from '../../components/landing/FeaturesBento'
 import ValueCards from '../../components/landing/ValueCards'
 import HowItWorks from '../../components/landing/HowItWorks'
-import Pricing from '../../components/landing/Pricing'
 import FAQAccordion from '../../components/landing/FAQAccordion'
 import Footer from '../../components/layout/Footer'
+import Pricing from '../../components/landing/Pricing'
+
+// GSAP Imports
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 gsap.registerPlugin(ScrollTrigger)
 
 const LandingPage = () => {
-  
-  // Optional: Add a smooth fade-in to sections as you scroll using GSAP
+
+  // Optional: Global GSAP reveal for sections
   useEffect(() => {
     const sections = gsap.utils.toArray('.gsap-fade-section');
     sections.forEach((sec) => {
@@ -39,35 +41,39 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-[#020617] font-sans selection:bg-blue-500/30">
       <Navbar />
+      
+      {/* 1. Hero (Awwwards WOW Upgrade) */}
       <Hero />
 
       <main className="pb-24">
         
-        <div className="gsap-fade-section pt-12 pb-6">
-          <SocialProof />
+        {/* 2. Grouped SocialProof + ValueCards (Clean & Simple) */}
+        <div className="relative z-10 gsap-fade-section">
+          <div className="max-w-7xl mx-auto px-6 pt-12">
+            <SocialProof />
+            <ValueCards />
+          </div>
         </div>
 
-        <div className="gsap-fade-section pb-6 relative z-10">
-          <ValueCards />
-        </div>
-
-        {/* Global Background Grid Pattern */}
-        <div className="relative">
+        {/* 3. The Core Ecosystem Logic (How It Works) */}
+        <div className="gsap-fade-section relative">
+           {/* Global Background Grid (subtle) */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] mask-image-gradient pointer-events-none" />
           
-          <div className="gsap-fade-section relative z-10 px-6">
+          <div className="relative z-10 px-6">
             <HowItWorks />
-          </div>
-
-          <div className="gsap-fade-section relative z-10 px-6">
-            <Pricing />
-          </div>
-
-          <div className="gsap-fade-section relative z-10 px-6">
-            <FAQAccordion />
           </div>
         </div>
 
+        {/* 4. Pricing (Transparent Business Model) */}
+        <div className="relative z-10 px-6 gsap-fade-section">
+           <Pricing />
+        </div>
+
+        {/* 5. FAQ (Professional Vetting Questions) */}
+        <div className="relative z-10 px-6 gsap-fade-section">
+          <FAQAccordion />
+        </div>
       </main>
 
       <Footer />

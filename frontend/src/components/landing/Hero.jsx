@@ -1,58 +1,44 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Play, ChevronRight, TrendingUp, ShieldCheck } from "lucide-react";
-import Aurora from './Aurora';
+import { ArrowRight, Play, ShieldCheck, Wallet, CheckCircle2, BrainCircuit } from "lucide-react";
 
 const Hero = () => {
   return (
-    <section id="hero" className="relative w-full min-h-screen overflow-hidden text-white selection:bg-blue-500/30 scroll-mt-36">
+    <section id="hero" className="relative w-full min-h-screen overflow-hidden bg-[#020617] text-white selection:bg-blue-500/30 pt-24 pb-20">
       
-      {/* --- CIRCULAR GRADIENT BACKGROUND (commented out) --- */}
-      
-      <svg className="absolute z-0 w-full -mt-40 md:mt-0" width="1440" height="676" viewBox="0 0 1440 676" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="-92" y="-948" width="1624" height="1624" rx="812" fill="url(#circleGradient)" className="hero-circle-rect" />
+      {/* --- MASSIVE TOP-DOWN CIRCULAR GLOW (From Figma/Code) --- */}
+      <svg 
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[200%] md:w-[140%] max-w-[1800px] pointer-events-none z-0" 
+        viewBox="0 0 1440 676" 
+        fill="none" 
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect x="-92" y="-948" width="1624" height="1624" rx="812" fill="url(#circleGradient)" className="hero-circle-rect opacity-60 md:opacity-100" />
         <defs>
           <radialGradient id="circleGradient" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="rotate(90 428 292)scale(812)">
-            <stop offset=".63" stopColor="#372AAC" stopOpacity="0" />
-            <stop offset="0.9" stopColor="#372AAC" stopOpacity="0.25" />
-            <stop offset="1" stopColor="#372AAC" stopOpacity="0.45" />
+            <stop offset="0.5" stopColor="#020617" stopOpacity="0" />
+            <stop offset="0.85" stopColor="#3b82f6" stopOpacity="0.2" />
+            <stop offset="1" stopColor="#06b6d4" stopOpacity="0.45" />
           </radialGradient>
         </defs>
       </svg>
-      {/* Responsive style to reduce transparency (increase opacity) on small screens */}
-      <style>{`
-        .hero-circle-rect{fill-opacity:0.45}
-        @media (max-width: 640px){
-          .hero-circle-rect{fill-opacity:0.85}
-        }
-      `}</style>
-      
 
-      {/* Aurora background component (replaces SVG) - wrapped to control vertical size */}
-      <div className="absolute inset-x-0 -top-28 sm:-top-56 h-[30vh] sm:h-[50vh] z-0 pointer-events-none">
-        <Aurora
-          colorStops={["#020617","#3b82f6","#06b6d4"]}
-          blend={0.5}
-          amplitude={1.0}
-          speed={1}
-        />
-      </div>
+      {/* Grid Pattern Overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:32px_32px] opacity-40 z-0 pointer-events-none mask-image-gradient" />
 
 
       {/* --- MAIN CONTENT --- */}
-      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32 md:pt-40 pb-20 sm:pb-28 md:pb-32 flex flex-col items-center text-center">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 mt-12 flex flex-col items-center text-center">
         
-        {/* Announcement pill removed per request */}
-
-        {/* Headline */}
+        {/* Minimalist 2-Line Headline */}
         <motion.h1 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight mb-4 sm:mb-6 leading-[1.1] px-4"
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="text-4xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-black tracking-tight mb-6 leading-[1.05]"
         >
-          Venture Capital, <br className="hidden sm:block" />
-          <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
-            Democratized.
+          <span className="block text-white">You don't need</span>
+          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-400">
+            to know someone.
           </span>
         </motion.h1>
 
@@ -60,108 +46,130 @@ const Hero = () => {
         <motion.p 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-base sm:text-lg md:text-xl text-slate-400 max-w-2xl mb-8 sm:mb-10 leading-relaxed px-4"
+          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+          className="text-lg md:text-xl text-slate-400 max-w-2xl mb-10 leading-relaxed font-medium"
         >
-          Connect with elite technical mentors and secure funding through our <span className="text-white font-medium">AI-driven investment ecosystem</span>. Stop chasing leads, start building.
+          <span className="text-white font-semibold">Venture Capital, Democratized.</span> <br className="hidden sm:block"/>
+          Vetted startups. Expert-validated code. Secured milestone funding.
         </motion.p>
 
         {/* CTA Buttons */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center w-full sm:w-auto px-4"
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full sm:w-auto"
         >
-         <a href="/auth/register" className="group relative w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base rounded-full bg-blue-600 text-white font-semibold shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] hover:bg-blue-500 transition-all hover:scale-105 active:scale-95">
-  <span className="flex items-center gap-2">
-    Start Funding <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-  </span>
-</a>
-          
-          <button className="group w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base rounded-full border border-white/10 bg-white/5 backdrop-blur-sm text-white font-medium hover:bg-white/10 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
-            <Play className="w-4 h-4 fill-white" /> View Demo
+          <a href="/auth/register" className="group relative w-full sm:w-auto px-8 py-4 rounded-full bg-white text-[#020617] font-bold shadow-[0_0_40px_-10px_rgba(255,255,255,0.4)] hover:scale-105 active:scale-95 transition-all">
+            <span className="flex items-center justify-center gap-2">
+              Start Investing <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </span>
+          </a>
+          <button className="group w-full sm:w-auto px-8 py-4 rounded-full border border-white/20 bg-white/5 backdrop-blur-md text-white font-semibold hover:bg-white/10 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2">
+            <Play className="w-4 h-4 fill-white" /> Watch Demo
           </button>
         </motion.div>
 
 
-        {/* --- 3D DASHBOARD VISUAL --- */}
+        {/* --- BENTO GRID: EXPLAINING THE WEBSITE --- */}
         <motion.div 
-          initial={{ opacity: 0, y: 50, rotateX: 20 }}
-          animate={{ opacity: 1, y: 0, rotateX: 0 }}
-          transition={{ duration: 0.8, delay: 0.5, type: "spring" }}
-          className="mt-12 sm:mt-16 md:mt-20 relative w-full max-w-5xl perspective-1000 px-4"
+          initial={{ opacity: 0, y: 60 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.6, type: "spring", stiffness: 40 }}
+          className="mt-20 md:mt-28 w-full grid grid-cols-1 md:grid-cols-3 gap-4 perspective-1000"
         >
-          {/* Glow behind the dashboard */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[50%] bg-blue-500/20 blur-[100px] rounded-full pointer-events-none" />
-
-          {/* The Dashboard Card */}
-          <div className="relative bg-[#0F1117] border border-white/10 rounded-xl shadow-2xl overflow-hidden ring-1 ring-white/10">
-            {/* Fake Browser Header */}
-            <div className="h-10 border-b border-white/5 bg-white/[0.02] flex items-center px-4 gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
-              <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
-              <div className="ml-4 px-3 py-1 bg-black/40 rounded-md text-[10px] text-slate-500 font-mono">investhub.io/dashboard</div>
-            </div>
-
-            {/* Dashboard Content Mockup */}
-            <div className="p-4 sm:p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-              
-              {/* Sidebar Mockup */}
-              <div className="hidden lg:flex flex-col gap-4 col-span-1 border-r border-white/5 pr-6">
-                <div className="h-8 w-32 bg-white/10 rounded animate-pulse" />
-                <div className="space-y-3 mt-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-6 w-full bg-white/5 rounded" />
-                  ))}
+          
+          {/* Card 1: AI Risk Analysis (Span 2) */}
+          <div className="col-span-1 md:col-span-2 relative p-6 md:p-8 rounded-3xl bg-[#0B0D10]/80 backdrop-blur-xl border border-white/10 overflow-hidden group hover:border-blue-500/30 transition-colors">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
+            
+            <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center h-full">
+              <div className="flex-1 text-left">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-bold uppercase tracking-wider mb-4 border border-blue-500/20">
+                  <BrainCircuit className="w-4 h-4" /> AI Vetting
                 </div>
-                <div className="mt-auto h-20 w-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded border border-blue-500/20 p-4">
-                  <div className="h-2 w-12 bg-blue-500/40 rounded mb-2" />
-                  <div className="h-4 w-20 bg-blue-500/20 rounded" />
-                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">Automated Risk Analysis</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Our Gemini AI agent instantly analyzes pitch decks, market fit, and burn rates, giving you a predictive score before you invest a dime.
+                </p>
               </div>
 
-              {/* Main Area */}
-              <div className="col-span-1 md:col-span-2 lg:col-span-2 space-y-4 sm:space-y-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
-                  <div>
-                    <div className="text-xs sm:text-sm text-slate-400 mb-1">Total Valuation</div>
-                    <div className="text-2xl sm:text-3xl font-bold text-white">$2,450,000.00</div>
-                  </div>
-                  <div className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-sm rounded-full border border-emerald-500/20 flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3" /> +12.5%
-                  </div>
-                </div>
-
-                {/* Chart Mockup */}
-                <div className="h-40 w-full bg-gradient-to-b from-white/5 to-transparent rounded-lg border border-white/5 relative overflow-hidden">
-                   <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-white/10" />
-                   <svg className="absolute bottom-0 left-0 w-full h-full text-blue-500/20" viewBox="0 0 100 40" preserveAspectRatio="none">
-                     <path d="M0 40 L0 30 C10 30 10 20 20 25 C30 30 40 10 50 20 C60 30 70 5 80 15 C90 25 100 20 100 20 L100 40 Z" fill="currentColor" />
-                     <path d="M0 30 C10 30 10 20 20 25 C30 30 40 10 50 20 C60 30 70 5 80 15 C90 25 100 20 100 20" fill="none" stroke="#3b82f6" strokeWidth="0.5" />
-                   </svg>
-                </div>
-
-                {/* Cards Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div className="p-4 bg-white/5 rounded-lg border border-white/5">
-                    <ShieldCheck className="w-5 h-5 text-indigo-400 mb-2" />
-                    <div className="text-xs text-slate-400">Risk Score</div>
-                    <div className="text-lg font-semibold">Low (12%)</div>
-                  </div>
-                  <div className="p-4 bg-white/5 rounded-lg border border-white/5">
-                    <div className="w-5 h-5 rounded-full bg-purple-500/20 mb-2" />
-                    <div className="text-xs text-slate-400">Mentors</div>
-                    <div className="text-lg font-semibold">14 Active</div>
-                  </div>
+              {/* Glowing Gauge Chart Mockup */}
+              <div className="w-full md:w-1/2 relative flex justify-center items-end h-32 md:h-full">
+                <svg viewBox="0 0 100 50" className="w-full max-w-[220px] overflow-visible">
+                  {/* Background Track */}
+                  <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#ffffff10" strokeWidth="8" strokeLinecap="round" />
+                  {/* Glowing Fill */}
+                  <motion.path
+                    d="M 10 50 A 40 40 0 0 1 90 50"
+                    fill="none"
+                    stroke="#06b6d4"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 0.85 }}
+                    transition={{ duration: 1.5, delay: 1, ease: "easeOut" }}
+                    className="drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]"
+                  />
+                </svg>
+                <div className="absolute bottom-0 flex flex-col items-center">
+                  <span className="text-3xl font-black text-white">85<span className="text-lg text-slate-400">%</span></span>
+                  <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Success Rate</span>
                 </div>
               </div>
-
             </div>
           </div>
-        </motion.div>
 
+          {/* Card 2: Smart Escrow Wallet */}
+          <div className="col-span-1 p-6 md:p-8 rounded-3xl bg-[#0B0D10]/80 backdrop-blur-xl border border-white/10 relative overflow-hidden group hover:border-emerald-500/30 transition-colors flex flex-col justify-between">
+            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-emerald-500/10 blur-[60px] rounded-full pointer-events-none" />
+            
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-4 border border-emerald-500/20">
+                <Wallet className="w-4 h-4" /> Smart Escrow
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Milestone Funding</h3>
+            </div>
+            
+            <div className="mt-6 p-4 rounded-xl bg-white/5 border border-white/5 backdrop-blur-sm">
+              <div className="text-xs text-slate-400 mb-1">Funds Locked (Milestone 2)</div>
+              <div className="text-2xl font-bold text-emerald-400 mb-3">$125,000.00</div>
+              <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }} 
+                  animate={{ width: '60%' }} 
+                  transition={{ duration: 1.5, delay: 1.2 }}
+                  className="h-full bg-emerald-400 rounded-full shadow-[0_0_10px_rgba(52,211,153,0.5)]" 
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Mentor Verification (Span 3 - Horizontal) */}
+          <div className="col-span-1 md:col-span-3 p-6 rounded-3xl bg-[#0B0D10]/80 backdrop-blur-xl border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-6 group hover:border-purple-500/30 transition-colors">
+            <div className="flex items-center gap-4 text-left">
+              <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/30 shrink-0">
+                <ShieldCheck className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Verified by Technical Mentors</h3>
+                <p className="text-slate-400 text-sm">Real codebases reviewed by elite CTOs before your funds are released.</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-3">
+                <div className="w-10 h-10 rounded-full bg-slate-800 border-2 border-[#0B0D10] flex items-center justify-center overflow-hidden"><img src="https://i.pravatar.cc/100?img=11" alt="Mentor" /></div>
+                <div className="w-10 h-10 rounded-full bg-slate-800 border-2 border-[#0B0D10] flex items-center justify-center overflow-hidden"><img src="https://i.pravatar.cc/100?img=33" alt="Mentor" /></div>
+                <div className="w-10 h-10 rounded-full bg-slate-800 border-2 border-[#0B0D10] flex items-center justify-center overflow-hidden"><img src="https://i.pravatar.cc/100?img=12" alt="Mentor" /></div>
+              </div>
+              <div className="flex items-center gap-1 text-xs font-semibold text-purple-400 bg-purple-500/10 px-3 py-1.5 rounded-full border border-purple-500/20">
+                <CheckCircle2 className="w-3.5 h-3.5" /> 14 Active Validations
+              </div>
+            </div>
+          </div>
+
+        </motion.div>
       </div>
     </section>
   );
