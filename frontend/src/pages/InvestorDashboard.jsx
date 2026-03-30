@@ -1,4 +1,3 @@
-// InvestorDashboard.jsx
 import { useState, useMemo, useEffect } from "react";
 import AppNavbar from "../components/layout/AppNavBar";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
@@ -24,12 +23,10 @@ const InvestorDashboard = () => {
     let mounted = true;
     const load = async () => {
       try {
-        // Use ideas endpoint (only ideas) instead of startups
         const res = await api.get("/v1/ideas/all");
         if (!mounted) return;
         const items = res?.data?.data || [];
 
-        // Normalize idea documents to the shape StartupCard expects
         const normalized = items.map((it) => ({
           id: it._id || it.id,
           _id: it._id || it.id,
@@ -46,7 +43,6 @@ const InvestorDashboard = () => {
           founders: it.createdBy
             ? [{ name: "Founder", avatar: (it.createdBy && String(it.createdBy).slice(0, 2).toUpperCase()) }]
             : arrayify(it.founders),
-          // keep original payload for further details
           raw: it,
         }));
 
@@ -95,51 +91,69 @@ const InvestorDashboard = () => {
   }, [startups, searchQuery, activeFilters]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppNavbar />
+    <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans selection:bg-blue-500/30">
+      
+      {/* Assuming AppNavbar handles its own fixed positioning. If not, wrap it. */}
+      <div className="sticky top-0 z-50 border-b border-white/5 bg-[#020617]/80 backdrop-blur-xl">
+        <AppNavbar />
+      </div>
 
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Abstract background glow */}
+        <div className="fixed top-1/4 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[150px] rounded-full pointer-events-none" />
+        <div className="fixed bottom-0 left-1/4 w-[400px] h-[400px] bg-cyan-600/5 blur-[120px] rounded-full pointer-events-none" />
+
         <DesktopSidebar />
 
-        <main className="flex-1 px-4 md:px-8 pt-28 pb-12 max-w-7xl">
-          {/* Section Header */}
-          <div className="hidden md:block mb-8">
-            <h1 className="text-3xl heading-tight">Explore Opportunities</h1>
-            <p className="text-muted-foreground mt-1">
-              Founders waiting for smart capital.
-            </p>
-          </div>
+        <main className="flex-1 w-full overflow-y-auto px-4 md:px-8 py-8 lg:py-12">
+          <div className="max-w-7xl mx-auto">
+            
+            {/* Header Area matching target design */}
+            <div className="mb-10">
+              <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">Explore Opportunities</h1>
+              <p className="text-slate-400 text-sm md:text-base">
+                Discover founders waiting for smart, AI-vetted capital.
+              </p>
+            </div>
 
-          <div className="mb-8">
-            <FilterBar
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              activeFilters={activeFilters}
-              onToggleFilter={toggleFilter}
-            />
-          </div>
+            {/* Filter / Search Area */}
+            <div className="mb-10">
+              {/* Note: Ensure FilterBar component is using dark-mode classes (e.g. bg-white/5, border-white/10) */}
+              <FilterBar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                activeFilters={activeFilters}
+                onToggleFilter={toggleFilter}
+              />
+            </div>
 
-          {/* Cards Grid */}
-          {loading ? (
-            <div className="text-center py-20 text-muted-foreground">Loading startups…</div>
-          ) : error ? (
-            <div className="text-center py-20 text-red-500">{error}</div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-                {filtered.map((startup, i) => (
-                  <StartupCard key={startup._id || startup.id || i} startup={startup} index={i} />
-                ))}
+            {/* Content Grid */}
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-32 text-slate-400">
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+                Loading startups...
               </div>
-
-              {filtered.length === 0 && (
-                <div className="text-center py-20 text-muted-foreground">
-                  <p className="text-lg">No startups match your criteria</p>
-                  <p className="text-sm mt-1">Try adjusting your filters</p>
+            ) : error ? (
+              <div className="text-center py-20 text-red-400 bg-red-500/10 rounded-2xl border border-red-500/20 max-w-2xl mx-auto">
+                {error}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filtered.map((startup, i) => (
+                    <StartupCard key={startup._id || startup.id || i} startup={startup} index={i} />
+                  ))}
                 </div>
-              )}
-            </>
-          )}
+
+                {filtered.length === 0 && (
+                  <div className="text-center py-32 bg-white/5 border border-white/5 rounded-3xl mt-8">
+                    <p className="text-xl font-bold text-white mb-2">No startups found</p>
+                    <p className="text-sm text-slate-400">Try adjusting your filters or search query.</p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </main>
       </div>
     </div>

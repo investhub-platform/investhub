@@ -1,4 +1,3 @@
-// DesktopSidebar.jsx
 import { useState } from "react";
 import {
   Compass,
@@ -34,52 +33,60 @@ function getActivePath(pathname, items) {
 
 export function DesktopSidebar() {
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true); // Default collapsed for modern look
   const activePath = getActivePath(location.pathname, sidebarItems);
 
   return (
     <aside
-      className={`hidden lg:flex relative flex-col min-h-screen bg-card/50 border-r border-white/[0.07] p-4 pt-24 transition-all duration-200 ${
-        collapsed ? "w-20" : "w-60"
+      className={`hidden lg:flex relative flex-col h-screen sticky top-0 bg-[#06080D]/80 backdrop-blur-2xl border-r border-white/5 py-6 transition-all duration-300 z-40 ${
+        collapsed ? "w-20" : "w-64"
       }`}
     >
       <button
         type="button"
         onClick={() => setCollapsed((v) => !v)}
-        className="absolute top-24 right-0 translate-x-1/2 p-2 rounded-lg bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors z-[60]"
-        aria-label={collapsed ? "Expand sidebar" : "Minimize sidebar"}
-        title={collapsed ? "Expand sidebar" : "Minimize sidebar"}
+        className="absolute top-8 -right-3 p-1.5 rounded-full bg-[#1A1D24] border border-white/10 text-slate-400 hover:text-white transition-colors z-[60] shadow-lg"
       >
-        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
       </button>
 
-      <div className="flex flex-col gap-1 flex-1">
+      {/* Brand area (optional depending on Navbar) */}
+      <div className={`flex items-center justify-center mb-10 ${collapsed ? 'px-0' : 'px-6 justify-start'}`}>
+         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.3)] shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+         </div>
+         {!collapsed && <span className="ml-3 text-white font-bold tracking-wide text-lg">InvestHub</span>}
+      </div>
+
+      <div className="flex flex-col gap-2 flex-1 px-3">
         {sidebarItems.map((item) => {
           const active = activePath === item.path;
           return (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center py-2.5 rounded-xl text-sm font-medium transition-all outline-none ${
+              className={`flex items-center py-3 rounded-xl text-sm font-medium transition-all outline-none group ${
                 active
-                  ? "sidebar-item-active"
-                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-              } ${collapsed ? "justify-center px-2" : "gap-3 px-3"}`}
-              aria-current={active ? "page" : undefined}
-              title={item.label}
+                  ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                  : "text-slate-400 hover:bg-white/5 hover:text-white"
+              } ${collapsed ? "justify-center px-0" : "gap-4 px-4"}`}
+              title={collapsed ? item.label : undefined}
             >
-              <item.icon className="w-4 h-4" />
-              {!collapsed && item.label}
+              <item.icon className={`w-5 h-5 transition-transform ${!active && 'group-hover:scale-110'}`} />
+              {!collapsed && <span className="whitespace-nowrap">{item.label}</span>}
             </Link>
           );
         })}
       </div>
 
       {!collapsed && (
-        <div className="glass-card p-4 mt-4">
-          <p className="text-xs text-muted-foreground mb-1">Wallet Balance</p>
-          <p className="text-lg font-semibold">$14,500</p>
-          <p className="text-xs text-accent mt-1">+12.4% this month</p>
+        <div className="mx-4 mt-auto p-5 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-blue-500/20 blur-[30px] rounded-full pointer-events-none" />
+          <p className="text-xs text-slate-400 uppercase tracking-wider mb-1 font-semibold">Wallet Balance</p>
+          <p className="text-2xl font-bold text-white">$14,500</p>
+          <div className="flex items-center gap-1 text-xs text-emerald-400 font-medium mt-2 bg-emerald-500/10 w-fit px-2 py-1 rounded-md border border-emerald-500/20">
+            <TrendingUp className="w-3 h-3" /> +12.4%
+          </div>
         </div>
       )}
     </aside>
