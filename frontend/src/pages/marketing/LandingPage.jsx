@@ -7,6 +7,7 @@ import SocialProof from '../../components/landing/SocialProof'
 import ValueCards from '../../components/landing/ValueCards'
 import HowItWorks from '../../components/landing/HowItWorks'
 import FAQAccordion from '../../components/landing/FAQAccordion'
+import Pricing from '../../components/landing/Pricing'
 import Footer from '../../components/layout/Footer'
 
 const LandingPage = () => {
@@ -37,10 +38,9 @@ const LandingPage = () => {
         </div>
       </div>
 
-        {/* Feature Bento */}
-        {/* <div className="px-6">
-          <FeaturesBento />
-        </div> */}
+         <div className="px-6">
+          <Pricing />
+        </div> 
 
         {/* How it works */}
         <div className="px-6">
