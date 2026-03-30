@@ -28,6 +28,57 @@ export const getRequestById = async (id) => {
   }
 };
 
+export const getRequestsByStartupId = async (startupId) => {
+  if (!startupId) {
+    throw new AppError("startupId is required", 400);
+  }
+
+  try {
+    const requests = await requestRepository.findByStartupId(startupId);
+    return requests || [];
+  } catch (error) {
+    throw new AppError("Failed to fetch requests for startup", 500);
+  }
+};
+
+export const updateRequestStatus = async (id, status, updatedBy) => {
+  const validStatuses = ["approved", "rejected", "withdrawn"];
+  if (!id) {
+    throw new AppError("Request ID is required", 400);
+  }
+  if (!validStatuses.includes(status)) {
+    throw new AppError(
+      `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+      400
+    );
+  }
+
+  try {
+    const request = await requestRepository.findByIdForUpdate(id);
+    if (!request) {
+      throw new AppError("Request not found", 404);
+    }
+
+    request.requestStatus = status;
+    request.updatedUtc = new Date();
+    if (updatedBy) request.updatedBy = updatedBy;
+
+    // Keep decision fields in sync with status when explicit
+    if (status === "withdrawn") {
+      request.founderDecision = {
+        decision: "reject",
+        comment: "Withdrawn by requester",
+        decidedAt: new Date()
+      };
+    }
+
+    return await requestRepository.save(request);
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError("Failed to update request status", 500);
+  }
+};
+
 export const createNewRequest = async (payload) => {
   // Validate required fields
   const { investorId, amount, createdBy } = payload;

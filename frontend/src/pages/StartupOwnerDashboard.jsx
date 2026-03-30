@@ -22,11 +22,56 @@ import {
 
 const StartupOwnerDashboard = () => {
   const { user } = useAuth();
+  const [dashboardTab, setDashboardTab] = useState("startups");
   const [activeView, setActiveView] = useState("manage");
   const [startups, setStartups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+
+  const [plans, setPlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [plansError, setPlansError] = useState("");
+  const [isPlanFormOpen, setIsPlanFormOpen] = useState(false);
+  const [planFormData, setPlanFormData] = useState({
+    title: "",
+    description: "",
+    category: "Tech",
+    budget: "",
+    timeline: "",
+    expectedOutcomes: ""
+  });
+  const [planSaving, setPlanSaving] = useState(false);
+  const [editingPlanId, setEditingPlanId] = useState(null);
+
+  const normalizeRequest = (request) => {
+    const investorName =
+      request.investorId?.name || request.createdBy?.name || "Unknown Investor";
+    const investorAvatar = investorName
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
+    return {
+      id: request._id || request.id,
+      status: (request.requestStatus || "pending").toLowerCase(),
+      amount: request.amount || 0,
+      message: request.message || "",
+      date:
+        request.createdUtc || request.createdAt
+          ? new Date(
+              request.createdUtc || request.createdAt
+            ).toLocaleDateString()
+          : "",
+      investorName,
+      investorAvatar,
+      createdBy: request.createdBy,
+      investorId: request.investorId,
+      raw: request
+    };
+  };
 
   const normalizeStartup = (startup) => ({
     id: startup._id || startup.id,
@@ -59,7 +104,24 @@ const StartupOwnerDashboard = () => {
       }
       const res = await api.get(`/v1/startups/user/${userId}`);
       const data = res?.data?.data || [];
-      setStartups(data.map(normalizeStartup));
+
+      const enriched = await Promise.all(
+        data.map(async (startup) => {
+          const startupId = startup._id || startup.id;
+          let investorRequests = startup.investorRequests || [];
+
+          try {
+            const reqRes = await api.get(`/v1/requests/startup/${startupId}`);
+            investorRequests = (reqRes?.data?.data || []).map(normalizeRequest);
+          } catch {
+            // ignore, keep existing or empty requests
+          }
+
+          return normalizeStartup({ ...startup, investorRequests });
+        })
+      );
+
+      setStartups(enriched);
     } catch (e) {
       const message = e?.response?.data?.message || "Failed to load startups.";
       setError(message);
@@ -68,10 +130,39 @@ const StartupOwnerDashboard = () => {
     }
   };
 
+  const loadPlans = async () => {
+    if (!user) return;
+    setPlansLoading(true);
+    setPlansError("");
+
+    try {
+      const res = await api.get("/v1/ideas/plans");
+      const userId = user?.id || user?._id;
+      const allPlans = res?.data?.data || [];
+      const myPlans = allPlans.filter(
+        (p) => String(p.createdBy) === String(userId)
+      );
+      setPlans(myPlans);
+    } catch (e) {
+      setPlansError(
+        e?.response?.data?.message || "Failed to load investment plans."
+      );
+    } finally {
+      setPlansLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchStartups();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  useEffect(() => {
+    if (dashboardTab === "plans") {
+      loadPlans();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashboardTab, user]);
 
   const handleStartupCreated = (startup) => {
     setStartups((prev) => [normalizeStartup(startup), ...prev]);
@@ -110,97 +201,431 @@ const StartupOwnerDashboard = () => {
     }
   };
 
+  const handleRequestStatus = async (startupId, requestId, status) => {
+    try {
+      setLoading(true);
+      setError("");
+
+      await api.patch(`/v1/requests/${requestId}/status`, {
+        requestStatus: status,
+        updatedBy: user?.id || user?._id
+      });
+
+      // Refresh one startup's request list
+      const reqRes = await api.get(`/v1/requests/startup/${startupId}`);
+      const investorRequests = (reqRes?.data?.data || []).map(normalizeRequest);
+
+      setStartups((prev) =>
+        prev.map((s) => (s.id === startupId ? { ...s, investorRequests } : s))
+      );
+      setActionMessage(`Request ${status} successfully.`);
+    } catch (e) {
+      setError(
+        e?.response?.data?.message || "Failed to update request status."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearPlanForm = () => {
+    setPlanFormData({
+      title: "",
+      description: "",
+      category: "Tech",
+      budget: "",
+      timeline: "",
+      expectedOutcomes: ""
+    });
+    setEditingPlanId(null);
+  };
+
+  const handlePlanSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!planFormData.title.trim() || !planFormData.description.trim()) {
+      setPlansError("Title and description are required.");
+      return;
+    }
+
+    setPlanSaving(true);
+    setPlansError("");
+
+    try {
+      if (editingPlanId) {
+        await api.put(`/v1/ideas/${editingPlanId}`, {
+          ...planFormData,
+          isIdea: false
+        });
+        setActionMessage("Investment plan updated successfully.");
+      } else {
+        await api.post("/v1/ideas", {
+          ...planFormData,
+          isIdea: false
+        });
+        setActionMessage("Investment plan created successfully.");
+      }
+
+      clearPlanForm();
+      setIsPlanFormOpen(false);
+      loadPlans();
+    } catch (e) {
+      setPlansError(
+        e?.response?.data?.message || "Failed to save investment plan."
+      );
+    } finally {
+      setPlanSaving(false);
+    }
+  };
+
+  const handlePlanEdit = (plan) => {
+    setEditingPlanId(plan._id || plan.id);
+    setPlanFormData({
+      title: plan.title || "",
+      description: plan.description || "",
+      category: plan.category || "Tech",
+      budget: plan.budget || "",
+      timeline: plan.timeline || "",
+      expectedOutcomes: plan.expectedOutcomes || ""
+    });
+    setIsPlanFormOpen(true);
+  };
+
+  const handlePlanDelete = async (planId) => {
+    if (!confirm("Delete this investment plan?")) return;
+
+    try {
+      await api.delete(`/v1/ideas/${planId}`);
+      setActionMessage("Investment plan deleted successfully.");
+      loadPlans();
+    } catch (e) {
+      setPlansError(
+        e?.response?.data?.message || "Failed to delete investment plan."
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <AppNavbar />
       <div className="flex">
         <DesktopSidebar />
-        <main className="flex-1 px-4 md:px-8 pt-28 pb-12 max-w-7xl lg:ml-64">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-3xl heading-tight">Founder Dashboard</h1>
-              <p className="text-muted-foreground mt-1">
-                Manage your startups and investor relations.
-              </p>
-            </div>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() =>
-                setActiveView(activeView === "create" ? "manage" : "create")
-              }
-              className="self-start flex items-center gap-2 px-5 py-2.5 rounded-full gradient-blue text-sm font-semibold glow-blue transition-all"
+        <main className="flex-1 px-4 md:px-8 pt-28 pb-12 max-w-7xl">
+          {/* Top tabs */}
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              onClick={() => setDashboardTab("startups")}
+              className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                dashboardTab === "startups"
+                  ? "gradient-blue text-white"
+                  : "bg-white/5 text-muted-foreground"
+              }`}
             >
-              {activeView === "create" ? (
-                <X className="w-4 h-4" />
-              ) : (
-                <Plus className="w-4 h-4" />
-              )}
-              {activeView === "create" ? "Cancel" : "Add Startup"}
-            </motion.button>
+              Startups + Ideas
+            </button>
+            <button
+              onClick={() => setDashboardTab("plans")}
+              className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                dashboardTab === "plans"
+                  ? "gradient-blue text-white"
+                  : "bg-white/5 text-muted-foreground"
+              }`}
+            >
+              Investor Plans
+            </button>
           </div>
 
-          {Boolean(error) && (
-            <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-          {Boolean(actionMessage) && (
-            <div className="mb-4 rounded-xl border border-success/30 bg-success/10 p-3 text-sm text-success">
-              {actionMessage}
-            </div>
-          )}
+          {dashboardTab === "startups" ? (
+            <>
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <div>
+                  <h1 className="text-3xl heading-tight">Founder Dashboard</h1>
+                  <p className="text-muted-foreground mt-1">
+                    Manage your startups and investor relations.
+                  </p>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() =>
+                    setActiveView(activeView === "create" ? "manage" : "create")
+                  }
+                  className="self-start flex items-center gap-2 px-5 py-2.5 rounded-full gradient-blue text-sm font-semibold glow-blue transition-all"
+                >
+                  {activeView === "create" ? (
+                    <X className="w-4 h-4" />
+                  ) : (
+                    <Plus className="w-4 h-4" />
+                  )}
+                  {activeView === "create" ? "Cancel" : "Add Startup"}
+                </motion.button>
+              </div>
 
-          <AnimatePresence mode="wait">
-            {activeView === "create" ? (
-              <motion.div
-                key="create"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-              >
-                <CreateStartupForm
-                  onClose={() => setActiveView("manage")}
-                  onSuccess={handleStartupCreated}
-                />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="manage"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="space-y-6"
-              >
-                {loading && (
-                  <div className="text-sm text-muted-foreground">
-                    Loading your startups…
-                  </div>
+              {Boolean(error) && (
+                <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
+              {Boolean(actionMessage) && (
+                <div className="mb-4 rounded-xl border border-success/30 bg-success/10 p-3 text-sm text-success">
+                  {actionMessage}
+                </div>
+              )}
+
+              <AnimatePresence mode="wait">
+                {activeView === "create" ? (
+                  <motion.div
+                    key="create"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                  >
+                    <CreateStartupForm
+                      onClose={() => setActiveView("manage")}
+                      onSuccess={handleStartupCreated}
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="manage"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-6"
+                  >
+                    {loading && (
+                      <div className="text-sm text-muted-foreground">
+                        Loading your startups…
+                      </div>
+                    )}
+                    {!loading && startups.length === 0 && (
+                      <div className="text-sm text-muted-foreground">
+                        No startups yet. Add your first one.
+                      </div>
+                    )}
+                    {startups.map((startup, i) => (
+                      <StartupManageCard
+                        key={startup.id}
+                        startup={startup}
+                        index={i}
+                        onUpdate={handleUpdateStartup}
+                        onDelete={handleDeleteStartup}
+                        onActionMessage={setActionMessage}
+                        onRequestAction={handleRequestStatus}
+                      />
+                    ))}
+                  </motion.div>
                 )}
-                {!loading && startups.length === 0 && (
-                  <div className="text-sm text-muted-foreground">
-                    No startups yet. Add your first one.
+              </AnimatePresence>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <div>
+                  <h1 className="text-3xl heading-tight">Investor Plans</h1>
+                  <p className="text-muted-foreground mt-1">
+                    Submit and manage your investor plans without attaching a
+                    startup.
+                  </p>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => {
+                    setIsPlanFormOpen((prev) => !prev);
+                    if (isPlanFormOpen) clearPlanForm();
+                  }}
+                  className="self-start flex items-center gap-2 px-5 py-2.5 rounded-full gradient-blue text-sm font-semibold glow-blue transition-all"
+                >
+                  {isPlanFormOpen ? "Cancel" : "Add Plan"}
+                </motion.button>
+              </div>
+
+              {Boolean(plansError) && (
+                <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                  {plansError}
+                </div>
+              )}
+              {Boolean(actionMessage) && (
+                <div className="mb-4 rounded-xl border border-success/30 bg-success/10 p-3 text-sm text-success">
+                  {actionMessage}
+                </div>
+              )}
+
+              {isPlanFormOpen && (
+                <form
+                  onSubmit={handlePlanSubmit}
+                  className="obsidian-card p-5 mb-6 space-y-4"
+                >
+                  <h3 className="text-lg font-semibold">
+                    {editingPlanId ? "Edit" : "New"} Investment Plan
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input
+                      className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 text-sm"
+                      value={planFormData.title}
+                      onChange={(e) =>
+                        setPlanFormData((prev) => ({
+                          ...prev,
+                          title: e.target.value
+                        }))
+                      }
+                      placeholder="Title"
+                      required
+                    />
+                    <input
+                      className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 text-sm"
+                      value={planFormData.category}
+                      onChange={(e) =>
+                        setPlanFormData((prev) => ({
+                          ...prev,
+                          category: e.target.value
+                        }))
+                      }
+                      placeholder="Category"
+                    />
                   </div>
-                )}
-                {startups.map((startup, i) => (
-                  <StartupManageCard
-                    key={startup.id}
-                    startup={startup}
-                    index={i}
-                    onUpdate={handleUpdateStartup}
-                    onDelete={handleDeleteStartup}
+                  <textarea
+                    className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 text-sm"
+                    value={planFormData.description}
+                    onChange={(e) =>
+                      setPlanFormData((prev) => ({
+                        ...prev,
+                        description: e.target.value
+                      }))
+                    }
+                    placeholder="Description"
+                    rows={3}
+                    required
                   />
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input
+                      className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 text-sm"
+                      value={planFormData.budget}
+                      onChange={(e) =>
+                        setPlanFormData((prev) => ({
+                          ...prev,
+                          budget: e.target.value
+                        }))
+                      }
+                      placeholder="Budget"
+                    />
+                    <input
+                      className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 text-sm"
+                      value={planFormData.timeline}
+                      onChange={(e) =>
+                        setPlanFormData((prev) => ({
+                          ...prev,
+                          timeline: e.target.value
+                        }))
+                      }
+                      placeholder="Timeline"
+                    />
+                  </div>
+                  <textarea
+                    className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 text-sm"
+                    value={planFormData.expectedOutcomes}
+                    onChange={(e) =>
+                      setPlanFormData((prev) => ({
+                        ...prev,
+                        expectedOutcomes: e.target.value
+                      }))
+                    }
+                    placeholder="Expected Outcomes"
+                    rows={2}
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearPlanForm();
+                        setIsPlanFormOpen(false);
+                      }}
+                      className="px-4 py-2 rounded-lg bg-white/5 text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={planSaving}
+                      className="px-4 py-2 rounded-lg gradient-blue text-sm font-semibold"
+                    >
+                      {planSaving
+                        ? "Saving..."
+                        : editingPlanId
+                          ? "Update Plan"
+                          : "Create Plan"}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {plansLoading ? (
+                <p className="text-sm text-muted-foreground">Loading plans…</p>
+              ) : plans.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No investment plans yet.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {plans.map((plan) => (
+                    <div
+                      key={plan._id || plan.id}
+                      className="obsidian-card p-4"
+                    >
+                      <div className="flex justify-between flex-wrap gap-2">
+                        <div>
+                          <h4 className="font-semibold">{plan.title}</h4>
+                          <p className="text-xs text-muted-foreground">
+                            {plan.category}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handlePlanEdit(plan)}
+                            className="px-3 py-1 rounded-full bg-white/10 text-xs"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() =>
+                              handlePlanDelete(plan._id || plan.id)
+                            }
+                            className="px-3 py-1 rounded-full bg-destructive/20 text-xs text-destructive"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-sm mt-2">{plan.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Budget: {plan.budget || "-"}, Timeline:{" "}
+                        {plan.timeline || "-"}
+                      </p>
+                      {plan.expectedOutcomes && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Expected: {plan.expectedOutcomes}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </main>
       </div>
     </div>
   );
 };
 
-function StartupManageCard({ startup, index, onUpdate, onDelete }) {
+function StartupManageCard({
+  startup,
+  index,
+  onUpdate,
+  onDelete,
+  onActionMessage,
+  onRequestAction
+}) {
   const [expanded, setExpanded] = useState(index === 0);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -209,6 +634,21 @@ function StartupManageCard({ startup, index, onUpdate, onDelete }) {
     BR: startup.BR,
     status: startup.status
   });
+
+  const [ideas, setIdeas] = useState([]);
+  const [ideasLoading, setIdeasLoading] = useState(false);
+  const [ideasError, setIdeasError] = useState("");
+  const [ideaFormOpen, setIdeaFormOpen] = useState(false);
+  const [ideaFormData, setIdeaFormData] = useState({
+    title: "",
+    description: "",
+    category: "Tech",
+    budget: "",
+    timeline: "",
+    expectedOutcomes: ""
+  });
+  const [ideaSaving, setIdeaSaving] = useState(false);
+  const [editingIdeaId, setEditingIdeaId] = useState(null);
 
   const statusConfig = {
     draft: {
@@ -240,12 +680,112 @@ function StartupManageCard({ startup, index, onUpdate, onDelete }) {
       ? Math.round((startup.currentFunding / startup.fundingGoal) * 100)
       : 0;
   const pendingRequests = startup.investorRequests.filter(
-    (r) => r.status === "pending"
+    (r) =>
+      r.status === "pending" ||
+      r.status === "pending_founder" ||
+      r.status === "pending_mentor"
   ).length;
 
-  // Initialize form data from `startup` only when the user starts editing.
-  // Avoid calling setState synchronously inside an effect to prevent
-  // cascading renders (eslint: react-hooks/set-state-in-effect).
+  useEffect(() => {
+    setFormData({
+      name: startup.name,
+      description: startup.description,
+      BR: startup.BR,
+      status: startup.status
+    });
+  }, [startup]);
+
+  useEffect(() => {
+    if (expanded) {
+      (async () => {
+        setIdeasLoading(true);
+        setIdeasError("");
+        try {
+          const res = await api.get(`/v1/ideas/startup/${startup.id}`);
+          setIdeas(res?.data?.data || []);
+        } catch {
+          setIdeasError("Failed to load ideas for this startup.");
+        } finally {
+          setIdeasLoading(false);
+        }
+      })();
+    }
+  }, [expanded, startup.id]);
+
+  const clearIdeaForm = () => {
+    setIdeaFormData({
+      title: "",
+      description: "",
+      category: "Tech",
+      budget: "",
+      timeline: "",
+      expectedOutcomes: ""
+    });
+    setEditingIdeaId(null);
+  };
+
+  const handleIdeaSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!ideaFormData.title.trim() || !ideaFormData.description.trim()) {
+      setIdeasError("Title and description are required.");
+      return;
+    }
+
+    setIdeaSaving(true);
+    setIdeasError("");
+
+    try {
+      if (editingIdeaId) {
+        await api.put(`/v1/ideas/${editingIdeaId}`, {
+          ...ideaFormData,
+          isIdea: true
+        });
+        onActionMessage?.("Idea updated successfully.");
+      } else {
+        await api.post("/v1/ideas", {
+          ...ideaFormData,
+          StartupId: startup.id,
+          isIdea: true
+        });
+        onActionMessage?.("Idea created successfully.");
+      }
+      clearIdeaForm();
+      setIdeaFormOpen(false);
+      const res = await api.get(`/v1/ideas/startup/${startup.id}`);
+      setIdeas(res?.data?.data || []);
+    } catch (e) {
+      setIdeasError(e?.response?.data?.message || "Failed to save idea.");
+    } finally {
+      setIdeaSaving(false);
+    }
+  };
+
+  const handleIdeaEdit = (idea) => {
+    setEditingIdeaId(idea._id || idea.id);
+    setIdeaFormData({
+      title: idea.title || "",
+      description: idea.description || "",
+      category: idea.category || "Tech",
+      budget: idea.budget || "",
+      timeline: idea.timeline || "",
+      expectedOutcomes: idea.expectedOutcomes || ""
+    });
+    setIdeaFormOpen(true);
+  };
+
+  const handleIdeaDelete = async (ideaId) => {
+    if (!confirm("Delete this idea?")) return;
+
+    try {
+      await api.delete(`/v1/ideas/${ideaId}`);
+      onActionMessage?.("Idea deleted successfully.");
+      const res = await api.get(`/v1/ideas/startup/${startup.id}`);
+      setIdeas(res?.data?.data || []);
+    } catch (e) {
+      setIdeasError(e?.response?.data?.message || "Failed to delete idea.");
+    }
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -278,7 +818,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete }) {
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full p-5 flex items-center gap-4 text-left hover:bg-white/[0.02] transition-colors"
+        className="w-full p-5 flex items-center gap-4 text-left hover:bg-white/2 transition-colors"
       >
         <div className="w-12 h-12 rounded-2xl gradient-blue flex items-center justify-center text-sm font-bold shrink-0">
           {startup.logo}
@@ -325,15 +865,6 @@ function StartupManageCard({ startup, index, onUpdate, onDelete }) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Populate the editable form with the latest startup values
-                        // when the user enters edit mode instead of doing this
-                        // inside a useEffect.
-                        setFormData({
-                          name: startup.name,
-                          description: startup.description,
-                          BR: startup.BR,
-                          status: startup.status
-                        });
                         setIsEditing(true);
                       }}
                       className="px-3 py-1.5 rounded-full bg-white/10 text-xs font-medium hover:bg-white/20 transition-colors"
@@ -360,7 +891,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete }) {
                   <form onSubmit={handleSave} className="w-full space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <input
-                        className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/[0.08] focus:outline-none focus:ring-primary/50 text-sm"
+                        className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 focus:outline-none focus:ring-primary/50 text-sm"
                         value={formData.name}
                         onChange={(e) =>
                           setFormData((prev) => ({
@@ -371,7 +902,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete }) {
                         placeholder="Startup name"
                       />
                       <input
-                        className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/[0.08] focus:outline-none focus:ring-primary/50 text-sm"
+                        className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 focus:outline-none focus:ring-primary/50 text-sm"
                         value={formData.BR}
                         onChange={(e) =>
                           setFormData((prev) => ({
@@ -381,23 +912,9 @@ function StartupManageCard({ startup, index, onUpdate, onDelete }) {
                         }
                         placeholder="Business Registration"
                       />
-                      <select
-                        className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/[0.08] focus:outline-none focus:ring-primary/50 text-sm"
-                        value={formData.status}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            status: e.target.value
-                          }))
-                        }
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="Approved">Approved</option>
-                        <option value="NotApproved">Not Approved</option>
-                      </select>
                     </div>
                     <textarea
-                      className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/[0.08] focus:outline-none focus:ring-primary/50 text-sm"
+                      className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 focus:outline-none focus:ring-primary/50 text-sm"
                       value={formData.description}
                       onChange={(e) =>
                         setFormData((prev) => ({
@@ -477,11 +994,191 @@ function StartupManageCard({ startup, index, onUpdate, onDelete }) {
                   </h4>
                   <div className="space-y-3">
                     {startup.investorRequests.map((req) => (
-                      <InvestorRequestCard key={req.id} request={req} />
+                      <InvestorRequestCard
+                        key={req.id}
+                        request={req}
+                        startupId={startup.id}
+                        onAction={onRequestAction}
+                      />
                     ))}
                   </div>
                 </div>
               )}
+
+              {/* Startup Ideas */}
+              <div className="border-t border-white/[0.07] pt-5 mt-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold">Startup Ideas</h4>
+                  <button
+                    onClick={() => {
+                      setIdeaFormOpen((prev) => !prev);
+                      if (ideaFormOpen) clearIdeaForm();
+                    }}
+                    className="px-3 py-1.5 rounded-full bg-white/10 text-xs font-medium"
+                  >
+                    {ideaFormOpen ? "Hide Form" : "Add Idea"}
+                  </button>
+                </div>
+
+                {ideasError && (
+                  <p className="text-xs text-destructive mb-2">{ideasError}</p>
+                )}
+
+                {ideaFormOpen && (
+                  <form onSubmit={handleIdeaSubmit} className="space-y-2 mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/8 text-sm"
+                        value={ideaFormData.title}
+                        onChange={(e) =>
+                          setIdeaFormData((prev) => ({
+                            ...prev,
+                            title: e.target.value
+                          }))
+                        }
+                        placeholder="Idea title"
+                        required
+                      />
+                      <input
+                        className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/8 text-sm"
+                        value={ideaFormData.category}
+                        onChange={(e) =>
+                          setIdeaFormData((prev) => ({
+                            ...prev,
+                            category: e.target.value
+                          }))
+                        }
+                        placeholder="Category"
+                      />
+                    </div>
+                    <textarea
+                      className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/8 text-sm"
+                      value={ideaFormData.description}
+                      onChange={(e) =>
+                        setIdeaFormData((prev) => ({
+                          ...prev,
+                          description: e.target.value
+                        }))
+                      }
+                      placeholder="Description"
+                      rows={3}
+                      required
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/8 text-sm"
+                        value={ideaFormData.budget}
+                        onChange={(e) =>
+                          setIdeaFormData((prev) => ({
+                            ...prev,
+                            budget: e.target.value
+                          }))
+                        }
+                        placeholder="Budget"
+                      />
+                      <input
+                        className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/8 text-sm"
+                        value={ideaFormData.timeline}
+                        onChange={(e) =>
+                          setIdeaFormData((prev) => ({
+                            ...prev,
+                            timeline: e.target.value
+                          }))
+                        }
+                        placeholder="Timeline"
+                      />
+                    </div>
+                    <textarea
+                      className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/8 text-sm"
+                      value={ideaFormData.expectedOutcomes}
+                      onChange={(e) =>
+                        setIdeaFormData((prev) => ({
+                          ...prev,
+                          expectedOutcomes: e.target.value
+                        }))
+                      }
+                      placeholder="Expected outcomes"
+                      rows={2}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearIdeaForm();
+                          setIdeaFormOpen(false);
+                        }}
+                        className="px-3 py-1.5 rounded-full bg-white/10 text-xs"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={ideaSaving}
+                        className="px-3 py-1.5 rounded-full gradient-blue text-xs font-semibold"
+                      >
+                        {ideaSaving
+                          ? "Saving..."
+                          : editingIdeaId
+                            ? "Update Idea"
+                            : "Create Idea"}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {ideasLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    Loading ideas…
+                  </p>
+                ) : ideas.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No ideas yet. Add your first idea.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {ideas.map((idea) => (
+                      <div
+                        key={idea._id || idea.id}
+                        className="p-3 rounded-xl bg-white/3 border border-white/5"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <h5 className="text-sm font-semibold">
+                              {idea.title}
+                            </h5>
+                            <p className="text-xs text-muted-foreground">
+                              {idea.category} • {idea.status}
+                            </p>
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleIdeaEdit(idea)}
+                              className="px-2 py-1 rounded-full bg-white/10 text-xs"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleIdeaDelete(idea._id || idea.id)
+                              }
+                              className="px-2 py-1 rounded-full bg-destructive/20 text-xs text-destructive"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {idea.description}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Budget: {idea.budget || "-"}, Timeline:{" "}
+                          {idea.timeline || "-"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {startup.status === "draft" && (
                 <div className="text-center py-6">
@@ -504,7 +1201,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete }) {
 
 function StatCard({ icon: Icon, label, value }) {
   return (
-    <div className="p-3 rounded-2xl bg-white/[0.03] text-center">
+    <div className="p-3 rounded-2xl bg-white/3 text-center">
       <Icon className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-sm font-semibold mt-0.5">{value}</p>
@@ -512,15 +1209,31 @@ function StatCard({ icon: Icon, label, value }) {
   );
 }
 
-function InvestorRequestCard({ request }) {
+function InvestorRequestCard({ request, startupId, onAction }) {
   const statusIcons = {
-    pending: <Clock className="w-4 h-4 text-yellow-400" />,
-    accepted: <CheckCircle2 className="w-4 h-4 text-accent" />,
-    declined: <XCircle className="w-4 h-4 text-destructive" />
+    pending_founder: <Clock className="w-4 h-4 text-yellow-400" />,
+    pending_mentor: <Clock className="w-4 h-4 text-yellow-400" />,
+    approved: <CheckCircle2 className="w-4 h-4 text-accent" />,
+    rejected: <XCircle className="w-4 h-4 text-destructive" />,
+    withdrawn: <XCircle className="w-4 h-4 text-destructive" />
+  };
+
+  const normalizedStatus = request.status || "pending";
+  const isPending =
+    normalizedStatus === "pending_founder" ||
+    normalizedStatus === "pending_mentor" ||
+    normalizedStatus === "pending";
+
+  const requestedUserName = request.createdBy?.name || request.investorName;
+  const requestedUserEmail =
+    request.createdBy?.email || request.investorId?.email;
+
+  const handleAction = (actionStatus) => {
+    onAction?.(startupId, request.id, actionStatus);
   };
 
   return (
-    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.05]">
+    <div className="p-4 rounded-2xl bg-white/3 border border-white/5">
       <div className="flex items-start gap-3">
         <div className="w-9 h-9 rounded-full gradient-blue flex items-center justify-center text-[10px] font-bold shrink-0">
           {request.investorAvatar}
@@ -529,12 +1242,16 @@ function InvestorRequestCard({ request }) {
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium">{request.investorName}</p>
             <div className="flex items-center gap-1.5">
-              {statusIcons[request.status]}
+              {statusIcons[normalizedStatus] || statusIcons.pending_founder}
               <span className="text-xs text-muted-foreground capitalize">
-                {request.status}
+                {normalizedStatus.replace("_", " ")}
               </span>
             </div>
           </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Requested by {requestedUserName}
+            {requestedUserEmail ? ` • ${requestedUserEmail}` : ""}
+          </p>
           <p className="text-sm font-semibold text-primary mt-0.5">
             {formatCurrency(request.amount)}
           </p>
@@ -545,13 +1262,25 @@ function InvestorRequestCard({ request }) {
             {request.date}
           </p>
 
-          {request.status === "pending" && (
+          {isPending && (
             <div className="flex gap-2 mt-3">
-              <button className="flex-1 py-1.5 rounded-full gradient-blue text-xs font-semibold">
-                Accept
+              <button
+                onClick={() => handleAction("approved")}
+                className="flex-1 py-1.5 rounded-full gradient-blue text-xs font-semibold"
+              >
+                Approve
               </button>
-              <button className="flex-1 py-1.5 rounded-full bg-white/5 border border-white/[0.07] text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Decline
+              <button
+                onClick={() => handleAction("rejected")}
+                className="flex-1 py-1.5 rounded-full bg-white/5 border border-white/[0.07] text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Reject
+              </button>
+              <button
+                onClick={() => handleAction("withdrawn")}
+                className="flex-1 py-1.5 rounded-full bg-destructive/20 text-xs font-medium text-destructive hover:bg-destructive/30 transition-colors"
+              >
+                Withdraw
               </button>
             </div>
           )}
@@ -571,7 +1300,7 @@ function CreateStartupForm({ onClose, onSuccess }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const { user } = useAuth();
+  const { fetchMe } = useAuth();
 
   const inputClass =
     "w-full px-4 py-3 rounded-xl bg-white/5 border border-white/[0.07] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm";
@@ -587,19 +1316,15 @@ function CreateStartupForm({ onClose, onSuccess }) {
     setError("");
 
     try {
-      const normalizedStatus =
-        formData.status === "approved"
-          ? "Approved"
-          : formData.status === "notapproved"
-            ? "NotApproved"
-            : "pending";
-
+      const me = await fetchMe();
+      console.log("Fetched user data:", me);
       const res = await api.post("/v1/startups", {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
         BR: formData.BR.trim() || null,
-        status: normalizedStatus,
-        userID: user?.id || user?._id
+        status: "pending",
+        UserID: me._id || me.id,
+        createdBy: me._id || me.id
       });
       setSubmitted(true);
       onSuccess?.(res.data?.data);
@@ -649,7 +1374,7 @@ function CreateStartupForm({ onClose, onSuccess }) {
           Description
         </label>
         <textarea
-          className={`${inputClass} min-h-[100px] resize-none`}
+          className={`${inputClass} min-h-25 resize-none`}
           placeholder="Describe your startup, the problem you solve, and your unique advantage..."
           value={formData.description}
           onChange={(e) =>
@@ -670,22 +1395,6 @@ function CreateStartupForm({ onClose, onSuccess }) {
               setFormData((prev) => ({ ...prev, BR: e.target.value }))
             }
           />
-        </div>
-        <div>
-          <label className="text-sm text-muted-foreground mb-1.5 block">
-            Status
-          </label>
-          <select
-            className={inputClass}
-            value={formData.status}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, status: e.target.value }))
-            }
-          >
-            <option value="pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="NotApproved">NotApproved</option>
-          </select>
         </div>
       </div>
 

@@ -30,6 +30,21 @@ export const save = async (doc) => {
   return await doc.save();
 };
 
+export const findByStartupId = async (startupId) => {
+  const startupIdStr = String(startupId);
+  return await Request.find({
+    deletedUtc: null,
+    $or: [
+      { StartupsId: startupIdStr },
+      { ideaId: startupIdStr },
+      { startupId: startupIdStr }
+    ]
+  })
+    .populate("createdBy", "_id name email role")
+    .populate("investorId", "_id name email role")
+    .lean();
+};
+
 export const findByIdForUpdate = async (id) => {
   return await Request.findById(id);
 };
