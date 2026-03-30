@@ -13,6 +13,21 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import api from "../lib/axios";
+import { useAuth } from "../features/auth/useAuth";
+import { formatCurrency } from "@/data/mockData";
+
+function extractPayload(responseData) {
+  if (!responseData) return null;
+  if (responseData.data && typeof responseData.data === "object") return responseData.data;
+  return responseData;
+}
+
+function getApiErrorMessage(err, fallback) {
+  if (err?.response?.status === 401) {
+    return "Session expired or unauthorized.";
+  }
+  return err?.response?.data?.message || err?.message || fallback;
+}
 
 const sidebarItems = [
   { icon: Compass, label: "Explore", path: "/app/explore" },
@@ -34,26 +49,37 @@ function getActivePath(pathname, items) {
 
 export function DesktopSidebar() {
   const location = useLocation();
+  const { accessToken } = useAuth();
   const [collapsed, setCollapsed] = useState(false); // Default OPEN so users can read text
-  const [walletBalance, setWalletBalance] = useState("$0.00");
-  const [walletChange, setWalletChange] = useState("+0%");
+  const [walletBalance, setWalletBalance] = useState("$0");
+  const [walletChange, setWalletChange] = useState("+0.0%");
   const activePath = getActivePath(location.pathname, sidebarItems);
 
   useEffect(() => {
+    if (!accessToken) return;
+
     const fetchWallet = async () => {
       try {
-        const res = await api.get("/v1/wallets/me");
-        const balance = res?.data?.data?.balance || 0;
-        const changePercent = res?.data?.data?.changePercent || 0;
-        setWalletBalance(`$${(balance / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
-        setWalletChange(`${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(1)}%`);
+        const res = await api.get("/v1/wallets/me", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = extractPayload(res?.data) || {};
+        const balance = data?.balance || 0;
+        const changePercent = data?.changePercent || 0;
+        setWalletBalance(formatCurrency(balance));
+        setWalletChange(`${changePercent >= 0 ? "+" : ""}${Number(changePercent).toFixed(1)}%`);
       } catch (err) {
-        console.error("Failed to fetch wallet", err);
-        setWalletBalance("$0.00");
+        const message = getApiErrorMessage(err, "Failed to load wallet");
+        if (message !== "Session expired or unauthorized.") {
+          console.error("Failed to fetch wallet", err);
+        }
+        setWalletBalance("$0");
+        setWalletChange("+0.0%");
       }
     };
+
     fetchWallet();
-  }, []);
+  }, [accessToken]);
 
   return (
     <aside
