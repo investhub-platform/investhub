@@ -60,7 +60,7 @@ export function StartupCard({ startup, index }) {
                   "bg-red-500/10 border-red-500/20 text-red-400"
                }`}>
                   <Brain className="w-3 h-3" />
-                  {startup.aiRiskLevel}
+                  AI Risk: {startup.aiRiskLevel} ({startup.aiRiskScore || 0}%)
                </div>
             </div>
             
@@ -83,7 +83,7 @@ export function StartupCard({ startup, index }) {
             <div className="mb-4">
                <div className="flex justify-between text-xs text-slate-400 mb-2 font-medium">
                   <span>Target: <strong className="text-white">{formatCurrency(goal)}</strong></span>
-                  <span className="text-blue-400 font-bold">{fundingPercent}%</span>
+                  <span className="text-blue-400 font-bold">{fundingPercent}% funded</span>
                </div>
                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                   <motion.div 

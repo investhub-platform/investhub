@@ -109,10 +109,11 @@ export default function LoginPage() {
           </div>
 
           <button
+            type="submit"
             disabled={loading}
             className="group w-full mt-4 flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? "Authenticating..." : "Sign In"}
+            {loading ? "Authenticating..." : "Login"}
             {!loading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
           </button>
 
