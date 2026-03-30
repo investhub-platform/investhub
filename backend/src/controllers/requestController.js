@@ -110,6 +110,29 @@ export const setMentorDecision = async (req, res, next) => {
   }
 };
 
+export const getRequestsByStartup = async (req, res, next) => {
+  try {
+    const startupId = req.params.startupId;
+    const data = await requestService.getRequestsByStartupId(startupId);
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const setRequestStatus = async (req, res, next) => {
+  try {
+    const data = await requestService.updateRequestStatus(
+      req.params.id,
+      req.body.requestStatus,
+      req.body.updatedBy
+    );
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   listRequests,
   getRequest,
@@ -117,5 +140,7 @@ export default {
   updateRequest,
   withdrawRequest,
   setFounderDecision,
-  setMentorDecision
+  setMentorDecision,
+  getRequestsByStartup,
+  setRequestStatus
 };
