@@ -1,4 +1,3 @@
-// StartupCard.jsx
 import { Brain, ArrowRight } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -13,89 +12,110 @@ export function StartupCard({ startup, index }) {
 
   const location = useLocation();
 
+  // Generate a consistent pseudo-random gradient for startups without logos
+  const gradientClass = [
+    "from-blue-500/20 to-indigo-500/20",
+    "from-purple-500/20 to-pink-500/20",
+    "from-emerald-500/20 to-teal-500/20",
+    "from-cyan-500/20 to-blue-500/20"
+  ][index % 4];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.08, duration: 0.4 }}
+      transition={{ delay: index * 0.05, duration: 0.5, ease: "easeOut" }}
+      className="h-full"
     >
-      <Link to={`/app/startup/${startup._id || startup.id}`} state={{ background: location, startup }} className="block">
-        <div className="obsidian-card p-5 md:p-6 card-hover group">
-          {/* Header */}
-          <div className="flex items-start gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl gradient-blue flex items-center justify-center text-xs font-bold shrink-0">
-              {startup.logo}
-            </div>
-            <div className="min-w-0">
-              <h3 className="font-semibold text-foreground truncate">{startup.name}</h3>
-              <p className="text-sm text-muted-foreground line-clamp-1">{startup.tagline}</p>
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div className="flex flex-wrap gap-1.5 mb-4">
-            {tags.map((tag) => (
-              <span key={tag} className="pill-filter text-xs py-1 px-2.5">
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          {/* Funding data */}
-          <div className="flex items-center justify-between text-sm mb-2">
-            <span className="text-muted-foreground">
-              Funding Goal: <span className="text-foreground font-medium">{formatCurrency(startup.fundingGoal)}</span>
-            </span>
-            <span className="text-muted-foreground">
-              Current: <span className="text-foreground font-medium">{formatCurrency(startup.currentFunding)}</span>
-            </span>
-          </div>
-
-          {/* AI Risk Badge */}
-          <div className="mb-4">
-            <div
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border animate-pulse-glow ${
-                startup.aiRiskLevel === "LOW"
-                  ? "bg-accent/10 border-accent/30 text-accent"
-                  : startup.aiRiskLevel === "MEDIUM"
-                  ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
-                  : "bg-destructive/10 border-destructive/30 text-destructive"
-              }`}
-            >
-              <Brain className="w-3.5 h-3.5" />
-              AI Risk: {startup.aiRiskLevel} ({startup.aiRiskScore}%)
+      <Link to={`/app/startup/${startup._id || startup.id}`} state={{ background: location, startup }} className="block h-full">
+        <div className="group flex flex-col h-full bg-[#0B0D10] rounded-[1.5rem] border border-white/5 overflow-hidden transition-all duration-300 hover:border-white/15 hover:shadow-2xl hover:shadow-blue-900/10 hover:-translate-y-1">
+          
+          {/* Top Banner Area */}
+          <div className={`h-24 w-full bg-gradient-to-br ${gradientClass} relative overflow-hidden border-b border-white/5`}>
+            {/* Ambient abstract shapes inside banner */}
+            <div className="absolute top-[-50%] left-[-10%] w-32 h-32 bg-white/5 rounded-full blur-[20px]" />
+            <div className="absolute bottom-[-50%] right-[-10%] w-32 h-32 bg-black/20 rounded-full blur-[20px]" />
+            
+            <div className="absolute -bottom-5 left-5 w-14 h-14 rounded-xl bg-[#0B0D10] border border-white/10 flex items-center justify-center text-xl font-bold text-white shadow-lg overflow-hidden">
+               {startup.logo ? (
+                 <img src={startup.logo} alt="logo" className="w-full h-full object-cover" />
+               ) : (
+                 <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                   {startup.name.charAt(0)}
+                 </span>
+               )}
             </div>
           </div>
 
-          {/* Progress bar */}
-          <div className="mb-5">
-            <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-              <div
-                className="h-full rounded-full gradient-blue transition-all duration-700"
-                style={{ width: `${fundingPercent}%` }}
-              />
+          {/* Content Area */}
+          <div className="p-5 pt-8 flex flex-col flex-1">
+            <div className="flex justify-between items-start mb-2">
+               <h3 className="text-xl font-bold text-white tracking-tight line-clamp-1 group-hover:text-blue-400 transition-colors">
+                 {startup.name}
+               </h3>
+               {/* Minimal AI Risk Indicator */}
+               <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase border ${
+                  startup.aiRiskLevel === "LOW" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
+                  startup.aiRiskLevel === "MEDIUM" ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400" :
+                  "bg-red-500/10 border-red-500/20 text-red-400"
+               }`}>
+                  <Brain className="w-3 h-3" />
+                  AI Risk: {startup.aiRiskLevel} ({startup.aiRiskScore || 0}%)
+               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-1.5">{fundingPercent}% funded</p>
-          </div>
+            
+            <p className="text-sm text-slate-400 line-clamp-2 mb-4 leading-relaxed">
+              {startup.tagline || "No description provided."}
+            </p>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-                {founders.map((f, i) => (
+            {/* Tags */}
+            <div className="flex flex-wrap gap-2 mb-auto">
+              {tags.slice(0, 3).map((tag) => (
+                <span key={tag} className="text-[11px] font-medium text-slate-300 bg-white/5 border border-white/5 py-1 px-2.5 rounded-full">
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            <div className="w-full h-px bg-white/5 my-5" />
+
+            {/* Funding Progress */}
+            <div className="mb-4">
+               <div className="flex justify-between text-xs text-slate-400 mb-2 font-medium">
+                  <span>Target: <strong className="text-white">{formatCurrency(goal)}</strong></span>
+                  <span className="text-blue-400 font-bold">{fundingPercent}% funded</span>
+               </div>
+               <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                  <motion.div 
+                     initial={{ width: 0 }}
+                     whileInView={{ width: `${fundingPercent}%` }}
+                     viewport={{ once: true }}
+                     transition={{ duration: 1, ease: "easeOut" }}
+                     className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full relative"
+                  >
+                     <div className="absolute top-0 right-0 bottom-0 w-4 bg-white/30 blur-[2px]" />
+                  </motion.div>
+               </div>
+            </div>
+
+            {/* Footer Row */}
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex -space-x-2">
+                {founders.slice(0, 3).map((f, i) => (
                   <div
-                      key={f.name || i}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-medium ${
-                        i === 0 ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white" : "bg-white/5 text-white"
-                      } border-2 border-white/10`}
-                    >
-                      {f.avatar || "--"}
-                    </div>
+                    key={f.name || i}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold bg-[#1A1D24] text-slate-300 border-2 border-[#0B0D10]"
+                  >
+                    {f.avatar || "U"}
+                  </div>
                 ))}
               </div>
-            <div className="flex items-center gap-2 text-sm font-medium text-primary group-hover:gap-3 transition-all">
-              View Analysis
-              <ArrowRight className="w-4 h-4" />
+              
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/5 group-hover:bg-blue-600 group-hover:border-blue-600 transition-all text-slate-400 group-hover:text-white">
+                 <ArrowRight className="w-4 h-4" />
+              </div>
             </div>
+
           </div>
         </div>
       </Link>
