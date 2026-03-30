@@ -41,22 +41,7 @@ const Hero = () => {
       {/* --- MAIN CONTENT --- */}
       <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32 md:pt-40 pb-20 sm:pb-28 md:pb-32 flex flex-col items-center text-center">
         
-        {/* Badge / Announcement Pill */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-6 sm:mb-8"
-        >
-          <a href="#" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300 text-xs sm:text-sm font-medium hover:bg-blue-500/20 transition-colors transform-none active:scale-95">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-            </span>
-            New: AI Risk Analysis 2.0
-            <ChevronRight className="w-4 h-4 text-blue-400" />
-          </a>
-        </motion.div>
+        {/* Announcement pill removed per request */}
 
         {/* Headline */}
         <motion.h1 
