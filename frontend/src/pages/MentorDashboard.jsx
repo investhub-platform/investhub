@@ -85,7 +85,7 @@ const MentorDashboard = () => {
 
         <DesktopSidebar />
 
-        <main className="flex-1 w-full overflow-y-auto px-4 sm:px-8 py-8 lg:py-12 relative z-10 scroll-smooth">
+        <main className="flex-1 w-full overflow-y-auto px-4 sm:px-8 py-8 lg:py-12 relative z-10 scroll-smooth lg:ml-64">
           <div className="max-w-7xl mx-auto">
             <Toaster position="top-right" toastOptions={{ style: { background: '#0B0D10', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' } }} />
             
