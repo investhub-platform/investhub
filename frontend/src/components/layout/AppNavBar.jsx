@@ -25,7 +25,6 @@ export default function AppNavbar() {
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-
   const headerRef = useRef(null);
 
   const initials =
@@ -42,7 +41,6 @@ export default function AppNavbar() {
     nav("/auth/login", { replace: true });
   };
 
-  // close menus on outside click
   useEffect(() => {
     const onDown = (e) => {
       if (!headerRef.current) return;
@@ -62,162 +60,115 @@ export default function AppNavbar() {
   return (
     <header
       ref={headerRef}
-      className="fixed top-0 left-0 right-0 z-50 w-full px-4 pt-3 pointer-events-none"
+      className="fixed top-0 left-0 right-0 z-50 w-full h-20 bg-[#020617]/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-6"
     >
-      <div className="pointer-events-auto relative flex items-center gap-3 px-3 py-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl shadow-lg w-full">
-        {/* Logo */}
-        <Link to="/app/explore" className="flex items-center gap-3">
-          <img
-            src="/logo.png"
-            alt="InvestHub"
-            width={28}
-            height={28}
-            className="h-6 w-6 md:h-7 md:w-7 rounded-md object-contain"
-          />
-          <span className="text-white font-semibold tracking-wide text-sm md:text-base">
-            InvestHub
-          </span>
-        </Link>
+      {/* Logo Area */}
+      <Link to="/app/explore" className="flex items-center gap-3 w-48">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.3)] shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <span className="text-white font-bold tracking-wide text-lg hidden sm:block">InvestHub</span>
+      </Link>
 
-        {/* Desktop links */}
-        <nav className="flex-1 justify-center hidden md:flex">
-          <div className="flex items-center gap-1 bg-white/5 rounded-full p-1">
+      {/* Desktop Links */}
+      <nav className="hidden lg:flex items-center gap-1 bg-white/5 rounded-full p-1 border border-white/5">
+        {navLinks.map((link) => (
+          <Link
+            key={link.path}
+            to={link.path}
+            className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
+              activePath === link.path
+                ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                : "text-slate-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            {link.label}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Right Side Actions */}
+      <div className="flex items-center gap-4 justify-end">
+        <button className="relative p-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 transition-colors text-slate-300 hover:text-white">
+          <Bell className="w-5 h-5" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_#3b82f6]" />
+        </button>
+
+        {/* Avatar Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setProfileOpen((s) => !s);
+              setMobileOpen(false);
+            }}
+            className="flex items-center gap-3 rounded-full border border-white/5 bg-white/5 hover:bg-white/10 px-2 py-1.5 transition-all"
+          >
+            <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-sm font-bold text-white shadow-inner">
+              {initials}
+            </div>
+            <div className="hidden md:flex flex-col items-start text-left mr-2">
+              <span className="text-sm font-bold text-white leading-none">
+                {user?.name || "User"}
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">
+                {user?.roles?.[0] || "USER"}
+              </span>
+            </div>
+          </button>
+
+          {profileOpen && (
+            <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-white/10 bg-[#0B0D10]/95 backdrop-blur-xl p-2 shadow-2xl origin-top-right animate-in fade-in zoom-in-95 duration-200">
+              <Link to="/app/profile" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-200 hover:bg-white/10 hover:text-white transition-colors">
+                <User className="w-4 h-4 text-slate-400" /> Profile
+              </Link>
+              <Link to="/app/settings" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-200 hover:bg-white/10 hover:text-white transition-colors">
+                <Settings className="w-4 h-4 text-slate-400" /> Settings
+              </Link>
+              <div className="h-px bg-white/10 my-1 mx-2" />
+              <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors">
+                <LogOut className="w-4 h-4" /> Logout
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => {
+            setMobileOpen((s) => !s);
+            setProfileOpen(false);
+          }}
+          className="lg:hidden p-2 rounded-full border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
+        >
+          {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </div>
+
+      {/* Mobile Dropdown Panel */}
+      {mobileOpen && (
+        <div className="absolute top-[85px] left-4 right-4 rounded-2xl border border-white/10 bg-[#0B0D10]/95 backdrop-blur-xl p-4 shadow-2xl lg:hidden animate-in slide-in-from-top-2">
+          <nav className="flex flex-col gap-2">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                onClick={() => setMobileOpen(false)}
+                className={`px-4 py-3 rounded-xl text-sm font-bold transition-all ${
                   activePath === link.path
-                    ? "gradient-blue text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                    : "text-slate-300 hover:bg-white/5 hover:text-white"
                 }`}
               >
                 {link.label}
               </Link>
             ))}
-          </div>
-        </nav>
-
-        {/* Right side */}
-        <div className="ml-auto flex items-center gap-2">
-          <button className="relative p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
-          </button>
-
-          {/* Mobile menu button */}
-          <button
-            onClick={() => {
-              setMobileOpen((s) => !s);
-              setProfileOpen(false);
-            }}
-            className="md:hidden inline-flex items-center justify-center p-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition"
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
-            aria-expanded={mobileOpen}
-          >
-            {mobileOpen ? <X className="w-5 h-5 text-slate-200" /> : <Menu className="w-5 h-5 text-slate-200" />}
-          </button>
-
-          {/* Avatar dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => {
-                setProfileOpen((s) => !s);
-                setMobileOpen(false);
-              }}
-              className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 transition"
-              aria-expanded={profileOpen}
-              aria-label="Open profile menu"
-            >
-              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 grid place-items-center text-xs font-bold text-white">
-                {initials}
-              </div>
-              <div className="hidden sm:flex flex-col items-start leading-tight">
-                <span className="text-xs font-semibold max-w-[140px] truncate text-slate-200">
-                  {user?.name || "User"}
-                </span>
-                <span className="text-[10px] uppercase tracking-widest text-primary/90">
-                  {user?.roles?.[0] || "USER"}
-                </span>
-              </div>
+            <div className="h-px bg-white/10 my-2" />
+            <button onClick={onLogout} className="w-full text-left px-4 py-3 rounded-xl text-sm font-bold text-red-400 hover:bg-red-500/10">
+              Logout
             </button>
-
-            {profileOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-white/10 bg-[#0B0D10]/95 backdrop-blur p-2 shadow-xl">
-                <Link
-                  to="/app/profile"
-                  onClick={() => setProfileOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-slate-200 hover:bg-white/5"
-                >
-                  <User className="w-4 h-4" />
-                  Profile
-                </Link>
-                <Link
-                  to="/app/settings"
-                  onClick={() => setProfileOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-slate-200 hover:bg-white/5"
-                >
-                  <Settings className="w-4 h-4" />
-                  Settings
-                </Link>
-                <button
-                  onClick={onLogout}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-red-200 hover:bg-red-500/10"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
+          </nav>
         </div>
-
-        {/* Mobile dropdown */}
-        {mobileOpen && (
-          <div className="absolute top-[64px] left-1/2 -translate-x-1/2 w-[92%] max-w-md rounded-2xl border border-white/10 bg-[#0B0D10]/95 backdrop-blur p-3 shadow-xl md:hidden">
-            <nav className="flex flex-col gap-2 text-sm text-slate-200">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  onClick={() => setMobileOpen(false)}
-                  className={`px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                    activePath === link.path
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-
-              <Link
-                to="/app/profile"
-                onClick={() => setMobileOpen(false)}
-                className="block px-3 py-2 rounded-xl hover:bg-white/5"
-              >
-                Profile
-              </Link>
-              <Link
-                to="/app/settings"
-                onClick={() => setMobileOpen(false)}
-                className="block px-3 py-2 rounded-xl hover:bg-white/5"
-              >
-                Settings
-              </Link>
-
-              <div className="h-px bg-white/10 my-1" />
-
-              <button
-                onClick={onLogout}
-                className="w-full text-left px-3 py-2 rounded-xl text-red-200 hover:bg-red-500/10"
-              >
-                Logout
-              </button>
-            </nav>
-          </div>
-        )}
-      </div>
+      )}
     </header>
   );
 }
