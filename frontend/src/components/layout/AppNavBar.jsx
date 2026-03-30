@@ -33,6 +33,7 @@ export default function AppNavbar() {
       .slice(0, 2)
       .map((w) => w[0]?.toUpperCase())
       .join("") || "U";
+  const avatarUrl = user?.profile?.profilePictureUrl || "";
 
   const onLogout = async () => {
     setProfileOpen(false);
@@ -101,8 +102,12 @@ export default function AppNavbar() {
             }}
             className="flex items-center gap-3 rounded-full border border-white/5 bg-white/5 hover:bg-white/10 px-2 py-1.5 transition-all"
           >
-            <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-sm font-bold text-white shadow-inner">
-              {initials}
+            <div className="h-9 w-9 rounded-full overflow-hidden border border-white/10 bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-sm font-bold text-white shadow-inner">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+              ) : (
+                initials
+              )}
             </div>
             <div className="hidden md:flex flex-col items-start text-left mr-2">
               <span className="text-sm font-bold text-white leading-none">
