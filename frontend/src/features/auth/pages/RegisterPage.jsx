@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../../../lib/axios";
 import AuthHeader from "../../../components/layout/AuthHeader";
+import AuthBackground from "../../../components/AuthBackground";
 import { motion } from "framer-motion";
 import { User, Mail, Lock, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -41,9 +42,7 @@ export default function RegisterPage() {
   return (
     <div className="relative min-h-screen bg-[#020617] text-white flex items-center justify-center px-4 pt-20 overflow-hidden">
       
-      {/* Background Elements */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:32px_32px] opacity-40 z-0 pointer-events-none mask-image-gradient" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-600/10 blur-[120px] rounded-full pointer-events-none z-0" />
+      <AuthBackground />
 
       <AuthHeader className="relative z-20" />
       
