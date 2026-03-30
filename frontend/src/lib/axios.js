@@ -71,7 +71,14 @@ api.interceptors.response.use(
 
     try {
       // ✅ Use raw axios here to avoid interceptor recursion
-      const r = await axios.post("/api/v1/auth/refresh", {}, { withCredentials: true });
+      // When frontend is deployed separate from backend, axios.post("/api/v1/auth/refresh")
+      // would hit the frontend origin. Build a full refresh URL using the configured
+      // base so cross-origin refresh works in deployed apps.
+      const refreshBase =
+        (api.defaults && api.defaults.baseURL) ||
+        (import.meta.env.VITE_API_BASE ? `${import.meta.env.VITE_API_BASE}/api` : "/api");
+      const refreshUrl = `${String(refreshBase).replace(/\/+$/g, "")}/v1/auth/refresh`;
+      const r = await axios.post(refreshUrl, {}, { withCredentials: true });
 
       const newToken = r?.data?.data?.accessToken;
       if (!newToken) throw new Error("Refresh did not return token");

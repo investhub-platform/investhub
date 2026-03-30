@@ -32,7 +32,12 @@ export const getWalletHistory = async (req, res, next) => {
 // @access  Private
 export const initiateDeposit = async (req, res, next) => {
   try {
-    const data = await walletService.initiateDeposit(req.user.id, req.user, req.body.amount);
+    // Allow optional frontend/backend URL overrides when testing locally.
+    const options = {
+      frontendUrl: req.body.frontendUrl,
+      backendUrl: req.body.backendUrl,
+    };
+    const data = await walletService.initiateDeposit(req.user.id, req.user, req.body.amount, options);
     res.status(200).json(data);
   } catch (error) {
     next(error);
@@ -74,6 +79,19 @@ export const markDepositFailed = async (req, res, next) => {
 export const getDepositStatus = async (req, res, next) => {
   try {
     const data = await walletService.getDepositStatus(req.user.id, req.params.orderId);
+    res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Local/sandbox fallback confirmation from client callback
+// @route   POST /api/v1/wallets/deposit/confirm-client
+// @access  Private
+export const confirmDepositFromClient = async (req, res, next) => {
+  try {
+    const { orderId } = req.body;
+    const data = await walletService.confirmDepositFromClientCallback(req.user.id, orderId);
     res.status(200).json(data);
   } catch (error) {
     next(error);
