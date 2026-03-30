@@ -105,7 +105,7 @@ export function DesktopSidebar() {
               to={item.path}
               className={`relative flex items-center py-3.5 rounded-xl text-sm font-semibold transition-all outline-none group ${
                 active
-                  ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)]"
+                  ? "bg-blue-500/10 border border-blue-400/20 text-white shadow-[0_0_18px_rgba(59,130,246,0.2)]"
                   : "text-slate-400 hover:bg-white/5 hover:text-white"
               } ${collapsed ? "justify-center px-0" : "px-4 gap-4"}`}
             >

@@ -77,7 +77,7 @@ export default function AppNavbar() {
             to={link.path}
             className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
               activePath === link.path
-                ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                ? "bg-blue-500/10 border border-blue-400/20 text-white shadow-[0_0_18px_rgba(59,130,246,0.2)]"
                 : "text-slate-400 hover:text-white hover:bg-white/5"
             }`}
           >
@@ -158,7 +158,7 @@ export default function AppNavbar() {
                 onClick={() => setMobileOpen(false)}
                 className={`px-4 py-3 rounded-xl text-sm font-bold transition-all ${
                   activePath === link.path
-                    ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                    ? "bg-blue-500/10 text-white border border-blue-400/20 shadow-[0_0_18px_rgba(59,130,246,0.2)]"
                     : "text-slate-300 hover:bg-white/5 hover:text-white"
                 }`}
               >
