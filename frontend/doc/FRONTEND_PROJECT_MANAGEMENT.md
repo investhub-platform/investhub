@@ -55,9 +55,9 @@ Summary
   - Migara: Admin MVP routes + OAuth scaffolding (7d)
 
 - **Sprint 2 (2 weeks): Feature polish & testing**
-  - Shalon: Payments top-up + unit tests (6d)
+  - Shalon: Payments top-up + unit tests (6d) + Mentor Hub (directory, booking, events)
   - Dinil: Responsive polish + Portfolio view + bug fixes (6d)
-  - Rukshan: Messaging UI + Mentor Hub (directory, booking, events) + finish E2E tests (10d)
+  - Rukshan: Messaging UI + AI Analysis + finish E2E tests (10d)
   - Migara: Accessibility, withdraw UI, Admin polish (6d)
 
 Estimates assume focused work and small bugfix overhead; adjust per team velocity.
