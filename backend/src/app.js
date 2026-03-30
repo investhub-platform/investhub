@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import path from "path";
 import router from "./routes/index.js";
 import errorHandler from "./middlewares/error.middleware.js";
 import cookieParser from "cookie-parser";
@@ -50,6 +51,7 @@ app.options(/.*/, cors(corsOptions));
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(cookieParser());
+app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
 app.use("/api", router);
 

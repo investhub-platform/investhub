@@ -8,11 +8,25 @@ export const getMe = async (userId) => {
 };
 
 export const updateMe = async (userId, payload) => {
+  const existing = await userRepo.findById(userId);
+  if (!existing) throw new AppError("User not found", 404);
+
   const allowed = ["profile", "preferences", "name"];
   const safePayload = {};
 
   for (const k of allowed) {
     if (payload[k] !== undefined) safePayload[k] = payload[k];
+  }
+
+  // Merge nested objects so partial updates (like profilePictureUrl only) do not overwrite all profile/preferences fields.
+  if (safePayload.profile) {
+    const currentProfile = existing.profile?.toObject ? existing.profile.toObject() : existing.profile || {};
+    safePayload.profile = { ...currentProfile, ...safePayload.profile };
+  }
+
+  if (safePayload.preferences) {
+    const currentPrefs = existing.preferences?.toObject ? existing.preferences.toObject() : existing.preferences || {};
+    safePayload.preferences = { ...currentPrefs, ...safePayload.preferences };
   }
 
   safePayload.updatedUtc = new Date();
