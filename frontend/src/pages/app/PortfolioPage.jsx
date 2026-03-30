@@ -51,7 +51,7 @@ export default function PortfolioPage() {
           setError("Failed to load user data here");
         }
       } catch (err) {
-        setError("Failed to load user data");
+        setError("Failed to load user data", err);
       }
     };
 
