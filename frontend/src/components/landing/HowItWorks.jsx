@@ -36,7 +36,7 @@ export default function HowItWorks() {
   const steps = view === 'founder' ? founderSteps : investorSteps
 
   return (
-    <section id="how" className="w-full py-16 sm:py-24 md:py-32 bg-[#020617] relative overflow-hidden">
+    <section id="how-it-works" className="w-full py-16 sm:py-24 md:py-32 bg-[#020617] relative overflow-hidden scroll-mt-36">
       
       {/* Background Grid (Optional) */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] mask-image-gradient pointer-events-none" />

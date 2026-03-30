@@ -1,4 +1,5 @@
 import * as userService from "../services/userService.js";
+import AppError from "../utils/AppError.js";
 
 export const getMe = async (req, res, next) => {
   try {
@@ -22,6 +23,33 @@ export const deleteMe = async (req, res, next) => {
   try {
     await userService.deleteMe(req.user.id);
     res.json({ success: true, message: "Account deleted" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const uploadAvatar = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      throw new AppError("Avatar image file is required", 400);
+    }
+
+    const avatarPath = `/uploads/avatars/${req.file.filename}`;
+    const avatarUrl = `${req.protocol}://${req.get("host")}${avatarPath}`;
+
+    const user = await userService.updateMe(req.user.id, {
+      profile: {
+        profilePictureUrl: avatarUrl,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        avatarUrl,
+        user,
+      },
+    });
   } catch (err) {
     next(err);
   }

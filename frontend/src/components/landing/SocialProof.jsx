@@ -24,7 +24,7 @@ const companies = [
 
 export default function SocialProof() {
   return (
-    <section className="relative w-full py-4 sm:py-6 overflow-hidden bg-transparent">
+    <section id="mentors" className="relative w-full py-4 sm:py-6 overflow-hidden bg-transparent scroll-mt-36">
       {/* Background Glow (subtle radial, centered) */}
       <div
         className="absolute inset-0 pointer-events-none"
