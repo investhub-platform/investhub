@@ -19,7 +19,9 @@ import {
   updateRequest,
   withdrawRequest,
   setFounderDecision,
-  setMentorDecision
+  setMentorDecision,
+  getRequestsByStartup,
+  setRequestStatus
 } from "../../controllers/requestController.js";
 
 //user management
@@ -72,6 +74,8 @@ router.put("/requests/:id", updateRequest); // update a request completely
 router.patch("/requests/:id/withdraw", withdrawRequest); // withdraw a request
 router.patch("/requests/:id/founder-decision", setFounderDecision); // set founder decision
 router.patch("/requests/:id/mentor-decision", setMentorDecision); // set mentor decision
+router.patch("/requests/:id/status", setRequestStatus); // set request status (approved/rejected/withdrawn)
+router.get("/requests/startup/:startupId", getRequestsByStartup); // get requests for a startup
 
 //user
 router.use("/auth", authRoutes);
