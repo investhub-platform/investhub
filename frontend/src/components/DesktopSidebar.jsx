@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Compass,
   Briefcase,
@@ -12,6 +12,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import api from "../lib/axios";
 
 const sidebarItems = [
   { icon: Compass, label: "Explore", path: "/app/explore" },
@@ -34,11 +35,29 @@ function getActivePath(pathname, items) {
 export function DesktopSidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false); // Default OPEN so users can read text
+  const [walletBalance, setWalletBalance] = useState("$0.00");
+  const [walletChange, setWalletChange] = useState("+0%");
   const activePath = getActivePath(location.pathname, sidebarItems);
+
+  useEffect(() => {
+    const fetchWallet = async () => {
+      try {
+        const res = await api.get("/v1/wallets/me");
+        const balance = res?.data?.data?.balance || 0;
+        const changePercent = res?.data?.data?.changePercent || 0;
+        setWalletBalance(`$${(balance / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+        setWalletChange(`${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(1)}%`);
+      } catch (err) {
+        console.error("Failed to fetch wallet", err);
+        setWalletBalance("$0.00");
+      }
+    };
+    fetchWallet();
+  }, []);
 
   return (
     <aside
-      className={`hidden lg:flex relative flex-col sticky top-20 h-[calc(100vh-5rem)] bg-[#020617]/50 backdrop-blur-xl border-r border-white/5 pt-8 pb-6 transition-all duration-300 ease-in-out z-40 ${
+      className={`hidden lg:flex fixed flex-col top-20 left-0 h-[calc(100vh-5rem)] bg-[#020617]/50 backdrop-blur-xl border-r border-white/5 pt-8 pb-6 transition-all duration-300 ease-in-out z-40 ${
         collapsed ? "w-20" : "w-64"
       }`}
     >
@@ -86,9 +105,9 @@ export function DesktopSidebar() {
         <div className="mx-4 mt-auto p-5 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm relative overflow-hidden group">
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-500/20 blur-[40px] rounded-full pointer-events-none transition-transform duration-700 group-hover:scale-150" />
           <p className="text-xs text-slate-400 uppercase tracking-widest mb-1 font-bold">Wallet Balance</p>
-          <p className="text-2xl font-black text-white">$14,500</p>
+          <p className="text-2xl font-black text-white">{walletBalance}</p>
           <div className="flex items-center gap-1 text-xs text-emerald-400 font-bold mt-2 bg-emerald-500/10 w-fit px-2.5 py-1 rounded-md border border-emerald-500/20">
-            <TrendingUp className="w-3.5 h-3.5" /> +12.4%
+            <TrendingUp className="w-3.5 h-3.5" /> {walletChange}
           </div>
         </div>
       )}

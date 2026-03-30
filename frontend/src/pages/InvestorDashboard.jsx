@@ -91,21 +91,18 @@ const InvestorDashboard = () => {
   }, [startups, searchQuery, activeFilters]);
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-blue-500/30">
       
-      {/* Assuming AppNavbar handles its own fixed positioning. If not, wrap it. */}
-      <div className="sticky top-0 z-50 border-b border-white/5 bg-[#020617]/80 backdrop-blur-xl">
-        <AppNavbar />
-      </div>
+      <AppNavbar />
 
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex pt-20 overflow-hidden relative min-h-[calc(100vh-5rem)]">
         {/* Abstract background glow */}
         <div className="fixed top-1/4 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[150px] rounded-full pointer-events-none" />
         <div className="fixed bottom-0 left-1/4 w-[400px] h-[400px] bg-cyan-600/5 blur-[120px] rounded-full pointer-events-none" />
 
         <DesktopSidebar />
 
-        <main className="flex-1 w-full overflow-y-auto px-4 md:px-8 py-8 lg:py-12">
+        <main className="flex-1 w-full overflow-y-auto px-4 md:px-8 lg:ml-64 py-8 lg:py-12">
           <div className="max-w-7xl mx-auto">
             
             {/* Header Area matching target design */}
