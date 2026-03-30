@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { User, LogOut, Menu, X, Bell, Settings } from "lucide-react";
 import { useAuth } from "../../features/auth/useAuth";
+import NotificationDropdown from "../../features/notifications/NotificationDropdown";
 
 const navLinks = [
   { label: "Explore", path: "/app/explore" },
@@ -99,11 +100,16 @@ export default function AppNavbar() {
         </nav>
 
         {/* Right side */}
-        <div className="ml-auto flex items-center gap-2">
+         <div className="ml-auto flex items-center gap-2">
+          { /*
           <button className="relative p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
             <Bell className="w-5 h-5" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
-          </button>
+          </button> */}
+
+        {/* Notification dropdown */}
+        
+          <NotificationDropdown />
 
           {/* Mobile menu button */}
           <button
