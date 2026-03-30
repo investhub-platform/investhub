@@ -68,7 +68,7 @@ const Navbar = () => {
 
   return (
     <header className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 w-full flex justify-center pointer-events-none">
-      <div ref={navShellRef} className="pointer-events-auto flex items-center justify-between px-4 py-3 bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl w-full mx-4 transition-all">
+      <div ref={navShellRef} className="pointer-events-auto flex items-center justify-between px-4 py-3 bg-white/5 backdrop-blur-lg backdrop-saturate-150 border border-transparent rounded-full shadow-lg w-full mx-4 transition-all">
         
         <Link to="/" className="flex items-center gap-3">
           <img src="/favicon.ico" alt="InvestHub logo" className="w-8 h-8 rounded-lg shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
@@ -105,7 +105,7 @@ const Navbar = () => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="pointer-events-auto absolute top-[80px] left-1/2 transform -translate-x-1/2 w-[92%] max-w-md bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-4 z-40 md:hidden shadow-2xl"
+            className="pointer-events-auto absolute top-[80px] left-1/2 transform -translate-x-1/2 w-[92%] max-w-md bg-white/5 backdrop-blur-lg backdrop-saturate-150 border border-transparent rounded-2xl p-4 z-40 md:hidden shadow-lg"
           >
             <nav className="flex flex-col gap-3 text-base font-medium text-slate-200">
               <a onClick={(event) => handleSectionScroll(event, 'how-it-works')} href="#how-it-works" className="p-3 rounded-xl hover:bg-white/5">How it Works</a>
