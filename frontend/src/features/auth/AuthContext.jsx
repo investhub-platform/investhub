@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import api, { setAuthToken } from "../../lib/axios";
 import { AuthContext } from "./authCreate";
+
 export { AuthContext };
 
 export function AuthProvider({ children }) {
@@ -28,16 +29,17 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(
-    async ({ email, password }) => {
-      const res = await api.post("/v1/auth/login", { email, password });
-      const token = res.data?.data?.accessToken;
-      if (!token) throw new Error("Login did not return access token");
+  async ({ email, password }) => {
+    const res = await api.post("/v1/auth/login", { email, password });
+    const token = res.data?.data?.accessToken;
+    if (!token) throw new Error("Login did not return access token");
 
-      setAccessToken(token);
-      await fetchMe();
-    },
-    [fetchMe, setAccessToken]
-  );
+    setAccessToken(token);
+    const me = await fetchMe();
+    return me;
+  },
+  [fetchMe, setAccessToken]
+);
 
   const logout = useCallback(async () => {
     try {
@@ -67,11 +69,13 @@ export function AuthProvider({ children }) {
   }, [accessToken, fetchMe, setAccessToken]);
 
   const isAuthed = !!user;
+  const isAdmin = !!user?.roles?.includes("admin");
 
   const value = useMemo(
     () => ({
       booting,
       isAuthed,
+      isAdmin,
       user,
       accessToken,
       login,
@@ -80,7 +84,17 @@ export function AuthProvider({ children }) {
       setUser,
       setAccessToken,
     }),
-    [booting, isAuthed, user, accessToken, login, logout, fetchMe, setAccessToken]
+    [
+      booting,
+      isAuthed,
+      isAdmin,
+      user,
+      accessToken,
+      login,
+      logout,
+      fetchMe,
+      setAccessToken,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
