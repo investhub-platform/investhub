@@ -66,6 +66,7 @@ const StartupOwnerDashboard = () => {
     title: "",
     description: "",
     category: "Tech",
+    customCategory: "",
     budget: "",
     timeline: "",
     expectedOutcomes: "",
@@ -239,7 +240,7 @@ const StartupOwnerDashboard = () => {
   };
 
   const clearPlanForm = () => {
-    setPlanFormData({ title: "", description: "", category: "Tech", budget: "", timeline: "", expectedOutcomes: "", pitchDeckText: "" });
+    setPlanFormData({ title: "", description: "", category: "Tech", customCategory: "", budget: "", timeline: "", expectedOutcomes: "", pitchDeckText: "" });
     setPlanPhotoFile(null); setPlanPitchFiles([]); setEditingPlanId(null);
   };
 
@@ -253,6 +254,7 @@ const StartupOwnerDashboard = () => {
       form.append("title", planFormData.title);
       form.append("description", planFormData.description);
       form.append("category", planFormData.category);
+      if (planFormData.category === "Other") form.append("customCategory", planFormData.customCategory || "");
       form.append("budget", String(planFormData.budget || 0));
       form.append("timeline", planFormData.timeline || "");
       form.append("expectedOutcomes", planFormData.expectedOutcomes || "");
@@ -281,6 +283,7 @@ const StartupOwnerDashboard = () => {
     setEditingPlanId(plan._id || plan.id);
     setPlanFormData({
       title: plan.title || "", description: plan.description || "", category: plan.category || "Tech",
+      customCategory: plan.customCategory || "",
       budget: plan.budget || "", timeline: plan.timeline || "", expectedOutcomes: plan.expectedOutcomes || "",
       pitchDeckText: plan.pitchDeckText || ""
     });
@@ -455,7 +458,17 @@ const StartupOwnerDashboard = () => {
                         </div>
                         <div>
                           <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Category</label>
-                          <input className={inputClass} value={planFormData.category} onChange={(e) => setPlanFormData((p) => ({ ...p, category: e.target.value }))} placeholder="e.g. HealthTech, FinTech" />
+                          <select className={inputClass} value={planFormData.category} onChange={(e) => setPlanFormData((p) => ({ ...p, category: e.target.value, customCategory: e.target.value === "Other" ? p.customCategory : "" }))}>
+                            <option value="Tech">Tech</option>
+                            <option value="Health">Health</option>
+                            <option value="Education">Education</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Agriculture">Agriculture</option>
+                            <option value="Other">Other</option>
+                          </select>
+                          {planFormData.category === "Other" && (
+                            <input className={`${inputClass} mt-3`} value={planFormData.customCategory} onChange={(e) => setPlanFormData((p) => ({ ...p, customCategory: e.target.value }))} placeholder="Specify custom category (required)" />
+                          )}
                         </div>
                       </div>
 
@@ -578,7 +591,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
   const [ideasLoading, setIdeasLoading] = useState(false);
   const [ideasError, setIdeasError] = useState("");
   const [ideaFormOpen, setIdeaFormOpen] = useState(false);
-  const [ideaFormData, setIdeaFormData] = useState({ title: "", description: "", category: "Tech", budget: "", timeline: "", expectedOutcomes: "", pitchDeckText: "" });
+  const [ideaFormData, setIdeaFormData] = useState({ title: "", description: "", category: "Tech", customCategory: "", budget: "", timeline: "", expectedOutcomes: "", pitchDeckText: "" });
   const [ideaPhotoFile, setIdeaPhotoFile] = useState(null);
   const [ideaPitchFiles, setIdeaPitchFiles] = useState([]);
   const [startupLogoFile, setStartupLogoFile] = useState(null);
@@ -616,7 +629,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
   }, [expanded, startup.id]);
 
   const clearIdeaForm = () => {
-    setIdeaFormData({ title: "", description: "", category: "Tech", budget: "", timeline: "", expectedOutcomes: "", pitchDeckText: "" });
+    setIdeaFormData({ title: "", description: "", category: "Tech", customCategory: "", budget: "", timeline: "", expectedOutcomes: "", pitchDeckText: "" });
     setIdeaPhotoFile(null); setIdeaPitchFiles([]); setEditingIdeaId(null);
   };
 
@@ -628,7 +641,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
     try {
       const form = new FormData();
       form.append("title", ideaFormData.title); form.append("description", ideaFormData.description);
-      form.append("category", ideaFormData.category); form.append("budget", String(ideaFormData.budget || 0));
+      form.append("category", ideaFormData.category); if (ideaFormData.category === "Other") form.append("customCategory", ideaFormData.customCategory || ""); form.append("budget", String(ideaFormData.budget || 0));
       form.append("timeline", ideaFormData.timeline || ""); form.append("expectedOutcomes", ideaFormData.expectedOutcomes || "");
       form.append("pitchDeckText", ideaFormData.pitchDeckText || ""); form.append("isIdea", "true"); form.append("StartupId", startup.id);
       if (ideaPhotoFile) form.append("photo", ideaPhotoFile);
@@ -655,6 +668,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
     setEditingIdeaId(idea._id || idea.id);
     setIdeaFormData({
       title: idea.title || "", description: idea.description || "", category: idea.category || "Tech",
+      customCategory: idea.customCategory || "",
       budget: idea.budget || "", timeline: idea.timeline || "", expectedOutcomes: idea.expectedOutcomes || "", pitchDeckText: idea.pitchDeckText || ""
     });
     setIdeaPhotoFile(null); setIdeaPitchFiles([]); setIdeaFormOpen(true);
@@ -838,7 +852,17 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
                          </div>
                          <div>
                             <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Category</label>
-                            <input className={inputClass} value={ideaFormData.category} onChange={(e) => setIdeaFormData((p) => ({ ...p, category: e.target.value }))} placeholder="e.g. SaaS" />
+                            <select className={inputClass} value={ideaFormData.category} onChange={(e) => setIdeaFormData((p) => ({ ...p, category: e.target.value, customCategory: e.target.value === "Other" ? p.customCategory : "" }))}>
+                              <option value="Tech">Tech</option>
+                              <option value="Health">Health</option>
+                              <option value="Education">Education</option>
+                              <option value="Finance">Finance</option>
+                              <option value="Agriculture">Agriculture</option>
+                              <option value="Other">Other</option>
+                            </select>
+                            {ideaFormData.category === "Other" && (
+                              <input className={`${inputClass} mt-3`} value={ideaFormData.customCategory} onChange={(e) => setIdeaFormData((p) => ({ ...p, customCategory: e.target.value }))} placeholder="Specify custom category (required)" />
+                            )}
                          </div>
                       </div>
                       <div>
