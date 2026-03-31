@@ -159,6 +159,16 @@ export const getRequestsByInvestor = async (req, res, next) => {
   }
 };
 
+export const getRequestsByIdea = async (req, res, next) => {
+  try {
+    const ideaId = req.params.ideaId;
+    const data = await requestService.getRequestsByIdeaId(ideaId);
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   listRequests,
   getRequest,
@@ -170,5 +180,6 @@ export default {
   setMentorDecision,
   getRequestsByStartup,
   getRequestsByInvestor,
+  getRequestsByIdea,
   setRequestStatus
 };

@@ -291,12 +291,8 @@ const StartupDetail = ({ isModal = false }) => {
       setInvestError(`Minimum investment is ${formatCurrency(minAmount)}.`);
       return;
     }
-    if (amountNumber > walletBalance) {
-      setInvestError("Insufficient wallet balance. Please top up your wallet first.");
-      return;
-    }
 
-    const startupOwnerId =
+    const founderId =
       startup?.startupProfile?.raw?.UserID ||
       startup?.startupProfile?.raw?.userId ||
       startup?.startupProfile?.raw?.createdBy ||
@@ -305,29 +301,27 @@ const StartupDetail = ({ isModal = false }) => {
       startup?.raw?.userId ||
       startup?.raw?.ownerId;
 
-    const startupId =
-      startup?.startupProfile?.id ||
-      startup?.startupRefId ||
-      (startup.recordType === "startup" ? startup.id : null);
+    const ideaId = startup?.id;
 
-    if (!startupOwnerId || !startupId) {
-      setInvestError("Startup owner details are missing. Please contact support.");
+    if (!founderId || !ideaId) {
+      setInvestError("Founder or idea details are missing. Please contact support.");
       return;
     }
 
     try {
       setInvestSubmitting(true);
-      await api.post("/v1/wallets/invest", {
+      await api.post("/v1/requests", {
+        ideaId,
+        founderId,
         amount: amountNumber,
-        startupId,
-        startupOwnerId,
+        message: investMessage || "",
+        direction: "investor_to_startup"
       });
 
-      setWalletBalance((prev) => Math.max(0, prev - amountNumber));
       setInvestSuccess({ amount: amountNumber });
       setInvestStep("done");
     } catch (e) {
-      const msg = e?.response?.data?.message || "Failed to complete investment.";
+      const msg = e?.response?.data?.message || "Failed to send investment request.";
       setInvestError(msg);
     } finally {
       setInvestSubmitting(false);
