@@ -19,3 +19,8 @@ export const deleteUser = async (id) => {
   const res = await api.delete(`/v1/admin/users/${id}`);
   return res.data;
 };
+
+export const getPlatformIncome = async () => {
+  const res = await api.get("/v1/admin/income");
+  return res.data;
+};

@@ -1,5 +1,7 @@
 import * as userRepo from "../repositories/userRepository.js";
 import AppError from "../utils/AppError.js";
+import Transaction from "../models/Transaction.js";
+import Wallet from "../models/Wallet.js";
 
 export const listUsers = async (req, res, next) => {
   try {
@@ -65,6 +67,44 @@ export const deleteUser = async (req, res, next) => {
     await user.save();
 
     res.json({ success: true, message: "User soft deleted" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getPlatformIncome = async (req, res, next) => {
+  try {
+    const adminUserId = process.env.ADMIN_USER_ID;
+
+    if (!adminUserId) {
+      throw new AppError("ADMIN_USER_ID is not configured", 500);
+    }
+
+    const feePercent = Number(process.env.PLATFORM_FEE_PERCENT || 5);
+
+    const adminWallet = await Wallet.findOne({ userId: adminUserId });
+
+    const transactions = await Transaction.find({
+      userId: adminUserId,
+      type: "PlatformFee",
+      status: "Completed",
+    }).sort({ createdAt: -1 });
+
+    const totalIncome = transactions.reduce(
+      (sum, tx) => sum + Number(tx.amount || 0),
+      0
+    );
+
+    res.json({
+      success: true,
+      data: {
+        adminWalletBalance: adminWallet?.balance || 0,
+        totalIncome,
+        feePercent,
+        transactionCount: transactions.length,
+        transactions,
+      },
+    });
   } catch (err) {
     next(err);
   }
