@@ -6,6 +6,43 @@ import { useAuth } from "../../features/auth/useAuth";
 import api from "../../lib/axios";
 import { Check, X, Clock, TrendingUp, DollarSign, Loader, Send } from "lucide-react";
 
+const DEFAULT_CHECKOUT_URL = "https://sandbox.payhere.lk/pay/checkout";
+const PAYHERE_CHECKOUT_URL_RAW = import.meta.env.VITE_PAYHERE_CHECKOUT_URL || DEFAULT_CHECKOUT_URL;
+const PAYHERE_CHECKOUT_URL = PAYHERE_CHECKOUT_URL_RAW.replace(/\/+$/, "");
+
+function extractPayload(responseData) {
+  if (!responseData) return null;
+  if (responseData.data && typeof responseData.data === "object") return responseData.data;
+  return responseData;
+}
+
+function openPayHereFormFallback(payload) {
+  const required = ["merchant_id", "return_url", "cancel_url", "notify_url", "order_id", "items", "currency", "amount", "hash"];
+  const missing = required.filter((key) => !payload?.[key]);
+  if (missing.length) throw new Error(`Payment payload missing required fields: ${missing.join(", ")}`);
+
+  const popup = window.open("", "payhere_checkout", "width=920,height=780");
+  if (!popup) throw new Error("Popup blocked by browser. Please allow popups and try again.");
+
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = PAYHERE_CHECKOUT_URL;
+  form.target = "payhere_checkout";
+
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = key;
+    input.value = String(value);
+    form.appendChild(input);
+  });
+
+  document.body.appendChild(form);
+  form.submit();
+  document.body.removeChild(form);
+}
+
 const formatCurrency = (value) => {
   const n = Number(value || 0);
   if (!Number.isFinite(n) || n === 0) return "$0";
@@ -36,18 +73,24 @@ export default function InvestmentDashboard() {
   const [decisionComment, setDecisionComment] = useState("");
   const [isDecisionProcessing, setIsDecisionProcessing] = useState(false);
 
+  const fetchWalletBalance = useCallback(async () => {
+    try {
+      const res = await api.get("/v1/wallets/me");
+      const wallet = extractPayload(res?.data);
+      const nextBalance = Number(wallet?.balance || 0);
+      setWalletBalance(nextBalance);
+      return nextBalance;
+    } catch (e) {
+      console.error("Failed to fetch wallet", e);
+      setWalletBalance(0);
+      return 0;
+    }
+  }, []);
+
   // Fetch wallet balance
   useEffect(() => {
-    const fetchWallet = async () => {
-      try {
-        const res = await api.get("/v1/wallets/me");
-        setWalletBalance(res?.data?.data?.balance || 0);
-      } catch (e) {
-        console.error("Failed to fetch wallet", e);
-      }
-    };
-    fetchWallet();
-  }, []);
+    fetchWalletBalance();
+  }, [fetchWalletBalance]);
 
   // Fetch sent requests (investor view)
   const fetchSentRequests = useCallback(async () => {
@@ -126,7 +169,9 @@ export default function InvestmentDashboard() {
 
   // Handle wallet payment
   const handleWalletPayment = async (requestId, amount) => {
-    if (amount > walletBalance) {
+    const latestBalance = await fetchWalletBalance();
+
+    if (amount > latestBalance) {
       setError("Insufficient wallet balance. Please top up your wallet.");
       return;
     }
@@ -139,17 +184,19 @@ export default function InvestmentDashboard() {
 
       // Get the startup owner ID from the request
       const startupOwnerId = request.founderId?.id || request.founderId?._id || request.founderId;
+      const startupId = request.ideaId?.StartupId || request.ideaId?.startupId;
+      if (!startupId || !startupOwnerId) {
+        throw new Error("Missing startup details required for wallet transfer");
+      }
       
-      // For now, we'll use a placeholder startupId - ideally this comes from the idea
-      // The backend should handle this through the ideaId
-      const { data } = await api.post("/v1/wallets/invest", {
+      await api.post("/v1/wallets/invest", {
         amount,
         startupOwnerId,
-        // ideaId already in request
+        startupId,
       });
 
       setSuccessMessage("Payment completed successfully!");
-      setWalletBalance((prev) => Math.max(0, prev - amount));
+      await fetchWalletBalance();
       setSelectedRequestForPayment(null);
       setPaymentMethod("wallet");
       fetchSentRequests();
@@ -165,18 +212,19 @@ export default function InvestmentDashboard() {
     setIsPaymentProcessing(true);
     setError("");
     try {
-      const { data } = await api.post("/v1/wallets/deposit/initiate", {
+      const res = await api.post("/v1/wallets/deposit/initiate", {
         amount,
-        returnUrl: `${window.location.origin}/app/deals?payment=success&requestId=${requestId}`,
       });
+      const payload = extractPayload(res?.data);
+      const orderId = payload?.order_id;
+      if (!orderId) throw new Error("Missing order id from payment initiation response");
 
-      if (data?.data?.redirectUrl) {
-        window.location.href = data.data.redirectUrl;
-      } else {
-        throw new Error("No redirect URL from PayHere");
-      }
+      openPayHereFormFallback(payload);
+      setSuccessMessage("Payment popup opened. Complete payment to top up wallet, then pay this deal from wallet.");
+      setSelectedRequestForPayment(null);
     } catch (e) {
       setError(e?.response?.data?.message || "PayHere payment failed");
+    } finally {
       setIsPaymentProcessing(false);
     }
   };
