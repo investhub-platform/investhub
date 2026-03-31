@@ -142,7 +142,7 @@ const InvestorDashboard = () => {
   });
   const [pitchSubmitting, setPitchSubmitting] = useState(false);
   const [pitchFeedback, setPitchFeedback] = useState("");
-  const [ideasData, setIdesData] = useState([]);
+  //const [ideasData, setIdesData] = useState([]);
 
   useEffect(() => {
     let mounted = true;
@@ -151,7 +151,7 @@ const InvestorDashboard = () => {
         const res = await api.get("/v1/ideas");
         if (!mounted) return;
         const items = extractPayload(res);
-        setIdesData(items);
+        //setIdesData(items);
         console.log("Fetched ideas data:", items);
         const ideaItems = items.filter((it) => it?.isIdea === true);
         const planItems = items.filter((it) => it?.isIdea === false);
