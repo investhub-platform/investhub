@@ -99,11 +99,13 @@ export default function InvestmentDashboard() {
     setError("");
     try {
       const userId = user?.id || user?._id;
-      const res = await api.get(`/v1/requests/investor/${userId}`);
-      setSentRequests(res?.data?.data || []);
+      const res = await api.get(`/v1/requests/investor/${userId}?t=${Date.now()}`);
+      const requests = res?.data?.data || [];
+      setSentRequests(requests);
+      console.log("Fetched sent requests:", requests.map(r => ({ id: r._id, status: r.requestStatus })));
     } catch (e) {
       setError("Failed to load investment requests");
-      console.error(e);
+      console.error("Fetch sent requests error:", e);
     } finally {
       setLoading(false);
     }
@@ -118,7 +120,7 @@ export default function InvestmentDashboard() {
     try {
       // First get all ideas created by founder
       const userId = user?.id || user?._id;
-      const allRequests = await api.get("/v1/requests");
+      const allRequests = await api.get(`/v1/requests?t=${Date.now()}`);
       
       // Filter for requests where founderId matches current user
       const founderRequests = (allRequests?.data?.data || []).filter(
@@ -126,9 +128,10 @@ export default function InvestmentDashboard() {
       );
       
       setReceivedRequests(founderRequests);
+      console.log("Fetched received requests:", founderRequests.map(r => ({ id: r._id, status: r.requestStatus })));
     } catch (e) {
       setError("Failed to load received requests");
-      console.error(e);
+      console.error("Fetch received requests error:", e);
     } finally {
       setLoading(false);
     }
@@ -151,17 +154,47 @@ export default function InvestmentDashboard() {
     setError("");
     try {
       const userId = user?.id || user?._id;
-      await api.patch(`/v1/requests/${requestId}/founder-decision`, {
+      const res = await api.patch(`/v1/requests/${requestId}/founder-decision`, {
         decision,
         comment: decisionComment || "",
         updatedBy: userId,
       });
+      
+      if (!res?.data) {
+        console.warn("Founder decision response missing");
+      }
+      
+      // Determine new status based on decision
+      const newStatus = decision === "accept" ? "pending_mentor" : "rejected";
+      
+      // Immediately update local state to show decision
+      setReceivedRequests(prevRequests =>
+        prevRequests.map(r =>
+          (r._id || r.id) === requestId
+            ? {
+                ...r,
+                requestStatus: newStatus,
+                founderDecision: {
+                  decision,
+                  comment: decisionComment || "",
+                  decidedAt: new Date()
+                }
+              }
+            : r
+        )
+      );
+      
       setSuccessMessage(`Request ${decision === "accept" ? "accepted" : "rejected"} successfully!`);
       setSelectedRequestForDecision(null);
       setDecisionComment("");
-      fetchReceivedRequests();
+      
+      // Refetch to ensure data is in sync with backend
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await fetchReceivedRequests();
     } catch (e) {
-      setError(e?.response?.data?.message || "Failed to update request");
+      const errorMsg = e?.response?.data?.message || e?.message || "Failed to update request";
+      setError(errorMsg);
+      console.error("Founder decision error:", e);
     } finally {
       setIsDecisionProcessing(false);
     }
@@ -189,26 +222,54 @@ export default function InvestmentDashboard() {
         throw new Error("Missing startup details required for wallet transfer");
       }
       
-      await api.post("/v1/wallets/invest", {
+      // Execute wallet transfer
+      const walletRes = await api.post("/v1/wallets/invest", {
         amount,
         startupOwnerId,
         startupId,
       });
+      
+      if (!walletRes?.data) {
+        throw new Error("Wallet transfer failed or no response received");
+      }
 
+      // Mark request as paid after successful wallet transfer
       const userId = user?.id || user?._id;
-      await api.patch(`/v1/requests/${requestId}/status`, {
+      const updateRes = await api.patch(`/v1/requests/${requestId}/status`, {
         requestStatus: "paid",
         updatedBy: userId,
       });
 
-      setSuccessMessage("Investment completed successfully.");
+      if (!updateRes?.data) {
+        console.warn("Status update response missing, but payment succeeded.");
+      }
+
+      setSuccessMessage("Investment completed successfully!");
       await fetchWalletBalance();
+      
+      // Immediately update local state to show paid status
+      setSentRequests(prevRequests => 
+        prevRequests.map(r => 
+          (r._id || r.id) === requestId 
+            ? { ...r, requestStatus: "paid" } 
+            : r
+        )
+      );
+      
+      // Small delay to ensure backend has processed the update
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Close modal and clear selection
       setSelectedRequestForPayment(null);
       setPaymentMethod("wallet");
-      fetchSentRequests();
-      fetchReceivedRequests();
+
+      // Refetch both views to show updated paid status
+      await fetchSentRequests();
+      await fetchReceivedRequests();
     } catch (e) {
-      setError(e?.response?.data?.message || "Payment failed");
+      const errorMsg = e?.response?.data?.message || e?.message || "Payment failed";
+      setError(errorMsg);
+      console.error("Wallet payment error:", e);
     } finally {
       setIsPaymentProcessing(false);
     }
@@ -371,7 +432,7 @@ export default function InvestmentDashboard() {
                         const status = getRequestStatus(request);
                         const founderName = request.founderId?.name || "Unknown Founder";
                         const ideaTitle = request.ideaId?.title || "Unknown Idea";
-                        const canPay = request.requestStatus === "pending_mentor" || request.requestStatus === "approved";
+                        const canPay = (request.requestStatus === "pending_mentor" || request.requestStatus === "approved") && request.requestStatus !== "paid";
                         
                         return (
                           <motion.div
