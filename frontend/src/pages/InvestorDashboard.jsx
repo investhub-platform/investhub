@@ -1,6 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BriefcaseBusiness, Mail, Landmark, Building2, SearchX, User, Send } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  Mail,
+  Landmark,
+  Building2,
+  SearchX,
+  User,
+  Send
+} from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import AppNavbar from "../components/layout/AppNavBar";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
@@ -21,9 +29,11 @@ const resolveAssetUrl = (url) => {
   const raw = String(url);
   if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
   const baseFromApi = String(api.defaults?.baseURL || "");
-  const base = (baseFromApi.startsWith("http")
-    ? baseFromApi.replace(/\/api\/?$/, "")
-    : "http://localhost:5000").replace(/\/+$/, "");
+  const base = (
+    baseFromApi.startsWith("http")
+      ? baseFromApi.replace(/\/api\/?$/, "")
+      : "http://localhost:5000"
+  ).replace(/\/+$/, "");
   return raw.startsWith("/") ? `${base}${raw}` : `${base}/${raw}`;
 };
 
@@ -52,8 +62,15 @@ const normalizeMandate = (item, index) => {
     (typeof createdBy === "object" ? createdBy?.name : "") ||
     "Unknown investor";
 
-  const preferredIndustries = arrayify(item?.preferredIndustries || item?.industries || item?.category || item?.customCategory);
-  const minCheck = Number(item?.minCheckSize || item?.targetCheckSize || item?.budget || 0);
+  const preferredIndustries = arrayify(
+    item?.preferredIndustries ||
+      item?.industries ||
+      item?.category ||
+      item?.customCategory
+  );
+  const minCheck = Number(
+    item?.minCheckSize || item?.targetCheckSize || item?.budget || 0
+  );
   const maxCheck = Number(item?.maxCheckSize || 0);
   const contactEmail = pickContact(item);
 
@@ -71,12 +88,24 @@ const normalizeMandate = (item, index) => {
     contactEmail,
     // Include possible uploaded image/logo fields so the UI can show banners
     photoUrl: resolveAssetUrl(
-      item?.ImgURL || item?.image || item?.coverImage || (item?.investor && (item.investor.ImgURL || item.investor.coverImage)) || ""
+      item?.ImgURL ||
+        item?.image ||
+        item?.coverImage ||
+        (item?.investor &&
+          (item.investor.ImgURL || item.investor.coverImage)) ||
+        ""
     ),
     logo: resolveAssetUrl(
-      item?.logo || item?.logoUrl || (item?.investor && (item.investor.logo || item.investor.ImgURL)) || ""
+      item?.logo ||
+        item?.logoUrl ||
+        (item?.investor && (item.investor.logo || item.investor.ImgURL)) ||
+        ""
     ),
-    summary: item?.description || item?.expectedOutcomes || item?.aiSummary || "No additional preference details provided.",
+    summary:
+      item?.description ||
+      item?.expectedOutcomes ||
+      item?.aiSummary ||
+      "No additional preference details provided."
   };
 };
 
@@ -85,7 +114,7 @@ const formatMoney = (value) => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 0
   }).format(value);
 };
 
@@ -113,6 +142,7 @@ const InvestorDashboard = () => {
   });
   const [pitchSubmitting, setPitchSubmitting] = useState(false);
   const [pitchFeedback, setPitchFeedback] = useState("");
+  const [ideasData, setIdesData] = useState([]);
 
   useEffect(() => {
     let mounted = true;
@@ -121,7 +151,8 @@ const InvestorDashboard = () => {
         const res = await api.get("/v1/ideas");
         if (!mounted) return;
         const items = extractPayload(res);
-
+        setIdesData(items);
+        console.log("Fetched ideas data:", items);
         const ideaItems = items.filter((it) => it?.isIdea === true);
         const planItems = items.filter((it) => it?.isIdea === false);
 
@@ -131,7 +162,9 @@ const InvestorDashboard = () => {
           isIdea: true,
           recordType: "idea",
           name: it.title || it.name || "Untitled",
-          tagline: (it.description && String(it.description).split(". ")[0]) || (it.aiSummary ? it.aiSummary.split("\n")[0] : ""),
+          tagline:
+            (it.description && String(it.description).split(". ")[0]) ||
+            (it.aiSummary ? it.aiSummary.split("\n")[0] : ""),
           tags: arrayify(it.category ? [it.category] : it.tags),
           industry: it.category || it.industry || "",
           stage: it.stage || "",
@@ -139,22 +172,33 @@ const InvestorDashboard = () => {
           currentFunding: it.currentFunding || 0,
           // Use ImgURL (cover) as the large banner image for idea posts, keep `logo` for small overlay
           photoUrl: resolveAssetUrl(
-            it.ImgURL || it.image || it.coverImage ||
-            (it.StartupId && (it.StartupId.ImgURL || it.StartupId.coverImage)) ||
-            ""
+            it.ImgURL ||
+              it.image ||
+              it.coverImage ||
+              (it.StartupId &&
+                (it.StartupId.ImgURL || it.StartupId.coverImage)) ||
+              ""
           ),
           // Prefer explicit logo fields, fall back to linked startup's logo/ImgURL
           logo: resolveAssetUrl(
-            it.logo || it.logoUrl ||
-            (it.StartupId && (it.StartupId.logo || it.StartupId.ImgURL)) ||
-            ""
+            it.logo ||
+              it.logoUrl ||
+              (it.StartupId && (it.StartupId.logo || it.StartupId.ImgURL)) ||
+              ""
           ),
           aiRiskLevel: it.aiRiskLevel || "UNKNOWN",
           aiRiskScore: it.aiRiskScore || 0,
           founders: it.createdBy
-            ? [{ name: "Founder", avatar: (it.createdBy && String(it.createdBy).slice(0, 2).toUpperCase()) }]
+            ? [
+                {
+                  name: "Founder",
+                  avatar:
+                    it.createdBy &&
+                    String(it.createdBy).slice(0, 2).toUpperCase()
+                }
+              ]
             : arrayify(it.founders),
-          raw: it,
+          raw: it
         }));
 
         setStartups(normalized);
@@ -192,16 +236,16 @@ const InvestorDashboard = () => {
         !searchQuery ||
         s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.industry?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          s.tags?.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+        s.tags?.some((t) =>
+          t.toLowerCase().includes(searchQuery.toLowerCase())
+        );
 
       const matchesFilters =
         activeFilters.length === 0 ||
-          activeFilters.some((f) => {
+        activeFilters.some((f) => {
           if (f === "AI Risk < 20%") return s.aiRiskScore < 20;
           return (
-            s.tags?.includes(f) ||
-            s.industry?.includes(f) ||
-            s.stage === f
+            s.tags?.includes(f) || s.industry?.includes(f) || s.stage === f
           );
         });
 
@@ -214,9 +258,15 @@ const InvestorDashboard = () => {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       return (
-        String(m.mandateTitle || "").toLowerCase().includes(q) ||
-        String(m.investorName || "").toLowerCase().includes(q) ||
-        (m.preferredIndustries || []).some((p) => String(p).toLowerCase().includes(q))
+        String(m.mandateTitle || "")
+          .toLowerCase()
+          .includes(q) ||
+        String(m.investorName || "")
+          .toLowerCase()
+          .includes(q) ||
+        (m.preferredIndustries || []).some((p) =>
+          String(p).toLowerCase().includes(q)
+        )
       );
     });
   }, [mandates, searchQuery]);
@@ -229,7 +279,8 @@ const InvestorDashboard = () => {
     return startups
       .filter((s) => {
         const owner = s?.raw?.createdBy;
-        const ownerId = typeof owner === "object" ? owner?._id || owner?.id : owner;
+        const ownerId =
+          typeof owner === "object" ? owner?._id || owner?.id : owner;
         return String(ownerId || "") === String(currentUserId);
       })
       .map((s) => ({
@@ -285,7 +336,9 @@ const InvestorDashboard = () => {
       return;
     }
 
-    const selectedIdea = founderIdeas.find((i) => String(i.id) === String(pitchForm.ideaId));
+    const selectedIdea = founderIdeas.find(
+      (i) => String(i.id) === String(pitchForm.ideaId)
+    );
     if (!selectedIdea) {
       setPitchFeedback("Selected startup idea was not found.");
       return;
@@ -302,7 +355,9 @@ const InvestorDashboard = () => {
         requestStatus: "pending_investor",
         amount: amountValue,
         message: pitchForm.message?.trim() || null,
-        StartupsId: selectedIdea.startupId ? String(selectedIdea.startupId) : null,
+        StartupsId: selectedIdea.startupId
+          ? String(selectedIdea.startupId)
+          : null,
         SendId: String(currentUserId),
         UserId: String(selectedMandate.investorId),
         createdBy: currentUserId
@@ -331,7 +386,6 @@ const InvestorDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-blue-500/30 overflow-hidden flex flex-col">
-      
       <AppNavbar />
 
       <div className="flex flex-1 pt-6 relative w-full h-screen overflow-hidden">
@@ -343,12 +397,14 @@ const InvestorDashboard = () => {
 
         <main className="flex-1 w-full overflow-y-auto px-4 md:px-8 py-8 lg:py-12 relative z-10 scroll-smooth lg:ml-64">
           <div className="max-w-7xl mx-auto">
-            
             {/* Header Area */}
             <div className="mb-10">
-              <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">Explore Opportunities</h1>
+              <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">
+                Explore Opportunities
+              </h1>
               <p className="text-slate-400 text-sm md:text-base font-medium">
-                Discover founders waiting for smart capital, or view active investor mandates.
+                Discover founders waiting for smart capital, or view active
+                investor mandates.
               </p>
             </div>
 
@@ -356,7 +412,7 @@ const InvestorDashboard = () => {
             <div className="inline-flex rounded-full p-1.5 bg-[#0B0D10]/80 border border-white/10 backdrop-blur-xl mb-8 shadow-lg ml-4 md:ml-8">
               {[
                 { key: "startups", label: "Startups Pitching" },
-                { key: "mandates", label: "Investor Mandates" },
+                { key: "mandates", label: "Investor Mandates" }
               ].map((tab) => {
                 const isActive = activeTab === tab.key;
                 return (
@@ -365,14 +421,20 @@ const InvestorDashboard = () => {
                     type="button"
                     onClick={() => setActiveTab(tab.key)}
                     className={`relative px-6 py-2.5 rounded-full text-sm font-bold transition-all z-10 ${
-                      isActive ? "text-white" : "text-slate-400 hover:text-white"
+                      isActive
+                        ? "text-white"
+                        : "text-slate-400 hover:text-white"
                     }`}
                   >
                     {isActive && (
                       <motion.span
                         layoutId="investor-dashboard-active-tab"
                         className="absolute inset-0 rounded-full bg-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.4)] -z-10"
-                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 400,
+                          damping: 30
+                        }}
                       />
                     )}
                     {tab.label}
@@ -412,15 +474,23 @@ const InvestorDashboard = () => {
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
                         {filtered.map((startup, i) => (
-                          <StartupCard key={startup._id || startup.id || i} startup={startup} index={i} />
+                          <StartupCard
+                            key={startup._id || startup.id || i}
+                            startup={startup}
+                            index={i}
+                          />
                         ))}
                       </div>
 
                       {filtered.length === 0 && (
                         <div className="text-center py-24 bg-[#0B0D10]/80 border border-white/5 rounded-[2rem] mt-4 flex flex-col items-center justify-center shadow-xl">
                           <SearchX className="w-12 h-12 text-slate-600 mb-4" />
-                          <p className="text-xl font-bold text-white mb-2">No startups found</p>
-                          <p className="text-sm text-slate-400 font-medium">Try adjusting your filters or search query.</p>
+                          <p className="text-xl font-bold text-white mb-2">
+                            No startups found
+                          </p>
+                          <p className="text-sm text-slate-400 font-medium">
+                            Try adjusting your filters or search query.
+                          </p>
                         </div>
                       )}
                     </>
@@ -456,16 +526,23 @@ const InvestorDashboard = () => {
                       <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6">
                         <BriefcaseBusiness className="w-8 h-8 text-blue-400" />
                       </div>
-                      <h3 className="text-2xl font-black text-white mb-2">No active mandates</h3>
+                      <h3 className="text-2xl font-black text-white mb-2">
+                        No active mandates
+                      </h3>
                       <p className="text-sm text-slate-400 font-medium max-w-md">
-                        Mandates will appear here once investors publish their preferred check sizes and target sectors.
+                        Mandates will appear here once investors publish their
+                        preferred check sizes and target sectors.
                       </p>
                     </div>
                   ) : filteredMandates.length === 0 ? (
                     <div className="text-center py-24 bg-[#0B0D10]/80 border border-white/5 rounded-[2rem] mt-4 flex flex-col items-center justify-center shadow-xl">
                       <SearchX className="w-12 h-12 text-slate-600 mb-4" />
-                      <p className="text-xl font-bold text-white mb-2">No mandates found</p>
-                      <p className="text-sm text-slate-400 font-medium">Try adjusting your search query.</p>
+                      <p className="text-xl font-bold text-white mb-2">
+                        No mandates found
+                      </p>
+                      <p className="text-sm text-slate-400 font-medium">
+                        Try adjusting your search query.
+                      </p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
@@ -478,9 +555,15 @@ const InvestorDashboard = () => {
                           className="group flex flex-col h-full bg-[#0B0D10] rounded-[1.5rem] border border-white/5 overflow-hidden transition-all duration-300 hover:border-white/15 hover:shadow-2xl hover:-translate-y-1"
                         >
                           {/* Banner Area (show uploaded image when available, fallback to gradient) */}
-                          <div className={`h-40 w-full relative overflow-hidden border-b border-white/5 bg-gradient-to-br ${getGradient(idx)}`}>
+                          <div
+                            className={`h-40 w-full relative overflow-hidden border-b border-white/5 bg-gradient-to-br ${getGradient(idx)}`}
+                          >
                             {mandate.photoUrl ? (
-                              <img src={mandate.photoUrl} alt={mandate.mandateTitle} className="w-full h-full object-cover" />
+                              <img
+                                src={mandate.photoUrl}
+                                alt={mandate.mandateTitle}
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
                               <>
                                 <div className="absolute top-[-50%] left-[-10%] w-32 h-32 bg-white/5 rounded-full blur-[20px]" />
@@ -490,7 +573,11 @@ const InvestorDashboard = () => {
 
                             <div className="absolute -bottom-5 left-6 w-12 h-12 rounded-xl bg-[#1A1D24] border border-white/10 flex items-center justify-center shadow-lg overflow-hidden">
                               {mandate.logo ? (
-                                <img src={mandate.logo} alt={mandate.investorName} className="w-full h-full object-cover" />
+                                <img
+                                  src={mandate.logo}
+                                  alt={mandate.investorName}
+                                  className="w-full h-full object-cover"
+                                />
                               ) : (
                                 <Landmark className="w-6 h-6 text-white/80" />
                               )}
@@ -503,25 +590,29 @@ const InvestorDashboard = () => {
 
                           {/* Content Area */}
                           <div className="p-6 pt-8 flex flex-col flex-1">
-                            
                             <div className="mb-4">
-                               <h3 className="text-xl font-bold text-white tracking-tight leading-tight mb-1 group-hover:text-blue-400 transition-colors">
-                                 {mandate.mandateTitle}
-                               </h3>
-                               <div className="flex items-center gap-2 text-sm text-slate-400">
-                                 <User className="w-3.5 h-3.5" />
-                                 <span>{mandate.investorName}</span>
-                               </div>
+                              <h3 className="text-xl font-bold text-white tracking-tight leading-tight mb-1 group-hover:text-blue-400 transition-colors">
+                                {mandate.mandateTitle}
+                              </h3>
+                              <div className="flex items-center gap-2 text-sm text-slate-400">
+                                <User className="w-3.5 h-3.5" />
+                                <span>{mandate.investorName}</span>
+                              </div>
                             </div>
 
                             {/* Tags */}
                             <div className="flex flex-wrap gap-2 mb-5">
                               {mandate.preferredIndustries.length > 0 ? (
-                                mandate.preferredIndustries.map((industry, i) => (
-                                  <span key={i} className="text-[11px] font-bold uppercase tracking-wider text-slate-300 bg-white/5 border border-white/10 py-1 px-2.5 rounded-md">
-                                    {industry}
-                                  </span>
-                                ))
+                                mandate.preferredIndustries.map(
+                                  (industry, i) => (
+                                    <span
+                                      key={i}
+                                      className="text-[11px] font-bold uppercase tracking-wider text-slate-300 bg-white/5 border border-white/10 py-1 px-2.5 rounded-md"
+                                    >
+                                      {industry}
+                                    </span>
+                                  )
+                                )
                               ) : (
                                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 bg-white/5 border border-white/5 py-1 px-2.5 rounded-md">
                                   Sector Agnostic
@@ -538,12 +629,16 @@ const InvestorDashboard = () => {
                             {/* Footer: Check Size & Action */}
                             <div className="flex items-end justify-between mt-auto">
                               <div>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Target Check Size</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">
+                                  Target Check Size
+                                </p>
                                 <div className="flex items-center gap-1.5 text-white font-black text-lg">
                                   <Building2 className="w-4 h-4 text-blue-400" />
                                   <span>{formatMoney(mandate.minCheck)}</span>
                                   {mandate.maxCheck > mandate.minCheck && (
-                                    <span className="text-slate-400 font-medium text-base">- {formatMoney(mandate.maxCheck)}</span>
+                                    <span className="text-slate-400 font-medium text-base">
+                                      - {formatMoney(mandate.maxCheck)}
+                                    </span>
                                   )}
                                 </div>
                               </div>
@@ -573,14 +668,20 @@ const InvestorDashboard = () => {
                               )}
 
                               <Link
-                                state={{ background: location, startup: { id: mandate.id, _id: mandate.id, isIdea: false } }}
+                                state={{
+                                  background: location,
+                                  startup: {
+                                    id: mandate.id,
+                                    _id: mandate.id,
+                                    isIdea: false
+                                  }
+                                }}
                                 to={`/app/plan/${mandate.id}`}
                                 className="ml-2 inline-flex items-center justify-center h-10 px-4 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
                               >
                                 View
                               </Link>
                             </div>
-
                           </div>
                         </motion.div>
                       ))}
@@ -610,36 +711,65 @@ const InvestorDashboard = () => {
               transition={{ duration: 0.2 }}
               className="fixed z-[60] inset-x-4 top-[10vh] mx-auto max-w-xl bg-[#0B0D10] border border-white/10 rounded-3xl shadow-2xl p-6"
             >
-              <h3 className="text-xl font-black text-white mb-1">Pitch This Mandate</h3>
+              <h3 className="text-xl font-black text-white mb-1">
+                Pitch This Mandate
+              </h3>
               <p className="text-sm text-slate-400 mb-5">
-                Pitching to <span className="text-white font-semibold">{selectedMandate.investorName}</span> for mandate <span className="text-white font-semibold">{selectedMandate.mandateTitle}</span>.
+                Pitching to{" "}
+                <span className="text-white font-semibold">
+                  {selectedMandate.investorName}
+                </span>{" "}
+                for mandate{" "}
+                <span className="text-white font-semibold">
+                  {selectedMandate.mandateTitle}
+                </span>
+                .
               </p>
 
               <form onSubmit={submitPitch} className="space-y-4">
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">Select Startup Idea</label>
+                  <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">
+                    Select Startup Idea
+                  </label>
                   <select
                     value={pitchForm.ideaId}
-                    onChange={(e) => setPitchForm((prev) => ({ ...prev, ideaId: e.target.value }))}
+                    onChange={(e) =>
+                      setPitchForm((prev) => ({
+                        ...prev,
+                        ideaId: e.target.value
+                      }))
+                    }
                     className="w-full px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     required
                   >
                     {founderIdeas.map((idea) => (
-                      <option key={idea.id} value={idea.id} className="bg-[#0B0D10]">
-                        {idea.title}{idea.industry ? ` • ${idea.industry}` : ""}
+                      <option
+                        key={idea.id}
+                        value={idea.id}
+                        className="bg-[#0B0D10]"
+                      >
+                        {idea.title}
+                        {idea.industry ? ` • ${idea.industry}` : ""}
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">Amount Requested (USD)</label>
+                  <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">
+                    Amount Requested (USD)
+                  </label>
                   <input
                     type="number"
                     min="1"
                     step="1"
                     value={pitchForm.amount}
-                    onChange={(e) => setPitchForm((prev) => ({ ...prev, amount: e.target.value }))}
+                    onChange={(e) =>
+                      setPitchForm((prev) => ({
+                        ...prev,
+                        amount: e.target.value
+                      }))
+                    }
                     className="w-full px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     placeholder="10000"
                     required
@@ -647,11 +777,18 @@ const InvestorDashboard = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">Pitch Message</label>
+                  <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">
+                    Pitch Message
+                  </label>
                   <textarea
                     rows={4}
                     value={pitchForm.message}
-                    onChange={(e) => setPitchForm((prev) => ({ ...prev, message: e.target.value }))}
+                    onChange={(e) =>
+                      setPitchForm((prev) => ({
+                        ...prev,
+                        message: e.target.value
+                      }))
+                    }
                     className="w-full px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     placeholder="Explain why your startup fits this investor mandate..."
                   />
