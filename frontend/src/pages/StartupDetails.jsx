@@ -310,9 +310,11 @@ const StartupDetail = ({ isModal = false }) => {
 
     try {
       setInvestSubmitting(true);
+      const investorId = user?.id || user?._id;
       await api.post("/v1/requests", {
-        ideaId,
+        investorId,
         founderId,
+        ideaId,
         amount: amountNumber,
         message: investMessage || "",
         direction: "investor_to_startup"
