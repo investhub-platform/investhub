@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Users, ShieldCheck, Building } from "lucide-react";
+import { LayoutDashboard, Users, Building } from "lucide-react";
 
 const links = [
   {
@@ -24,9 +24,14 @@ export default function AdminSidebar() {
     <aside className="w-72 min-h-screen border-r border-white/10 bg-[#020617]/90 backdrop-blur-xl p-6">
       <div className="mb-10">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.35)]">
-            <ShieldCheck className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.2)] overflow-hidden">
+            <img
+              src="/logo.png"
+              alt="InvestHub Logo"
+              className="w-9 h-9 object-contain"
+            />
           </div>
+
           <div>
             <h1 className="text-white text-xl font-bold tracking-wide">
               InvestHub
