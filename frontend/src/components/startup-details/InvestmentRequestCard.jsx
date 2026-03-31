@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Check, X, Clock, AlertCircle } from "lucide-react";
+import { Check, X, Clock } from "lucide-react";
 
 export default function InvestmentRequestCard({
   request,

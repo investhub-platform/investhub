@@ -300,7 +300,6 @@ const StartupOwnerDashboard = () => {
       await fetchStartups();
     } catch (e) {
       setError(e?.response?.data?.message || "Failed to send monthly payout.");
-    } finally {
     }
   };
 
