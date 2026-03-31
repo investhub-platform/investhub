@@ -33,7 +33,7 @@ describe("LoginPage", () => {
     mockLogin.mockReset();
   });
 
-  it("submits credentials and navigates to /app on success", async () => {
+  it("submits credentials and navigates to /app/explore on success", async () =>  {
     mockLogin.mockResolvedValue({});
     const user = userEvent.setup();
 
@@ -50,7 +50,8 @@ describe("LoginPage", () => {
       });
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith("/app");
+    //expect(mockNavigate).toHaveBeenCalledWith("/app");
+    expect(mockNavigate).toHaveBeenCalledWith("/app/explore", { replace: true });
   });
 
   it("shows API error message when login fails", async () => {
