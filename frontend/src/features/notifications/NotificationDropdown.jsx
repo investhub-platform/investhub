@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Bell, X, CheckCheck, Inbox } from "lucide-react";
 import {
   fetchNotifications,
@@ -24,7 +24,7 @@ export default function NotificationDropdown() {
   const nav = useNavigate();
 
   // Load notifications
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     if (!isAuthed || !accessToken) {
       setNotifications([]);
       return;
@@ -37,10 +37,10 @@ export default function NotificationDropdown() {
         console.error("Notification load error:", err);
       }
     }
-  };
+  }, [isAuthed, accessToken]);
 
   // Load unread count
-  const loadUnread = async () => {
+  const loadUnread = useCallback(async () => {
     if (!isAuthed || !accessToken) {
       setUnreadCount(0);
       return;
@@ -53,13 +53,11 @@ export default function NotificationDropdown() {
         console.error("Unread count error:", err);
       }
     }
-  };
+  }, [isAuthed, accessToken]);
 
   // Initial load + auto refresh
   useEffect(() => {
     if (!isAuthed || !accessToken) {
-      setNotifications([]);
-      setUnreadCount(0);
       return;
     }
 
@@ -75,7 +73,7 @@ export default function NotificationDropdown() {
       window.clearTimeout(initialTimeout);
       window.clearInterval(interval);
     };
-  }, [isAuthed, accessToken]);
+  }, [isAuthed, accessToken, loadNotifications, loadUnread]);
 
   // Handle clicking outside to close
   useEffect(() => {
@@ -202,7 +200,7 @@ export default function NotificationDropdown() {
                   <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 border border-white/5">
                     <Inbox className="w-5 h-5 text-slate-500" />
                   </div>
-                  <p className="text-sm font-bold text-white mb-1">You're all caught up!</p>
+                  <p className="text-sm font-bold text-white mb-1">You&apos;re all caught up!</p>
                   <p className="text-xs text-slate-400">No new notifications right now.</p>
                 </div>
               ) : (

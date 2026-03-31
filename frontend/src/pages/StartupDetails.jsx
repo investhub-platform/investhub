@@ -135,7 +135,7 @@ const StartupDetail = ({ isModal = false }) => {
               try {
                 await fetchStartup();
                 return;
-              } catch (startupErr) {
+              } catch {
                 if (mounted) setError("Record not found");
                 return;
               }
@@ -150,8 +150,8 @@ const StartupDetail = ({ isModal = false }) => {
           try {
             await fetchStartup();
             return;
-          } catch (startupErr) {
-            const startupStatus = startupErr?.response?.status;
+          } catch (err) {
+            const startupStatus = err?.response?.status;
             if (startupStatus && startupStatus !== 404) {
               if (mounted) setError("Failed to load record");
               return;
@@ -160,7 +160,7 @@ const StartupDetail = ({ isModal = false }) => {
             try {
               await fetchIdea();
               return;
-            } catch (ideaErr) {
+            } catch {
               if (mounted) setError("Record not found");
               return;
             }
@@ -169,8 +169,8 @@ const StartupDetail = ({ isModal = false }) => {
 
         try {
           await fetchIdea();
-        } catch (ideaErr) {
-          const ideaStatus = ideaErr?.response?.status;
+        } catch (err) {
+          const ideaStatus = err?.response?.status;
           if (ideaStatus && ideaStatus !== 404) {
             if (mounted) setError("Failed to load record");
             return;
@@ -178,7 +178,7 @@ const StartupDetail = ({ isModal = false }) => {
 
           try {
             await fetchStartup();
-          } catch (startupErr) {
+          } catch {
             if (mounted) setError("Record not found");
           }
         }

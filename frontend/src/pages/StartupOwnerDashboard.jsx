@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppNavbar from "../components/layout/AppNavBar";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
@@ -21,14 +21,10 @@ import {
   XCircle,
   DollarSign,
   Users,
-  Rocket,
   MessageSquare,
   ChevronDown,
   ChevronUp,
   BriefcaseBusiness,
-  Building2,
-  Landmark,
-  Mail,
   Loader,
   LayoutDashboard
 } from "lucide-react";
@@ -118,7 +114,7 @@ const StartupOwnerDashboard = () => {
     raw: startup
   });
 
-  const fetchStartups = async () => {
+  const fetchStartups = useCallback(async () => {
     if (!user) return;
     setLoading(true); setError(""); setActionMessage("");
 
@@ -148,9 +144,9 @@ const StartupOwnerDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const loadPlans = async () => {
+  const loadPlans = useCallback(async () => {
     if (!user) return;
     setPlansLoading(true); setPlansError("");
 
@@ -165,10 +161,10 @@ const StartupOwnerDashboard = () => {
     } finally {
       setPlansLoading(false);
     }
-  };
+  }, [user]);
 
-  useEffect(() => { fetchStartups(); }, [user]);
-  useEffect(() => { if (dashboardTab === "plans") loadPlans(); }, [dashboardTab, user]);
+  useEffect(() => { fetchStartups(); }, [fetchStartups, user]);
+  useEffect(() => { if (dashboardTab === "plans") loadPlans(); }, [dashboardTab, loadPlans, user]);
 
   const handleStartupCreated = (startup) => {
     setStartups((prev) => [normalizeStartup(startup), ...prev]);
@@ -398,7 +394,7 @@ const StartupOwnerDashboard = () => {
                           <div className="text-center py-20 bg-[#0B0D10]/80 border border-white/5 rounded-[2rem] flex flex-col items-center justify-center">
                             <LayoutDashboard className="w-12 h-12 text-slate-600 mb-4" />
                             <p className="text-xl font-bold text-white mb-2">No Startups Yet</p>
-                            <p className="text-sm text-slate-400">Click "Add Startup" to create your first company profile.</p>
+                            <p className="text-sm text-slate-400">Click &quot;Add Startup&quot; to create your first company profile.</p>
                           </div>
                         ) : (
                           startups.map((startup, i) => (
@@ -1010,7 +1006,7 @@ function InvestorRequestCard({ request, startupId, onAction }) {
              {request.message && (
                <>
                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Message</p>
-                 <p className="text-sm text-slate-300 italic leading-relaxed">"{request.message}"</p>
+                 <p className="text-sm text-slate-300 italic leading-relaxed">&quot;{request.message}&quot;</p>
                </>
              )}
           </div>

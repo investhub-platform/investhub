@@ -107,7 +107,7 @@ export default function InvestmentModal({
                 {investMessage && (
                   <div className="rounded-xl bg-[#1A1D24] border border-white/5 p-5">
                     <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Attached Note</p>
-                    <p className="text-sm text-slate-300 italic">\"{investMessage}\"</p>
+                    <p className="text-sm text-slate-300 italic">&quot;{investMessage}&quot;</p>
                   </div>
                 )}
 
