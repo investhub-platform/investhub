@@ -4,6 +4,7 @@ import { BriefcaseBusiness, Mail, Landmark, Building2, SearchX, ArrowRight, User
 import AppNavbar from "../components/layout/AppNavBar";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { FilterBar } from "@/components/FilterBar";
+import SearchBar from "@/components/SearchBar";
 import { StartupCard } from "@/components/StartupCard";
 import api from "@/lib/axios";
 
@@ -159,6 +160,18 @@ const InvestorDashboard = () => {
     });
   }, [startups, searchQuery, activeFilters]);
 
+  const filteredMandates = useMemo(() => {
+    return mandates.filter((m) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        String(m.mandateTitle || "").toLowerCase().includes(q) ||
+        String(m.investorName || "").toLowerCase().includes(q) ||
+        (m.preferredIndustries || []).some((p) => String(p).toLowerCase().includes(q))
+      );
+    });
+  }, [mandates, searchQuery]);
+
   // Helper for Mandate Card Gradients
   const getGradient = (index) => {
     const gradients = [
@@ -275,6 +288,14 @@ const InvestorDashboard = () => {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
                 >
+                  <div className="mb-6">
+                    <SearchBar
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      placeholder="Search mandates or investor name..."
+                    />
+                  </div>
+
                   {mandatesLoading ? (
                     <div className="flex flex-col items-center justify-center py-32 text-slate-400">
                       <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
@@ -294,9 +315,15 @@ const InvestorDashboard = () => {
                         Mandates will appear here once investors publish their preferred check sizes and target sectors.
                       </p>
                     </div>
+                  ) : filteredMandates.length === 0 ? (
+                    <div className="text-center py-24 bg-[#0B0D10]/80 border border-white/5 rounded-[2rem] mt-4 flex flex-col items-center justify-center shadow-xl">
+                      <SearchX className="w-12 h-12 text-slate-600 mb-4" />
+                      <p className="text-xl font-bold text-white mb-2">No mandates found</p>
+                      <p className="text-sm text-slate-400 font-medium">Try adjusting your search query.</p>
+                    </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
-                      {mandates.map((mandate, idx) => (
+                      {filteredMandates.map((mandate, idx) => (
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
