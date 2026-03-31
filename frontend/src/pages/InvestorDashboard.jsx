@@ -130,7 +130,18 @@ const InvestorDashboard = () => {
           stage: it.stage || "",
           fundingGoal: it.budget || it.fundingGoal || 0,
           currentFunding: it.currentFunding || 0,
-          logo: resolveAssetUrl(it.ImgURL || it.logo || ""),
+          // Use ImgURL (cover) as the large banner image for idea posts, keep `logo` for small overlay
+          photoUrl: resolveAssetUrl(
+            it.ImgURL || it.image || it.coverImage ||
+            (it.StartupId && (it.StartupId.ImgURL || it.StartupId.coverImage)) ||
+            ""
+          ),
+          // Prefer explicit logo fields, fall back to linked startup's logo/ImgURL
+          logo: resolveAssetUrl(
+            it.logo || it.logoUrl ||
+            (it.StartupId && (it.StartupId.logo || it.StartupId.ImgURL)) ||
+            ""
+          ),
           aiRiskLevel: it.aiRiskLevel || "UNKNOWN",
           aiRiskScore: it.aiRiskScore || 0,
           founders: it.createdBy
