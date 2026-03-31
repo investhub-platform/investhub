@@ -9,6 +9,8 @@ import {
   CheckCircle2,
   Circle,
   ExternalLink,
+  FileText,
+  Image,
   Shield,
   TrendingUp,
 } from "lucide-react";
@@ -25,29 +27,67 @@ const StartupDetail = ({ isModal = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Use startup passed in route state if available (faster, avoids refetch)
   const passed = location.state?.startup || null;
 
   const [startup, setStartup] = useState(
-    passed ? normalize(passed, passed.isIdea ? "idea" : "startup") : null
+    passed ? normalize(passed, inferPassedType(passed)) : null
   );
   const [loading, setLoading] = useState(!passed);
   const [error, setError] = useState(null);
 
+  const [activeTab, setActiveTab] = useState(0);
+  const [investAmount, setInvestAmount] = useState("");
+  const [investMessage, setInvestMessage] = useState("");
+  const [isInvestOpen, setIsInvestOpen] = useState(false);
+  const [investStep, setInvestStep] = useState("input");
+  const [investSubmitting, setInvestSubmitting] = useState(false);
+  const [investError, setInvestError] = useState("");
+  const [investSuccess, setInvestSuccess] = useState(null);
+  const [walletBalance, setWalletBalance] = useState(0);
+
   useEffect(() => {
     let mounted = true;
+
+    const hydrateLinkedStartup = async (record) => {
+      const startupRef =
+        typeof record?.startupRefId === "object"
+          ? record?.startupRefId?._id || record?.startupRefId?.id
+          : record?.startupRefId;
+
+      if (!startupRef) return record;
+
+      try {
+        const startupRes = await api.get(`/v1/startups/${startupRef}`);
+        const startupData = startupRes?.data?.data;
+        if (!startupData) return record;
+        return {
+          ...record,
+          startupProfile: normalize(startupData, "startup"),
+        };
+      } catch {
+        return record;
+      }
+    };
+
     const load = async () => {
-      if (passed) return;
+      if (passed) {
+        const next = await hydrateLinkedStartup(normalize(passed, inferPassedType(passed)));
+        if (mounted) setStartup(next);
+        return;
+      }
+
       setLoading(true);
       try {
-        // Try idea endpoint first
         const resIdea = await api.get(`/v1/ideas/${id}`);
         if (!mounted) return;
+
         const data = resIdea?.data?.data;
-        setStartup(normalize(data, "idea"));
+        const type = data?.isIdea === false ? "plan" : "idea";
+        const normalized = normalize(data, type);
+        const withStartup = await hydrateLinkedStartup(normalized);
+        if (mounted) setStartup(withStartup);
       } catch {
         try {
-          // Fallback to startup endpoint
           const res = await api.get(`/v1/startups/${id}`);
           if (!mounted) return;
           const data = res?.data?.data;
@@ -66,20 +106,6 @@ const StartupDetail = ({ isModal = false }) => {
       mounted = false;
     };
   }, [id, passed]);
-
-  // If a passed object exists, ensure it's normalized
-  useEffect(() => {
-    if (passed) setStartup(normalize(passed, passed.isIdea ? "idea" : "startup"));
-  }, [passed]);
-  const [activeTab, setActiveTab] = useState(0);
-  const [investAmount, setInvestAmount] = useState("");
-  const [investMessage, setInvestMessage] = useState("");
-  const [isInvestOpen, setIsInvestOpen] = useState(false);
-  const [investStep, setInvestStep] = useState("input");
-  const [investSubmitting, setInvestSubmitting] = useState(false);
-  const [investError, setInvestError] = useState("");
-  const [investSuccess, setInvestSuccess] = useState(null);
-  const [walletBalance, setWalletBalance] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -104,7 +130,7 @@ const StartupDetail = ({ isModal = false }) => {
   }, [user?._id, user?.id]);
 
   if (loading) {
-    return <div className={`${isModal ? "" : "min-h-screen"} bg-background flex items-center justify-center p-6`}>Loading…</div>;
+    return <div className={`${isModal ? "" : "min-h-screen"} bg-background flex items-center justify-center p-6`}>Loading...</div>;
   }
 
   if (error || !startup) {
@@ -115,12 +141,13 @@ const StartupDetail = ({ isModal = false }) => {
     );
   }
 
-  const fundingPercent = Math.round(
-    (startup.currentFunding / startup.fundingGoal) * 100
-  );
+  const fundingPercent = startup.fundingGoal > 0
+    ? Math.round((startup.currentFunding / startup.fundingGoal) * 100)
+    : 0;
 
   const amountNumber = Number(investAmount || 0);
   const minAmount = 10000;
+  const isPlan = startup.recordType === "plan";
 
   const openInvestModal = () => {
     setInvestError("");
@@ -145,13 +172,19 @@ const StartupDetail = ({ isModal = false }) => {
       return;
     }
 
-    const ownerCandidate =
-      startup?.raw?.createdBy || startup?.raw?.UserID || startup?.raw?.userId || startup?.raw?.ownerId;
     const startupOwnerId =
-      ownerCandidate && typeof ownerCandidate === "object"
-        ? ownerCandidate._id || ownerCandidate.id
-        : ownerCandidate;
-    const startupId = startup?.raw?.StartupId || startup?.raw?._id || startup?.id;
+      startup?.startupProfile?.raw?.UserID ||
+      startup?.startupProfile?.raw?.userId ||
+      startup?.startupProfile?.raw?.createdBy ||
+      startup?.raw?.createdBy ||
+      startup?.raw?.UserID ||
+      startup?.raw?.userId ||
+      startup?.raw?.ownerId;
+
+    const startupId =
+      startup?.startupProfile?.id ||
+      startup?.startupRefId ||
+      (startup.recordType === "startup" ? startup.id : null);
 
     if (!startupOwnerId || !startupId) {
       setInvestError("Startup owner details are missing. Please contact support.");
@@ -178,10 +211,9 @@ const StartupDetail = ({ isModal = false }) => {
   };
 
   return (
-    <div className={`${isModal ? "" : "min-h-screen"} bg-background`}> 
+    <div className={`${isModal ? "" : "min-h-screen"} bg-background`}>
       {!isModal && <AppNavbar />}
 
-      {/* Hero */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
         <div className={`max-w-7xl mx-auto px-4 md:px-8 ${isModal ? "pt-6 pb-6" : "pt-28 pb-8 md:pb-12"} relative`}>
@@ -200,10 +232,20 @@ const StartupDetail = ({ isModal = false }) => {
             </Link>
           )}
 
+          {startup.photoUrl && (
+            <div className="mb-5 rounded-3xl overflow-hidden border border-white/10">
+              <img src={startup.photoUrl} alt={startup.name} className="w-full max-h-72 object-cover" />
+            </div>
+          )}
+
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl gradient-blue flex items-center justify-center text-lg font-bold shrink-0">
-                {startup.logo}
+              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl gradient-blue flex items-center justify-center text-lg font-bold shrink-0 overflow-hidden">
+                {startup.photoUrl ? (
+                  <img src={startup.photoUrl} alt={startup.name} className="w-full h-full object-cover" />
+                ) : (
+                  startup.logo || startup.name?.charAt(0)
+                )}
               </div>
               <div>
                 <h1 className="text-2xl md:text-4xl heading-tight">{startup.name}</h1>
@@ -211,7 +253,7 @@ const StartupDetail = ({ isModal = false }) => {
                 <div className="flex items-center gap-2 mt-2">
                   <Shield className="w-3.5 h-3.5 text-accent" />
                   <span className="text-xs text-accent">
-                    Verified by Mentor {startup.mentorName}
+                    {isPlan ? "Investor mandate" : `Verified by Mentor ${startup.mentorName}`}
                   </span>
                 </div>
               </div>
@@ -225,58 +267,56 @@ const StartupDetail = ({ isModal = false }) => {
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 pb-12">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-          {/* Right sidebar (on top for mobile) */}
           <div className="lg:order-2 lg:w-[340px] shrink-0 space-y-6">
-            {/* Investment CTA */}
-            <div className="glass-card p-6 border-primary/20">
-              <h2 className="text-lg font-semibold mb-1">Secure Investment Tier 1</h2>
-              <p className="text-sm text-muted-foreground mb-5">
-                Funds locked in escrow, milestone-based release.
-              </p>
+            {!isPlan && (
+              <div className="glass-card p-6 border-primary/20">
+                <h2 className="text-lg font-semibold mb-1">Secure Investment Tier 1</h2>
+                <p className="text-sm text-muted-foreground mb-5">
+                  Funds locked in escrow, milestone-based release.
+                </p>
 
-              <div className="space-y-3 mb-5">
-                <label className="text-sm text-muted-foreground">Investment Amount (USD)</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                    $
-                  </span>
-                  <input
-                    type="text"
-                    value={investAmount}
-                    onChange={(e) => setInvestAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                    placeholder="10,000"
-                    className="w-full pl-8 pr-4 py-3 rounded-xl bg-white/5 border border-white/[0.07] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
-                  />
+                <div className="space-y-3 mb-5">
+                  <label className="text-sm text-muted-foreground">Investment Amount (USD)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$
+                    </span>
+                    <input
+                      type="text"
+                      value={investAmount}
+                      onChange={(e) => setInvestAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                      placeholder="10,000"
+                      className="w-full pl-8 pr-4 py-3 rounded-xl bg-white/5 border border-white/[0.07] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    />
+                  </div>
+                  <p className="text-xs text-accent">{formatCurrency(walletBalance)} Available in Wallet</p>
                 </div>
-                <p className="text-xs text-accent">{formatCurrency(walletBalance)} Available in Wallet</p>
+
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  whileHover={{ scale: 1.02 }}
+                  onClick={openInvestModal}
+                  className="w-full py-3.5 rounded-full gradient-blue text-sm font-semibold glow-blue transition-all"
+                >
+                  Commit Investment ($10k min)
+                </motion.button>
+                <p className="text-[11px] text-muted-foreground text-center mt-3">
+                  Wallet transfer is recorded instantly in transaction history.
+                </p>
               </div>
+            )}
 
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                whileHover={{ scale: 1.02 }}
-                onClick={openInvestModal}
-                className="w-full py-3.5 rounded-full gradient-blue text-sm font-semibold glow-blue transition-all"
-              >
-                Commit Investment ($10k min)
-              </motion.button>
-              <p className="text-[11px] text-muted-foreground text-center mt-3">
-                Wallet transfer is recorded instantly in transaction history.
-              </p>
-            </div>
-
-            {/* Meta card */}
             <div className="obsidian-card p-5">
-              <h3 className="text-sm font-semibold mb-4">Startup Details</h3>
+              <h3 className="text-sm font-semibold mb-4">{isPlan ? "Mandate Details" : "Startup Details"}</h3>
               <div className="space-y-3 text-sm">
                 {[
-                  ["Stage", startup.stage],
-                  ["Tech Stack", startup.techStack?.length ? startup.techStack.join(", ") : "N/A"],
-                  ["Industry", startup.industry],
-                  ["Milestones", `${startup.milestonesCompleted}/${startup.milestonesTotal} Completed`],
+                  ["Stage", startup.startupProfile?.stage || startup.stage || "N/A"],
+                  ["Tech Stack", startup.startupProfile?.techStack?.length ? startup.startupProfile.techStack.join(", ") : (startup.techStack?.length ? startup.techStack.join(", ") : "N/A")],
+                  ["Industry", startup.startupProfile?.industry || startup.industry || "N/A"],
+                  ["Milestones", `${startup.startupProfile?.milestonesCompleted ?? startup.milestonesCompleted}/${startup.startupProfile?.milestonesTotal ?? startup.milestonesTotal} Completed`],
                 ].map(([label, value]) => (
-                  <div key={label} className="flex justify-between">
+                  <div key={label} className="flex justify-between gap-3">
                     <span className="text-muted-foreground">{label}</span>
-                    <span className="font-medium">{value}</span>
+                    <span className="font-medium text-right">{value}</span>
                   </div>
                 ))}
               </div>
@@ -286,10 +326,7 @@ const StartupDetail = ({ isModal = false }) => {
                   <span>{fundingPercent}%</span>
                 </div>
                 <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                  <div
-                    className="h-full rounded-full gradient-blue"
-                    style={{ width: `${fundingPercent}%` }}
-                  />
+                  <div className="h-full rounded-full gradient-blue" style={{ width: `${fundingPercent}%` }} />
                 </div>
                 <div className="flex justify-between text-xs mt-1.5">
                   <span className="text-muted-foreground">{formatCurrency(startup.currentFunding)}</span>
@@ -297,11 +334,24 @@ const StartupDetail = ({ isModal = false }) => {
                 </div>
               </div>
             </div>
+
+            {startup.recordType === "idea" && startup.startupProfile && (
+              <div className="obsidian-card p-5">
+                <h3 className="text-sm font-semibold mb-3">Idea Owner Startup</h3>
+                {startup.startupProfile.photoUrl && (
+                  <img
+                    src={startup.startupProfile.photoUrl}
+                    alt={startup.startupProfile.name}
+                    className="w-full h-36 object-cover rounded-xl border border-white/10 mb-3"
+                  />
+                )}
+                <p className="text-sm font-semibold">{startup.startupProfile.name}</p>
+                <p className="text-xs text-muted-foreground mt-1">{startup.startupProfile.tagline}</p>
+              </div>
+            )}
           </div>
 
-          {/* Main content */}
           <div className="flex-1 lg:order-1 min-w-0">
-            {/* Tabs */}
             <div className="flex gap-1 p-1 bg-white/5 rounded-full mb-6 overflow-x-auto scrollbar-hide">
               {tabs.map((tab, i) => (
                 <button
@@ -341,8 +391,7 @@ const StartupDetail = ({ isModal = false }) => {
         </div>
       </div>
 
-      {/* Invest modal with confirmation flow */}
-      {isInvestOpen && (
+      {!isPlan && isInvestOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70" onClick={() => !investSubmitting && setIsInvestOpen(false)} />
           <div className="relative w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a1020] p-6">
@@ -467,14 +516,47 @@ function SummaryTab({ startup }) {
   return (
     <div className="obsidian-card p-6">
       <h2 className="text-xl font-semibold mb-4">Pitch Summary</h2>
-      <p className="text-muted-foreground leading-relaxed">{startup.pitchSummary}</p>
-      <div className="mt-6 flex flex-wrap gap-2">
-        {startup.tags.map((tag) => (
-          <span key={tag} className="pill-filter text-xs py-1 px-3">
-            {tag}
-          </span>
-        ))}
-      </div>
+      <p className="text-muted-foreground leading-relaxed">{startup.pitchSummary || "No summary available."}</p>
+
+      {startup.pitchDeckText && (
+        <div className="mt-5 p-4 rounded-2xl bg-white/[0.03] border border-white/10">
+          <p className="text-sm font-semibold mb-2 flex items-center gap-2"><FileText className="w-4 h-4" /> Pitch Deck Notes</p>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{startup.pitchDeckText}</p>
+        </div>
+      )}
+
+      {startup.pitchDeckFiles?.length > 0 && (
+        <div className="mt-5 space-y-3">
+          <p className="text-sm font-semibold">Pitch Deck Files</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {startup.pitchDeckFiles.map((file, idx) => {
+              const isImage = (file?.mimeType || "").startsWith("image/");
+              return (
+                <div key={`${file.url}-${idx}`} className="p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                  {isImage ? (
+                    <img src={file.url} alt={file.originalName || `pitch-${idx + 1}`} className="w-full h-36 object-cover rounded-lg border border-white/10" />
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm text-slate-300"><FileText className="w-4 h-4" /> {file.originalName || "Document"}</div>
+                  )}
+                  <a href={file.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 mt-2 text-xs text-primary hover:underline">
+                    <ExternalLink className="w-3.5 h-3.5" /> Open file
+                  </a>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {startup.tags?.length > 0 && (
+        <div className="mt-6 flex flex-wrap gap-2">
+          {startup.tags.map((tag) => (
+            <span key={tag} className="pill-filter text-xs py-1 px-3">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -499,12 +581,11 @@ function AIAnalysisTab({ startup }) {
         </div>
       </div>
 
-      {/* Risk Score */}
       <div className="mb-6 p-4 rounded-2xl bg-white/[0.03]">
         <p className="text-sm text-muted-foreground mb-2">Risk Score</p>
         <div className="flex items-end gap-3">
           <span className={`text-4xl font-bold ${riskColor}`}>{startup.aiRiskScore}</span>
-          <span className="text-sm text-muted-foreground mb-1">/ 100 — {startup.aiRiskLevel}</span>
+          <span className="text-sm text-muted-foreground mb-1">/ 100 - {startup.aiRiskLevel}</span>
         </div>
         <div className="h-2 rounded-full bg-white/5 mt-3 overflow-hidden">
           <div
@@ -520,7 +601,6 @@ function AIAnalysisTab({ startup }) {
         </div>
       </div>
 
-      {/* Summary */}
       <div className="mb-6">
         <p className="text-sm font-medium mb-3">Key Findings</p>
         <ul className="space-y-2">
@@ -533,7 +613,6 @@ function AIAnalysisTab({ startup }) {
         </ul>
       </div>
 
-      {/* Market Sentiment */}
       <div className="p-4 rounded-2xl bg-white/[0.03]">
         <div className="flex items-center gap-2 mb-1">
           <TrendingUp className="w-4 h-4 text-primary" />
@@ -565,9 +644,9 @@ function MilestonesTab({ startup }) {
             )}
             <div className="flex-1">
               <p className={`text-sm font-medium ${!m.completed ? "text-muted-foreground" : ""}`}>
-                {m.title}
+                {m.title || "Milestone"}
               </p>
-              <p className="text-xs text-muted-foreground">{m.date}</p>
+              <p className="text-xs text-muted-foreground">{m.date || ""}</p>
             </div>
           </div>
         ))}
@@ -585,7 +664,7 @@ function TeamTab({ startup }) {
           {startup.team.map((member) => (
             <div key={member.name} className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03]">
               <div className="w-10 h-10 rounded-full gradient-blue flex items-center justify-center text-xs font-bold shrink-0">
-                {member.avatar}
+                {member.avatar || <Image className="w-4 h-4" />}
               </div>
               <div>
                 <p className="text-sm font-medium">{member.name}</p>
@@ -617,32 +696,58 @@ function TeamTab({ startup }) {
 
 export default StartupDetail;
 
-// Normalize backend records into the shape expected by this view
+function inferPassedType(record) {
+  if (record?.isIdea === false) return "plan";
+  if (record?.isIdea === true) return "idea";
+  return "startup";
+}
+
 function normalize(record, type = "idea") {
   if (!record) return null;
 
-  if (type === "idea") {
+  if (type === "idea" || type === "plan") {
     const tags = arrayify(record.customCategory ? [record.customCategory] : (record.category ? [record.category] : record.tags));
     const milestones = arrayify(record.milestones);
     const techStack = arrayify(record.techStack);
     const team = arrayify(record.team);
     const aiInsights = record.aiInsights && typeof record.aiInsights === "object" ? record.aiInsights : {};
+    const startupRefId = typeof record.StartupId === "object" ? record.StartupId?._id || record.StartupId?.id : record.StartupId;
+
+    const normalizedPitchDeckFiles = arrayify(record.pitchDeckFiles).map((file) => {
+      if (typeof file === "string") {
+        return {
+          url: resolveAssetUrl(file),
+          originalName: null,
+          mimeType: null,
+          size: null,
+        };
+      }
+      return {
+        url: resolveAssetUrl(file?.url || ""),
+        originalName: file?.originalName || null,
+        mimeType: file?.mimeType || null,
+        size: file?.size || null,
+      };
+    }).filter((f) => Boolean(f.url));
 
     return {
       id: record._id || record.id,
+      recordType: type,
       name: record.title || "Untitled",
       tagline: record.description || (record.aiSummary ? String(record.aiSummary).split("\n")[0] : ""),
-      logo: record.ImgURL || record.logo || "",
+      logo: resolveAssetUrl(record.ImgURL || record.logo || ""),
+      photoUrl: resolveAssetUrl(record.ImgURL || record.logo || ""),
       mentorName: record.mentorName || "Mentor",
       stage: record.stage || "",
       techStack,
       milestones,
       milestonesCompleted: milestones.filter((m) => m?.completed).length,
       milestonesTotal: milestones.length,
-      currentFunding: record.currentFunding || 0,
-      fundingGoal: record.budget || record.fundingGoal || 0,
-      fundingGoalDisplay: record.budget || record.fundingGoal || 0,
+      currentFunding: Number(record.currentFunding || 0),
+      fundingGoal: Number(record.budget || record.fundingGoal || 0),
       pitchSummary: record.aiSummary || record.description || "",
+      pitchDeckText: record.pitchDeckText || null,
+      pitchDeckFiles: normalizedPitchDeckFiles,
       tags,
       industry: record.category || record.industry || "",
       aiRiskScore: record.aiRiskScore || 0,
@@ -656,27 +761,32 @@ function normalize(record, type = "idea") {
         : (record.createdBy
           ? [{ name: "Founder", role: "Founder", avatar: String(record.createdBy).slice(0, 2).toUpperCase() }]
           : []),
+      startupRefId: startupRefId || null,
+      startupProfile: null,
       raw: record,
     };
   }
 
-  // startup type
   const milestones = arrayify(record.milestones);
   const aiInsights = record.aiInsights && typeof record.aiInsights === "object" ? record.aiInsights : {};
   return {
     id: record._id || record.id,
+    recordType: "startup",
     name: record.name || record.title || "Untitled",
     tagline: record.tagline || record.description || "",
-    logo: record.logo || "",
+    logo: resolveAssetUrl(record.ImgURL || record.logo || ""),
+    photoUrl: resolveAssetUrl(record.ImgURL || record.logo || ""),
     mentorName: record.mentorName || "Mentor",
     stage: record.stage || "",
     techStack: arrayify(record.techStack),
     milestones,
     milestonesCompleted: milestones.filter((m) => m?.completed).length,
     milestonesTotal: milestones.length,
-    currentFunding: record.currentFunding || 0,
-    fundingGoal: record.fundingGoal || 0,
+    currentFunding: Number(record.currentFunding || 0),
+    fundingGoal: Number(record.fundingGoal || 0),
     pitchSummary: record.pitchSummary || record.description || "",
+    pitchDeckText: record.pitchDeckText || null,
+    pitchDeckFiles: arrayify(record.pitchDeckFiles).map((f) => (typeof f === "string" ? { url: resolveAssetUrl(f) } : { ...f, url: resolveAssetUrl(f?.url || "") })),
     tags: arrayify(record.tags),
     industry: record.industry || "",
     aiRiskScore: record.aiRiskScore || 0,
@@ -686,6 +796,8 @@ function normalize(record, type = "idea") {
       marketSentiment: aiInsights.marketSentiment || "",
     },
     team: arrayify(record.team),
+    startupRefId: record._id || record.id,
+    startupProfile: null,
     raw: record,
   };
 }
@@ -694,4 +806,15 @@ function arrayify(value) {
   if (Array.isArray(value)) return value;
   if (value == null || value === "") return [];
   return [value];
+}
+
+function resolveAssetUrl(url) {
+  if (!url) return "";
+  if (String(url).startsWith("http://") || String(url).startsWith("https://")) return url;
+  const baseFromApi = String(api.defaults?.baseURL || "");
+  const base = (baseFromApi.startsWith("http")
+    ? baseFromApi.replace(/\/api\/?$/, "")
+    : "http://localhost:5000").replace(/\/+$/, "");
+  if (String(url).startsWith("/")) return `${base}${url}`;
+  return `${base}/${url}`;
 }

@@ -45,6 +45,7 @@ export default function AppRoutes() {
         <Route path="/app/mentor" element={<MentorDashboard />} />
         <Route path="/app/founder" element={<StartupOwnerDashboard />} />
         <Route path="/app/startup/:id" element={<StartupDetails />} />
+        <Route path="/app/plan/:id" element={<StartupDetails />} />
         <Route path="/app/profile" element={<ProfilePage />} />
         <Route path="/app/wallet" element={<WalletPage />} />
         <Route path="/app/wallet/transactions" element={<TransactionsPage />} />
@@ -64,6 +65,7 @@ export default function AppRoutes() {
       {background && (
         <Routes>
           <Route path="/app/startup/:id" element={<StartupModal />} />
+          <Route path="/app/plan/:id" element={<StartupModal />} />
         </Routes>
       )}
     </>

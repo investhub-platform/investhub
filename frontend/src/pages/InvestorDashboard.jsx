@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { BriefcaseBusiness, Mail, Landmark, Building2, SearchX, User, Send } from "lucide-react";
+import { Link } from "react-router-dom";
 import AppNavbar from "../components/layout/AppNavBar";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { FilterBar } from "@/components/FilterBar";
@@ -13,6 +14,17 @@ const arrayify = (value) => {
   if (Array.isArray(value)) return value;
   if (value == null || value === "") return [];
   return [value];
+};
+
+const resolveAssetUrl = (url) => {
+  if (!url) return "";
+  const raw = String(url);
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  const baseFromApi = String(api.defaults?.baseURL || "");
+  const base = (baseFromApi.startsWith("http")
+    ? baseFromApi.replace(/\/api\/?$/, "")
+    : "http://localhost:5000").replace(/\/+$/, "");
+  return raw.startsWith("/") ? `${base}${raw}` : `${base}/${raw}`;
 };
 
 const extractPayload = (response) => {
@@ -115,7 +127,7 @@ const InvestorDashboard = () => {
           stage: it.stage || "",
           fundingGoal: it.budget || it.fundingGoal || 0,
           currentFunding: it.currentFunding || 0,
-          logo: it.ImgURL ? "" : (it.logo || ""),
+          logo: resolveAssetUrl(it.ImgURL || it.logo || ""),
           aiRiskLevel: it.aiRiskLevel || "UNKNOWN",
           aiRiskScore: it.aiRiskScore || 0,
           founders: it.createdBy
@@ -528,6 +540,13 @@ const InvestorDashboard = () => {
                                   <Mail className="w-4 h-4" />
                                 </div>
                               )}
+
+                              <Link
+                                to={`/app/plan/${mandate.id}`}
+                                className="ml-2 inline-flex items-center justify-center h-10 px-4 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+                              >
+                                View
+                              </Link>
                             </div>
 
                           </div>

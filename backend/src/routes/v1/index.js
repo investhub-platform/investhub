@@ -25,6 +25,7 @@ import {
   getRequestsByInvestor,
   setRequestStatus
 } from "../../controllers/requestController.js";
+import { handlePostAssetsUpload } from "../../middlewares/upload.middleware.js";
 
 //user management
 import authRoutes from "./auth.routes.js";
@@ -46,8 +47,8 @@ router.get("/startups", listStartups); // list all startups
 router.get("/startups/user/:userId", getStartupsByUser); // get startups by user ID
 router.get("/startups/status/:status", getStartupsByStatusController); // get startups by status
 router.get("/startups/:id", getStartup); // get a single startup by ID
-router.post("/startups", createStartup); // create a new startup
-router.put("/startups/:id", updateStartup); // update a startup completely
+router.post("/startups", handlePostAssetsUpload, createStartup); // create a new startup
+router.put("/startups/:id", handlePostAssetsUpload, updateStartup); // update a startup completely
 router.patch("/startups/:id/approve", approveStartup); // approve a startup
 router.patch("/startups/:id/reject", rejectStartup); // reject a startup
 router.delete("/startups/:id", deleteStartup); // soft delete a startup

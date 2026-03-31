@@ -1,6 +1,17 @@
 // controllers/ideaController.js
 import * as ideaService from "../services/ideaService.js";
 
+const toAssetPath = (file) => (file ? `/uploads/posts/${file.filename}` : null);
+
+const mapPitchDeckFiles = (files = []) => {
+  return files.map((file) => ({
+    url: `/uploads/posts/${file.filename}`,
+    originalName: file.originalname || null,
+    mimeType: file.mimetype || null,
+    size: file.size || null
+  }));
+};
+
 /**
  * Idea Controller
  * Handles HTTP requests and responses
@@ -78,9 +89,18 @@ export const getSingle = async (req, res, next) => {
  */
 export const createIdea = async (req, res, next) => {
   try {
+    const photoFile = req.files?.photo?.[0] || null;
+    const pitchDeckFiles = req.files?.pitchDeckFiles || [];
+
+    const payload = {
+      ...req.body,
+      ...(photoFile ? { ImgURL: toAssetPath(photoFile) } : {}),
+      ...(pitchDeckFiles.length ? { pitchDeckFiles: mapPitchDeckFiles(pitchDeckFiles) } : {})
+    };
+
     const idea = await ideaService.createNewIdea({
       userId: req.user.id,
-      ...req.body
+      ...payload
     });
     res.status(201).json({ success: true, data: idea });
   } catch (err) {
@@ -94,9 +114,18 @@ export const createIdea = async (req, res, next) => {
  */
 export const updateIdea = async (req, res, next) => {
   try {
+    const photoFile = req.files?.photo?.[0] || null;
+    const pitchDeckFiles = req.files?.pitchDeckFiles || [];
+
+    const payload = {
+      ...req.body,
+      ...(photoFile ? { ImgURL: toAssetPath(photoFile) } : {}),
+      ...(pitchDeckFiles.length ? { pitchDeckFiles: mapPitchDeckFiles(pitchDeckFiles) } : {})
+    };
+
     const idea = await ideaService.updateIdea(req.params.id, {
       userId: req.user.id,
-      ...req.body
+      ...payload
     });
     res.json({ success: true, data: idea });
   } catch (err) {

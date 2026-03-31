@@ -2,6 +2,7 @@
 import { Router } from "express";
 import { requireAuth } from "../../middlewares/auth.middleware.js";
 import { requireRole } from "../../middlewares/requireRole.js";
+import { handlePostAssetsUpload } from "../../middlewares/upload.middleware.js";
 import * as ideaController from "../../controllers/ideaController.js";
 
 const router = Router();
@@ -18,8 +19,8 @@ router.get("/:id", ideaController.getSingle);            // single record by ID
 router.use(requireAuth);
 
 // CRUD (protected)
-router.post("/", ideaController.createIdea);
-router.put("/:id", ideaController.updateIdea);
+router.post("/", handlePostAssetsUpload, ideaController.createIdea);
+router.put("/:id", handlePostAssetsUpload, ideaController.updateIdea);
 router.delete("/:id", ideaController.deleteIdea);
 
 // Mentor review route (requires auth + role)

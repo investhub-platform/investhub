@@ -20,6 +20,17 @@ import {
   ChevronUp
 } from "lucide-react";
 
+const resolveAssetUrl = (url) => {
+  if (!url) return "";
+  const raw = String(url);
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  const baseFromApi = String(api.defaults?.baseURL || "");
+  const base = (baseFromApi.startsWith("http")
+    ? baseFromApi.replace(/\/api\/?$/, "")
+    : "http://localhost:5000").replace(/\/+$/, "");
+  return raw.startsWith("/") ? `${base}${raw}` : `${base}/${raw}`;
+};
+
 const StartupOwnerDashboard = () => {
   const { user } = useAuth();
   const [dashboardTab, setDashboardTab] = useState("startups");
@@ -39,8 +50,11 @@ const StartupOwnerDashboard = () => {
     category: "Tech",
     budget: "",
     timeline: "",
-    expectedOutcomes: ""
+    expectedOutcomes: "",
+    pitchDeckText: ""
   });
+  const [planPhotoFile, setPlanPhotoFile] = useState(null);
+  const [planPitchFiles, setPlanPitchFiles] = useState([]);
   const [planSaving, setPlanSaving] = useState(false);
   const [editingPlanId, setEditingPlanId] = useState(null);
 
@@ -253,8 +267,11 @@ const StartupOwnerDashboard = () => {
       category: "Tech",
       budget: "",
       timeline: "",
-      expectedOutcomes: ""
+      expectedOutcomes: "",
+      pitchDeckText: ""
     });
+    setPlanPhotoFile(null);
+    setPlanPitchFiles([]);
     setEditingPlanId(null);
   };
 
@@ -270,16 +287,28 @@ const StartupOwnerDashboard = () => {
     setPlansError("");
 
     try {
+      const form = new FormData();
+      form.append("title", planFormData.title);
+      form.append("description", planFormData.description);
+      form.append("category", planFormData.category);
+      form.append("budget", String(planFormData.budget || 0));
+      form.append("timeline", planFormData.timeline || "");
+      form.append("expectedOutcomes", planFormData.expectedOutcomes || "");
+      form.append("pitchDeckText", planFormData.pitchDeckText || "");
+      form.append("isIdea", "false");
+      if (planPhotoFile) form.append("photo", planPhotoFile);
+      Array.from(planPitchFiles || []).forEach((file) => {
+        form.append("pitchDeckFiles", file);
+      });
+
       if (editingPlanId) {
-        await api.put(`/v1/ideas/${editingPlanId}`, {
-          ...planFormData,
-          isIdea: false
+        await api.put(`/v1/ideas/${editingPlanId}`, form, {
+          headers: { "Content-Type": "multipart/form-data" }
         });
         setActionMessage("Investment plan updated successfully.");
       } else {
-        await api.post("/v1/ideas", {
-          ...planFormData,
-          isIdea: false
+        await api.post("/v1/ideas", form, {
+          headers: { "Content-Type": "multipart/form-data" }
         });
         setActionMessage("Investment plan created successfully.");
       }
@@ -304,8 +333,11 @@ const StartupOwnerDashboard = () => {
       category: plan.category || "Tech",
       budget: plan.budget || "",
       timeline: plan.timeline || "",
-      expectedOutcomes: plan.expectedOutcomes || ""
+      expectedOutcomes: plan.expectedOutcomes || "",
+      pitchDeckText: plan.pitchDeckText || ""
     });
+    setPlanPhotoFile(null);
+    setPlanPitchFiles([]);
     setIsPlanFormOpen(true);
   };
 
@@ -551,6 +583,39 @@ const StartupOwnerDashboard = () => {
                     placeholder="Expected Outcomes"
                     rows={2}
                   />
+                  <textarea
+                    className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 text-sm"
+                    value={planFormData.pitchDeckText}
+                    onChange={(e) =>
+                      setPlanFormData((prev) => ({
+                        ...prev,
+                        pitchDeckText: e.target.value
+                      }))
+                    }
+                    placeholder="Pitch deck text (optional)"
+                    rows={3}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Plan Photo (optional)</label>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={(e) => setPlanPhotoFile(e.target.files?.[0] || null)}
+                        className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Pitch Deck Files (optional)</label>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/png,image/jpeg,image/webp,application/pdf,.doc,.docx,text/plain"
+                        onChange={(e) => setPlanPitchFiles(Array.from(e.target.files || []))}
+                        className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 text-xs"
+                      />
+                    </div>
+                  </div>
                   <div className="flex justify-end gap-2">
                     <button
                       type="button"
@@ -615,10 +680,16 @@ const StartupOwnerDashboard = () => {
                         </div>
                       </div>
                       <p className="text-sm mt-2">{plan.description}</p>
+                      {plan.ImgURL && (
+                        <img src={resolveAssetUrl(plan.ImgURL)} alt={plan.title} className="w-full max-h-52 object-cover rounded-xl mt-3 border border-white/10" />
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
                         Budget: {plan.budget || "-"}, Timeline:{" "}
                         {plan.timeline || "-"}
                       </p>
+                      {plan.pitchDeckText && (
+                        <p className="text-xs text-muted-foreground mt-2">Pitch: {plan.pitchDeckText}</p>
+                      )}
                       {plan.expectedOutcomes && (
                         <p className="text-xs text-muted-foreground mt-1">
                           Expected: {plan.expectedOutcomes}
@@ -663,8 +734,11 @@ function StartupManageCard({
     category: "Tech",
     budget: "",
     timeline: "",
-    expectedOutcomes: ""
+    expectedOutcomes: "",
+    pitchDeckText: ""
   });
+  const [ideaPhotoFile, setIdeaPhotoFile] = useState(null);
+  const [ideaPitchFiles, setIdeaPitchFiles] = useState([]);
   const [ideaSaving, setIdeaSaving] = useState(false);
   const [editingIdeaId, setEditingIdeaId] = useState(null);
 
@@ -738,8 +812,11 @@ function StartupManageCard({
       category: "Tech",
       budget: "",
       timeline: "",
-      expectedOutcomes: ""
+      expectedOutcomes: "",
+      pitchDeckText: ""
     });
+    setIdeaPhotoFile(null);
+    setIdeaPitchFiles([]);
     setEditingIdeaId(null);
   };
 
@@ -755,17 +832,29 @@ function StartupManageCard({
     setIdeasError("");
 
     try {
+      const form = new FormData();
+      form.append("title", ideaFormData.title);
+      form.append("description", ideaFormData.description);
+      form.append("category", ideaFormData.category);
+      form.append("budget", String(ideaFormData.budget || 0));
+      form.append("timeline", ideaFormData.timeline || "");
+      form.append("expectedOutcomes", ideaFormData.expectedOutcomes || "");
+      form.append("pitchDeckText", ideaFormData.pitchDeckText || "");
+      form.append("isIdea", "true");
+      form.append("StartupId", startup.id);
+      if (ideaPhotoFile) form.append("photo", ideaPhotoFile);
+      Array.from(ideaPitchFiles || []).forEach((file) => {
+        form.append("pitchDeckFiles", file);
+      });
+
       if (editingIdeaId) {
-        await api.put(`/v1/ideas/${editingIdeaId}`, {
-          ...ideaFormData,
-          isIdea: true
+        await api.put(`/v1/ideas/${editingIdeaId}`, form, {
+          headers: { "Content-Type": "multipart/form-data" }
         });
         onActionMessage?.("Idea updated successfully.");
       } else {
-        await api.post("/v1/ideas", {
-          ...ideaFormData,
-          StartupId: startup.id,
-          isIdea: true
+        await api.post("/v1/ideas", form, {
+          headers: { "Content-Type": "multipart/form-data" }
         });
         onActionMessage?.("Idea created successfully.");
       }
@@ -788,8 +877,11 @@ function StartupManageCard({
       category: idea.category || "Tech",
       budget: idea.budget || "",
       timeline: idea.timeline || "",
-      expectedOutcomes: idea.expectedOutcomes || ""
+      expectedOutcomes: idea.expectedOutcomes || "",
+      pitchDeckText: idea.pitchDeckText || ""
     });
+    setIdeaPhotoFile(null);
+    setIdeaPitchFiles([]);
     setIdeaFormOpen(true);
   };
 
@@ -1119,6 +1211,33 @@ function StartupManageCard({
                       placeholder="Expected outcomes"
                       rows={2}
                     />
+                    <textarea
+                      className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/8 text-sm"
+                      value={ideaFormData.pitchDeckText}
+                      onChange={(e) =>
+                        setIdeaFormData((prev) => ({
+                          ...prev,
+                          pitchDeckText: e.target.value
+                        }))
+                      }
+                      placeholder="Pitch deck text (optional)"
+                      rows={3}
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={(e) => setIdeaPhotoFile(e.target.files?.[0] || null)}
+                        className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/8 text-xs"
+                      />
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/png,image/jpeg,image/webp,application/pdf,.doc,.docx,text/plain"
+                        onChange={(e) => setIdeaPitchFiles(Array.from(e.target.files || []))}
+                        className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/8 text-xs"
+                      />
+                    </div>
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"
@@ -1189,6 +1308,16 @@ function StartupManageCard({
                         <p className="text-xs text-muted-foreground mt-1">
                           {idea.description}
                         </p>
+                        {idea.ImgURL && (
+                          <img
+                            src={resolveAssetUrl(idea.ImgURL)}
+                            alt={idea.title}
+                            className="w-full max-h-48 object-cover rounded-xl mt-2 border border-white/10"
+                          />
+                        )}
+                        {idea.pitchDeckText && (
+                          <p className="text-xs text-muted-foreground mt-2">Pitch: {idea.pitchDeckText}</p>
+                        )}
                         <p className="text-xs text-muted-foreground mt-1">
                           Budget: {idea.budget || "-"}, Timeline:{" "}
                           {idea.timeline || "-"}
@@ -1325,6 +1454,7 @@ function CreateStartupForm({ onClose, onSuccess }) {
     BR: "",
     status: "pending"
   });
+  const [photoFile, setPhotoFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -1346,13 +1476,17 @@ function CreateStartupForm({ onClose, onSuccess }) {
     try {
       const me = await fetchMe();
       console.log("Fetched user data:", me);
-      const res = await api.post("/v1/startups", {
-        name: formData.name.trim(),
-        description: formData.description.trim() || null,
-        BR: formData.BR.trim() || null,
-        status: "pending",
-        UserID: me._id || me.id,
-        createdBy: me._id || me.id
+      const form = new FormData();
+      form.append("name", formData.name.trim());
+      form.append("description", formData.description.trim() || "");
+      form.append("BR", formData.BR.trim() || "");
+      form.append("status", "pending");
+      form.append("UserID", me._id || me.id);
+      form.append("createdBy", me._id || me.id);
+      if (photoFile) form.append("photo", photoFile);
+
+      const res = await api.post("/v1/startups", form, {
+        headers: { "Content-Type": "multipart/form-data" }
       });
       setSubmitted(true);
       onSuccess?.(res.data?.data);
@@ -1424,6 +1558,17 @@ function CreateStartupForm({ onClose, onSuccess }) {
             }
           />
         </div>
+          <div>
+            <label className="text-sm text-muted-foreground mb-1.5 block">
+              Startup Photo (optional)
+            </label>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
+              className={inputClass}
+            />
+          </div>
       </div>
 
       <motion.button
