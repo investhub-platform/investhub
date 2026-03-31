@@ -2263,7 +2263,7 @@ function InvestorRequestCard({ request, startupId, onAction, onPayout }) {
   const requestedUserName = request.createdBy?.name || request.investorName;
   const requestedUserEmail =
     request.createdBy?.email || request.investorId?.email;
-
+  console.log("Rendering InvestorRequestCard with request:", request);
   return (
     <div className="p-5 rounded-2xl bg-[#1A1D24] border border-white/5 shadow-inner">
       <div className="flex items-start gap-4">
@@ -2305,7 +2305,11 @@ function InvestorRequestCard({ request, startupId, onAction, onPayout }) {
               </>
             )}
           </div>
-
+          <div className="bg-[#0B0D10] rounded-xl p-4 border border-white/5 mb-4">
+            <p className="text-sm font-bold text-blue-500 mb-3">
+              Request For {request.ideaTitle || "Investment in Startup"}
+            </p>
+          </div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4">
             Requested on {request.date}
           </p>
