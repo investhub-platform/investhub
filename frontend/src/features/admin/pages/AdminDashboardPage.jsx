@@ -210,8 +210,7 @@ export default function AdminDashboardPage() {
 
   const approvedPct = (stats.approvedStartups / startupTotal) * 100;
   const pendingPct = (stats.pendingStartups / startupTotal) * 100;
-  const rejectedPct = (stats.rejectedStartups / startupTotal) * 100;
-
+ 
   if (loading) {
     return (
       <div className="space-y-6">
