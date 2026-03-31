@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { BriefcaseBusiness, Mail, Landmark, Building2, SearchX, User, Send } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import AppNavbar from "../components/layout/AppNavBar";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { FilterBar } from "@/components/FilterBar";
@@ -83,6 +83,7 @@ const formatMoney = (value) => {
 };
 
 const InvestorDashboard = () => {
+  const location = useLocation();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("startups");
   const [searchQuery, setSearchQuery] = useState("");
@@ -544,6 +545,7 @@ const InvestorDashboard = () => {
                               )}
 
                               <Link
+                                state={{ background: location, startup: { id: mandate.id, _id: mandate.id, isIdea: false } }}
                                 to={`/app/plan/${mandate.id}`}
                                 className="ml-2 inline-flex items-center justify-center h-10 px-4 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
                               >
