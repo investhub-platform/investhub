@@ -195,11 +195,18 @@ export default function InvestmentDashboard() {
         startupId,
       });
 
-      setSuccessMessage("Payment completed successfully!");
+      const userId = user?.id || user?._id;
+      await api.patch(`/v1/requests/${requestId}/status`, {
+        requestStatus: "paid",
+        updatedBy: userId,
+      });
+
+      setSuccessMessage("Investment completed successfully.");
       await fetchWalletBalance();
       setSelectedRequestForPayment(null);
       setPaymentMethod("wallet");
       fetchSentRequests();
+      fetchReceivedRequests();
     } catch (e) {
       setError(e?.response?.data?.message || "Payment failed");
     } finally {
@@ -238,12 +245,17 @@ export default function InvestmentDashboard() {
     pending_mentor: {
       icon: <Clock className="w-4 h-4" />,
       color: "bg-blue-500/10 border-blue-500/20 text-blue-400",
-      label: "Pending Mentor Review"
+      label: "Approved - Ready to Pay"
     },
     approved: {
       icon: <Check className="w-4 h-4" />,
       color: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
       label: "Approved - Ready to Pay"
+    },
+    paid: {
+      icon: <Check className="w-4 h-4" />,
+      color: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
+      label: "Invested"
     },
     rejected: {
       icon: <X className="w-4 h-4" />,
@@ -253,6 +265,7 @@ export default function InvestmentDashboard() {
   };
 
   const getRequestStatus = (request) => {
+    if (request.requestStatus === "paid") return statusConfig.paid;
     if (request.requestStatus === "rejected") return statusConfig.rejected;
     if (request.requestStatus === "approved" || request.requestStatus === "pending_mentor") {
       return statusConfig.approved;
@@ -358,7 +371,7 @@ export default function InvestmentDashboard() {
                         const status = getRequestStatus(request);
                         const founderName = request.founderId?.name || "Unknown Founder";
                         const ideaTitle = request.ideaId?.title || "Unknown Idea";
-                        const canPay = request.requestStatus === "pending_mentor";
+                        const canPay = request.requestStatus === "pending_mentor" || request.requestStatus === "approved";
                         
                         return (
                           <motion.div
@@ -413,9 +426,9 @@ export default function InvestmentDashboard() {
                               </button>
                             )}
 
-                            {request.requestStatus === "approved" && !canPay && (
+                            {request.requestStatus === "paid" && (
                               <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
-                                ✓ Approved by founder - Payment completed
+                                ✓ Invested {formatCurrency(request.amount)} successfully
                               </div>
                             )}
 
@@ -534,6 +547,12 @@ export default function InvestmentDashboard() {
                                 {request.founderDecision.comment && (
                                   <p className="mt-2 text-xs opacity-80">{request.founderDecision.comment}</p>
                                 )}
+                              </div>
+                            )}
+
+                            {request.requestStatus === "paid" && (
+                              <div className="mt-4 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
+                                ✓ Investor has paid {formatCurrency(request.amount)} for this idea
                               </div>
                             )}
                           </motion.div>
