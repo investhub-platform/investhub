@@ -3,17 +3,17 @@ import { ArrowLeft, Bookmark, Shield } from "lucide-react";
 
 export default function StartupDetailsHero({ isModal, navigate, startup, isPlan }) {
   return (
-    <div className="relative w-full">
-      <div className="absolute inset-0 h-[350px] w-full overflow-hidden">
+    <div className="relative w-full overflow-hidden">
+      <div className="absolute inset-0 w-full overflow-hidden pointer-events-none">
         {startup.photoUrl ? (
           <>
-            <div className="absolute inset-0 bg-black/60 z-10" />
-            <img src={startup.photoUrl} alt="Cover" className="w-full h-full object-cover blur-sm opacity-50" />
+            <div className="absolute inset-0 bg-black/60 z-10 pointer-events-none" />
+            <img src={startup.photoUrl} alt="Cover" className="w-full h-full object-cover blur-sm opacity-50 pointer-events-none" />
           </>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-b from-blue-600/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-blue-600/20 to-transparent pointer-events-none" />
         )}
-        <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-[#020617] to-transparent z-20" />
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#020617] to-transparent z-20 pointer-events-none" />
       </div>
 
       <div className={`max-w-6xl mx-auto px-4 md:px-8 ${isModal ? "pt-6 pb-6" : "pt-24 md:pt-32 pb-8"} relative z-30`}>

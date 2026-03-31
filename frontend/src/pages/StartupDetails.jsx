@@ -350,7 +350,7 @@ const StartupDetail = ({ isModal = false }) => {
       <div className="max-w-6xl mx-auto px-4 md:px-8 pb-20 w-full">
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1 min-w-0 order-2 lg:order-1">
-            <div className="flex gap-2 p-1.5 bg-[#0B0D10]/80 backdrop-blur-xl border border-white/10 rounded-2xl mb-8 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 p-1.5 bg-[#0B0D10]/80 backdrop-blur-xl border border-white/10 rounded-2xl mb-8 mt-12 overflow-x-auto scrollbar-hide">
               {tabs.map((tab, i) => (
                 <button
                   key={tab}
