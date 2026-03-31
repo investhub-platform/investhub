@@ -787,9 +787,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
                     <StatCard icon={Users} label="Total Investors" value={String(startup.investorRequests.length)} />
                   )}
 
-                  {startup.stage && (
-                    <StatCard icon={Rocket} label="Current Stage" value={startup.stage} />
-                  )}
+                  {/* Current Stage card removed per request */}
                 </div>
               )}
 
