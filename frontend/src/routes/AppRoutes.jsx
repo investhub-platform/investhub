@@ -22,6 +22,7 @@ import AdminLayout from "../features/admin/components/AdminLayout";
 import AdminDashboardPage from "../features/admin/pages/AdminDashboardPage";
 import AdminUsersPage from "../features/admin/pages/AdminUsersPage";
 import AdminUserPage from "../features/admin/pages/AdminUserPage";
+import AdminStartupsPage from "../features/admin/pages/AdminStartupsPage";
 
 export default function AppRoutes() {
   const location = useLocation();
@@ -62,7 +63,9 @@ export default function AppRoutes() {
           <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="users/:id" element={<AdminUserPage />} />
+          <Route path="startups" element={<AdminStartupsPage />} />
         </Route>
+         
       </Route>
 
       {/* 404 */}

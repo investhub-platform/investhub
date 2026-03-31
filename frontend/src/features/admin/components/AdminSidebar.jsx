@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Users, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Users, ShieldCheck, Building } from "lucide-react";
 
 const links = [
   {
@@ -12,6 +12,11 @@ const links = [
     to: "/admin/users",
     icon: Users,
   },
+  {
+    label: "Startups",
+    to: "/admin/startups",
+    icon: Building,
+  },
 ];
 
 export default function AdminSidebar() {
@@ -23,7 +28,9 @@ export default function AdminSidebar() {
             <ShieldCheck className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-white text-xl font-bold tracking-wide">InvestHub</h1>
+            <h1 className="text-white text-xl font-bold tracking-wide">
+              InvestHub
+            </h1>
             <p className="text-slate-400 text-sm">Admin Panel</p>
           </div>
         </div>
