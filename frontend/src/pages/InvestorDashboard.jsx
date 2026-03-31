@@ -69,6 +69,13 @@ const normalizeMandate = (item, index) => {
     minCheck,
     maxCheck,
     contactEmail,
+    // Include possible uploaded image/logo fields so the UI can show banners
+    photoUrl: resolveAssetUrl(
+      item?.ImgURL || item?.image || item?.coverImage || (item?.investor && (item.investor.ImgURL || item.investor.coverImage)) || ""
+    ),
+    logo: resolveAssetUrl(
+      item?.logo || item?.logoUrl || (item?.investor && (item.investor.logo || item.investor.ImgURL)) || ""
+    ),
     summary: item?.description || item?.expectedOutcomes || item?.aiSummary || "No additional preference details provided.",
   };
 };
@@ -470,15 +477,25 @@ const InvestorDashboard = () => {
                           key={mandate.id}
                           className="group flex flex-col h-full bg-[#0B0D10] rounded-[1.5rem] border border-white/5 overflow-hidden transition-all duration-300 hover:border-white/15 hover:shadow-2xl hover:-translate-y-1"
                         >
-                          {/* Banner Area */}
-                          <div className={`h-20 w-full bg-gradient-to-br ${getGradient(idx)} relative overflow-hidden border-b border-white/5`}>
-                            <div className="absolute top-[-50%] left-[-10%] w-32 h-32 bg-white/5 rounded-full blur-[20px]" />
-                            <div className="absolute bottom-[-50%] right-[-10%] w-32 h-32 bg-black/20 rounded-full blur-[20px]" />
-                            
-                            <div className="absolute -bottom-5 left-6 w-12 h-12 rounded-xl bg-[#1A1D24] border border-white/10 flex items-center justify-center shadow-lg">
-                               <Landmark className="w-6 h-6 text-white/80" />
+                          {/* Banner Area (show uploaded image when available, fallback to gradient) */}
+                          <div className={`h-40 w-full relative overflow-hidden border-b border-white/5 bg-gradient-to-br ${getGradient(idx)}`}>
+                            {mandate.photoUrl ? (
+                              <img src={mandate.photoUrl} alt={mandate.mandateTitle} className="w-full h-full object-cover" />
+                            ) : (
+                              <>
+                                <div className="absolute top-[-50%] left-[-10%] w-32 h-32 bg-white/5 rounded-full blur-[20px]" />
+                                <div className="absolute bottom-[-50%] right-[-10%] w-32 h-32 bg-black/20 rounded-full blur-[20px]" />
+                              </>
+                            )}
+
+                            <div className="absolute -bottom-5 left-6 w-12 h-12 rounded-xl bg-[#1A1D24] border border-white/10 flex items-center justify-center shadow-lg overflow-hidden">
+                              {mandate.logo ? (
+                                <img src={mandate.logo} alt={mandate.investorName} className="w-full h-full object-cover" />
+                              ) : (
+                                <Landmark className="w-6 h-6 text-white/80" />
+                              )}
                             </div>
-                            
+
                             <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white/80 border border-white/10">
                               Mandate
                             </div>

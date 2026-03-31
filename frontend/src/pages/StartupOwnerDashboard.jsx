@@ -326,7 +326,7 @@ const StartupOwnerDashboard = () => {
             <div className="inline-flex rounded-full p-1.5 bg-[#0B0D10]/80 border border-white/10 backdrop-blur-xl mb-8 shadow-lg overflow-x-auto max-w-full">
               {[
                 { key: "startups", label: "Startups & Ideas" },
-                { key: "plans", label: "Standalone Ideas" },
+                { key: "plans", label: "Investor Plans" },
               ].map((tab) => {
                 const isActive = dashboardTab === tab.key;
                 return (
@@ -421,8 +421,8 @@ const StartupOwnerDashboard = () => {
                 <motion.div key="plans" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pb-6 border-b border-white/5">
                     <div>
-                      <h2 className="text-xl font-bold text-white">Standalone Ideas</h2>
-                      <p className="text-sm text-slate-400 mt-1">Post ideas or investment needs not tied to a specific startup.</p>
+                      <h2 className="text-xl font-bold text-white">Investor Plans</h2>
+                      <p className="text-sm text-slate-400 mt-1">Post investor plans or funding needs not tied to a specific startup.</p>
                     </div>
                     <button
                       onClick={() => {
@@ -431,7 +431,7 @@ const StartupOwnerDashboard = () => {
                       }}
                       className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-bold text-sm hover:bg-slate-200 transition-colors shadow-lg w-full sm:w-auto"
                     >
-                      {isPlanFormOpen ? <><X className="w-4 h-4"/> Cancel</> : <><Plus className="w-4 h-4"/> Post Idea</>}
+                      {isPlanFormOpen ? <><X className="w-4 h-4"/> Cancel</> : <><Plus className="w-4 h-4"/> Post Investor Plan</>}
                     </button>
                   </div>
 
@@ -448,8 +448,8 @@ const StartupOwnerDashboard = () => {
                       className="p-6 md:p-8 rounded-[2rem] bg-[#0B0D10]/80 border border-white/5 shadow-2xl mb-8 space-y-6"
                     >
                       <div>
-                        <h3 className="text-xl font-bold text-white mb-1">{editingPlanId ? "Edit Idea" : "Post New Idea"}</h3>
-                        <p className="text-sm text-slate-400">Share your vision to attract potential investors or partners.</p>
+                        <h3 className="text-xl font-bold text-white mb-1">{editingPlanId ? "Edit Plan" : "Post New Investor Plan"}</h3>
+                        <p className="text-sm text-slate-400">Share your investor plan to attract potential investors or partners.</p>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -500,7 +500,7 @@ const StartupOwnerDashboard = () => {
                           Cancel
                         </button>
                         <button type="submit" disabled={planSaving} className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-colors shadow-[0_0_15px_rgba(37,99,235,0.3)] disabled:opacity-50">
-                          {planSaving ? "Saving..." : editingPlanId ? "Update Idea" : "Publish Idea"}
+                          {planSaving ? "Saving..." : editingPlanId ? "Update Plan" : "Publish Plan"}
                         </button>
                       </div>
                     </motion.form>
@@ -509,13 +509,13 @@ const StartupOwnerDashboard = () => {
                   {plansLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 text-slate-400">
                        <Loader className="w-8 h-8 text-blue-500 animate-spin mb-4" />
-                       <span className="font-medium">Loading your ideas...</span>
+                       <span className="font-medium">Loading your plans...</span>
                      </div>
                   ) : plans.length === 0 && !isPlanFormOpen ? (
                     <div className="text-center py-20 bg-[#0B0D10]/80 border border-white/5 rounded-[2rem] flex flex-col items-center justify-center">
                       <BriefcaseBusiness className="w-12 h-12 text-slate-600 mb-4" />
-                      <p className="text-xl font-bold text-white mb-2">No Standalone Ideas</p>
-                      <p className="text-sm text-slate-400">Post a general idea or funding need to the network.</p>
+                      <p className="text-xl font-bold text-white mb-2">No Investor Plans</p>
+                      <p className="text-sm text-slate-400">Post an investor plan or funding mandate to the network.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
