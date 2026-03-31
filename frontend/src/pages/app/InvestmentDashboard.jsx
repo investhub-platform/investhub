@@ -100,8 +100,8 @@ export default function InvestmentDashboard() {
   const [walletBalance, setWalletBalance] = useState(0);
 
   // Decision modal
-  const [selectedRequestForDecision, setSelectedRequestForDecision] =
-    useState(null);
+  // const [selectedRequestForDecision, setSelectedRequestForDecision] =
+  //   useState(null);
   const [decisionComment, setDecisionComment] = useState("");
   const [isDecisionProcessing, setIsDecisionProcessing] = useState(false);
 
@@ -238,7 +238,7 @@ export default function InvestmentDashboard() {
       setSuccessMessage(
         `Request ${decision === "accept" ? "accepted" : "rejected"} successfully!`
       );
-      setSelectedRequestForDecision(null);
+      //setSelectedRequestForDecision(null);
       setDecisionComment("");
 
       // Refetch to ensure data is in sync with backend
