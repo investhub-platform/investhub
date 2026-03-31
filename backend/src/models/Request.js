@@ -41,6 +41,7 @@ const RequestSchema = new Schema(
         "pending_investor",
         "pending_mentor",
         "approved",
+        "paid",
         "rejected",
         "withdrawn"
       ],

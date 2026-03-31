@@ -26,7 +26,9 @@ import {
   ChevronUp,
   BriefcaseBusiness,
   Loader,
-  LayoutDashboard
+  LayoutDashboard,
+  BarChart3,
+  HandCoins
 } from "lucide-react";
 
 const resolveAssetUrl = (url) => {
@@ -66,6 +68,7 @@ const StartupOwnerDashboard = () => {
     title: "",
     description: "",
     category: "Tech",
+    customCategory: "",
     budget: "",
     timeline: "",
     expectedOutcomes: "",
@@ -76,6 +79,23 @@ const StartupOwnerDashboard = () => {
   const [planSaving, setPlanSaving] = useState(false);
   const [editingPlanId, setEditingPlanId] = useState(null);
 
+  const [progressReports, setProgressReports] = useState([]);
+  const [progressIdeasByStartup, setProgressIdeasByStartup] = useState({});
+  const [progressLoading, setProgressLoading] = useState(false);
+  const [progressError, setProgressError] = useState("");
+  const [isProgressFormOpen, setIsProgressFormOpen] = useState(false);
+  const [progressSaving, setProgressSaving] = useState(false);
+  const [progressFormData, setProgressFormData] = useState({
+    startupId: "",
+    ideaId: "",
+    weekNumber: "",
+    tasksCompleted: "",
+    challenges: "",
+    nextGoals: "",
+    monthlyIncome: "",
+    overallStatus: "on_track",
+  });
+
   const normalizeRequest = (request) => {
     const investorName = request.investorId?.name || request.createdBy?.name || "Unknown Investor";
     const investorAvatar = investorName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -85,6 +105,7 @@ const StartupOwnerDashboard = () => {
       status: (request.requestStatus || "pending").toLowerCase(),
       direction: request.direction || "investor_to_startup",
       amount: request.amount || 0,
+      ideaTitle: request.ideaId?.title || "Startup Idea",
       message: request.message || "",
       date: request.createdUtc || request.createdAt
           ? new Date(request.createdUtc || request.createdAt).toLocaleDateString()
@@ -166,6 +187,122 @@ const StartupOwnerDashboard = () => {
   useEffect(() => { fetchStartups(); }, [fetchStartups, user]);
   useEffect(() => { if (dashboardTab === "plans") loadPlans(); }, [dashboardTab, loadPlans, user]);
 
+  const loadProgressData = useCallback(async () => {
+    if (!user) return;
+    setProgressLoading(true);
+    setProgressError("");
+    try {
+      const startupList = startups || [];
+      if (!startupList.length) {
+        setProgressIdeasByStartup({});
+        setProgressReports([]);
+        return;
+      }
+
+      const ideaResponses = await Promise.all(
+        startupList.map((s) =>
+          api.get(`/v1/ideas/startup/${s.id}`).catch(() => ({ data: { data: [] } }))
+        )
+      );
+
+      const ideasMap = {};
+      const startupIdSet = new Set(startupList.map((s) => String(s.id)));
+      const ideaIdSet = new Set();
+
+      startupList.forEach((s, idx) => {
+        const ideas = ideaResponses[idx]?.data?.data || [];
+        ideasMap[s.id] = ideas;
+        ideas.forEach((idea) => ideaIdSet.add(String(idea._id || idea.id)));
+      });
+
+      setProgressIdeasByStartup(ideasMap);
+
+      const reportsRes = await api.get("/v1/progress-reports");
+      const allReports = reportsRes?.data?.data || [];
+      const myReports = allReports
+        .filter((r) => startupIdSet.has(String(r.StartupId)) || ideaIdSet.has(String(r.ideaId)))
+        .sort((a, b) => new Date(b.reportDate || b.createdUtc || 0) - new Date(a.reportDate || a.createdUtc || 0));
+
+      setProgressReports(myReports);
+    } catch (e) {
+      setProgressError(e?.response?.data?.message || "Failed to load progress reports.");
+    } finally {
+      setProgressLoading(false);
+    }
+  }, [startups, user]);
+
+  useEffect(() => {
+    if (dashboardTab === "progress") {
+      loadProgressData();
+    }
+  }, [dashboardTab, loadProgressData]);
+
+  const handleProgressSubmit = async (e) => {
+    e.preventDefault();
+    if (!progressFormData.startupId || !progressFormData.ideaId || !progressFormData.weekNumber) {
+      setProgressError("Startup, idea, and week number are required.");
+      return;
+    }
+
+    setProgressSaving(true);
+    setProgressError("");
+    try {
+      const userId = user?.id || user?._id;
+      await api.post("/v1/progress-reports", {
+        StartupId: progressFormData.startupId,
+        ideaId: progressFormData.ideaId,
+        mentorId: userId,
+        weekNumber: Number(progressFormData.weekNumber),
+        tasksCompleted: progressFormData.tasksCompleted,
+        challenges: progressFormData.challenges,
+        nextGoals: progressFormData.nextGoals,
+        monthlyIncome: Number(progressFormData.monthlyIncome || 0),
+        overallStatus: progressFormData.overallStatus,
+      });
+
+      setActionMessage("Progress report added successfully.");
+      setIsProgressFormOpen(false);
+      setProgressFormData({
+        startupId: progressFormData.startupId,
+        ideaId: "",
+        weekNumber: "",
+        tasksCompleted: "",
+        challenges: "",
+        nextGoals: "",
+        monthlyIncome: "",
+        overallStatus: "on_track",
+      });
+      await loadProgressData();
+    } catch (e2) {
+      setProgressError(e2?.response?.data?.message || "Failed to create progress report.");
+    } finally {
+      setProgressSaving(false);
+    }
+  };
+
+  const handleFounderPayout = async (startupId, request, amount) => {
+    const numericAmount = Number(amount);
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setError("Enter a valid payout amount.");
+      return;
+    }
+    try {
+      setError("");
+      const investorId = request?.investorId?._id || request?.investorId?.id || request?.investorId;
+      const requestId = request?.id || request?._id;
+      await api.post("/v1/wallets/payout", {
+        amount: numericAmount,
+        startupId,
+        investorId,
+        requestId,
+      });
+      setActionMessage(`Monthly payout of ${formatCurrency(numericAmount)} sent successfully.`);
+      await fetchStartups();
+    } catch (e) {
+      setError(e?.response?.data?.message || "Failed to send monthly payout.");
+    }
+  };
+
   const handleStartupCreated = (startup) => {
     setStartups((prev) => [normalizeStartup(startup), ...prev]);
     setActionMessage("Startup successfully created.");
@@ -239,7 +376,7 @@ const StartupOwnerDashboard = () => {
   };
 
   const clearPlanForm = () => {
-    setPlanFormData({ title: "", description: "", category: "Tech", budget: "", timeline: "", expectedOutcomes: "", pitchDeckText: "" });
+    setPlanFormData({ title: "", description: "", category: "Tech", customCategory: "", budget: "", timeline: "", expectedOutcomes: "", pitchDeckText: "" });
     setPlanPhotoFile(null); setPlanPitchFiles([]); setEditingPlanId(null);
   };
 
@@ -253,6 +390,7 @@ const StartupOwnerDashboard = () => {
       form.append("title", planFormData.title);
       form.append("description", planFormData.description);
       form.append("category", planFormData.category);
+      if (planFormData.category === "Other") form.append("customCategory", planFormData.customCategory || "");
       form.append("budget", String(planFormData.budget || 0));
       form.append("timeline", planFormData.timeline || "");
       form.append("expectedOutcomes", planFormData.expectedOutcomes || "");
@@ -281,6 +419,7 @@ const StartupOwnerDashboard = () => {
     setEditingPlanId(plan._id || plan.id);
     setPlanFormData({
       title: plan.title || "", description: plan.description || "", category: plan.category || "Tech",
+      customCategory: plan.customCategory || "",
       budget: plan.budget || "", timeline: plan.timeline || "", expectedOutcomes: plan.expectedOutcomes || "",
       pitchDeckText: plan.pitchDeckText || ""
     });
@@ -323,6 +462,7 @@ const StartupOwnerDashboard = () => {
               {[
                 { key: "startups", label: "Startups & Ideas" },
                 { key: "plans", label: "Investor Plans" },
+                { key: "progress", label: "Progress Reports" },
               ].map((tab) => {
                 const isActive = dashboardTab === tab.key;
                 return (
@@ -406,6 +546,7 @@ const StartupOwnerDashboard = () => {
                               onDelete={handleDeleteStartup}
                               onActionMessage={setActionMessage}
                               onRequestAction={handleRequestStatus}
+                              onPayout={handleFounderPayout}
                             />
                           ))
                         )}
@@ -413,7 +554,7 @@ const StartupOwnerDashboard = () => {
                     )}
                   </AnimatePresence>
                 </motion.div>
-              ) : (
+              ) : dashboardTab === "plans" ? (
                 <motion.div key="plans" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pb-6 border-b border-white/5">
                     <div>
@@ -455,7 +596,17 @@ const StartupOwnerDashboard = () => {
                         </div>
                         <div>
                           <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Category</label>
-                          <input className={inputClass} value={planFormData.category} onChange={(e) => setPlanFormData((p) => ({ ...p, category: e.target.value }))} placeholder="e.g. HealthTech, FinTech" />
+                          <select className={inputClass} value={planFormData.category} onChange={(e) => setPlanFormData((p) => ({ ...p, category: e.target.value, customCategory: e.target.value === "Other" ? p.customCategory : "" }))}>
+                            <option value="Tech">Tech</option>
+                            <option value="Health">Health</option>
+                            <option value="Education">Education</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Agriculture">Agriculture</option>
+                            <option value="Other">Other</option>
+                          </select>
+                          {planFormData.category === "Other" && (
+                            <input className={`${inputClass} mt-3`} value={planFormData.customCategory} onChange={(e) => setPlanFormData((p) => ({ ...p, customCategory: e.target.value }))} placeholder="Specify custom category (required)" />
+                          )}
                         </div>
                       </div>
 
@@ -555,6 +706,161 @@ const StartupOwnerDashboard = () => {
                     </div>
                   )}
                 </motion.div>
+              ) : (
+                <motion.div key="progress" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pb-6 border-b border-white/5">
+                    <div>
+                      <h2 className="text-xl font-bold text-white">Progress Reports</h2>
+                      <p className="text-sm text-slate-400 mt-1">Track business progress, monthly income, and investor return activity.</p>
+                    </div>
+                    <button
+                      onClick={() => setIsProgressFormOpen((prev) => !prev)}
+                      className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-bold text-sm hover:bg-slate-200 transition-colors shadow-lg w-full sm:w-auto"
+                    >
+                      {isProgressFormOpen ? <><X className="w-4 h-4"/> Cancel</> : <><Plus className="w-4 h-4"/> Add Progress Report</>}
+                    </button>
+                  </div>
+
+                  {progressError && (
+                    <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-200 text-sm font-medium">
+                      {progressError}
+                    </div>
+                  )}
+
+                  {isProgressFormOpen && (
+                    <form onSubmit={handleProgressSubmit} className="mb-8 p-6 md:p-8 rounded-[2rem] bg-[#0B0D10]/80 border border-white/5 shadow-2xl space-y-5">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Startup</label>
+                          <select
+                            className={inputClass}
+                            value={progressFormData.startupId}
+                            onChange={(e) => setProgressFormData((p) => ({ ...p, startupId: e.target.value, ideaId: "" }))}
+                            required
+                          >
+                            <option value="">Select startup</option>
+                            {startups.map((s) => (
+                              <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Idea</label>
+                          <select
+                            className={inputClass}
+                            value={progressFormData.ideaId}
+                            onChange={(e) => setProgressFormData((p) => ({ ...p, ideaId: e.target.value }))}
+                            required
+                          >
+                            <option value="">Select idea</option>
+                            {(progressIdeasByStartup[progressFormData.startupId] || []).map((idea) => (
+                              <option key={idea._id || idea.id} value={idea._id || idea.id}>{idea.title}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Week Number</label>
+                          <input
+                            type="number"
+                            min="1"
+                            className={inputClass}
+                            value={progressFormData.weekNumber}
+                            onChange={(e) => setProgressFormData((p) => ({ ...p, weekNumber: e.target.value }))}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Business Progress</label>
+                          <textarea className={`${inputClass} min-h-[100px] resize-y`} value={progressFormData.tasksCompleted} onChange={(e) => setProgressFormData((p) => ({ ...p, tasksCompleted: e.target.value }))} placeholder="What has been completed this month?" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Challenges</label>
+                          <textarea className={`${inputClass} min-h-[100px] resize-y`} value={progressFormData.challenges} onChange={(e) => setProgressFormData((p) => ({ ...p, challenges: e.target.value }))} placeholder="Current blockers or risks" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Next Month Goals</label>
+                          <textarea className={`${inputClass} min-h-[80px] resize-y`} value={progressFormData.nextGoals} onChange={(e) => setProgressFormData((p) => ({ ...p, nextGoals: e.target.value }))} placeholder="Key goals for next period" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Monthly Income (USD)</label>
+                          <input className={inputClass} value={progressFormData.monthlyIncome} onChange={(e) => setProgressFormData((p) => ({ ...p, monthlyIncome: e.target.value }))} placeholder="e.g. 12000" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Overall Status</label>
+                          <select className={inputClass} value={progressFormData.overallStatus} onChange={(e) => setProgressFormData((p) => ({ ...p, overallStatus: e.target.value }))}>
+                            <option value="on_track">On Track</option>
+                            <option value="delayed">Delayed</option>
+                            <option value="at_risk">At Risk</option>
+                          </select>
+                        </div>
+                        <div className="flex items-end justify-end">
+                          <button type="submit" disabled={progressSaving} className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-colors shadow-[0_0_15px_rgba(37,99,235,0.3)] disabled:opacity-50 w-full md:w-auto">
+                            {progressSaving ? "Saving..." : "Save Progress Report"}
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+                  )}
+
+                  {progressLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                      <Loader className="w-8 h-8 text-blue-500 animate-spin mb-4" />
+                      <span className="font-medium">Loading progress reports...</span>
+                    </div>
+                  ) : progressReports.length === 0 ? (
+                    <div className="text-center py-20 bg-[#0B0D10]/80 border border-white/5 rounded-[2rem] flex flex-col items-center justify-center">
+                      <BarChart3 className="w-12 h-12 text-slate-600 mb-4" />
+                      <p className="text-xl font-bold text-white mb-2">No Progress Reports Yet</p>
+                      <p className="text-sm text-slate-400">Create your first monthly progress and income update.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
+                      {progressReports.map((report) => (
+                        <div key={report._id || report.id} className="p-6 rounded-[2rem] bg-[#0B0D10] border border-white/5 shadow-xl">
+                          <div className="flex items-center justify-between gap-3 mb-4">
+                            <h4 className="text-lg font-bold text-white">Week {report.weekNumber}</h4>
+                            <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                              {report.overallStatus || "on_track"}
+                            </span>
+                          </div>
+                          <div className="space-y-3 text-sm">
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Business Progress</p>
+                              <p className="text-slate-300">{report.tasksCompleted || "-"}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Challenges</p>
+                              <p className="text-slate-300">{report.challenges || "-"}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Next Goals</p>
+                              <p className="text-slate-300">{report.nextGoals || "-"}</p>
+                            </div>
+                          </div>
+                          <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between">
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Monthly Income</p>
+                              <p className="text-base font-black text-emerald-400">{formatCurrency(report.monthlyIncome)}</p>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-slate-400">
+                              <HandCoins className="w-4 h-4" />
+                              {new Date(report.reportDate || report.createdUtc).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
               )}
             </AnimatePresence>
 
@@ -569,7 +875,7 @@ const StartupOwnerDashboard = () => {
 /* SUB-COMPONENTS                                                                                    */
 /* ------------------------------------------------------------------------------------------------- */
 
-function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage, onRequestAction }) {
+function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage, onRequestAction, onPayout }) {
   const [expanded, setExpanded] = useState(index === 0);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ name: startup.name, description: startup.description, BR: startup.BR, status: startup.status });
@@ -578,7 +884,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
   const [ideasLoading, setIdeasLoading] = useState(false);
   const [ideasError, setIdeasError] = useState("");
   const [ideaFormOpen, setIdeaFormOpen] = useState(false);
-  const [ideaFormData, setIdeaFormData] = useState({ title: "", description: "", category: "Tech", budget: "", timeline: "", expectedOutcomes: "", pitchDeckText: "" });
+  const [ideaFormData, setIdeaFormData] = useState({ title: "", description: "", category: "Tech", customCategory: "", budget: "", timeline: "", expectedOutcomes: "", pitchDeckText: "" });
   const [ideaPhotoFile, setIdeaPhotoFile] = useState(null);
   const [ideaPitchFiles, setIdeaPitchFiles] = useState([]);
   const [startupLogoFile, setStartupLogoFile] = useState(null);
@@ -596,6 +902,8 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
   const status = statusConfig[String(startup.status).toLowerCase()] || statusConfig.draft;
   const fundingPercent = startup.fundingGoal > 0 ? Math.round((startup.currentFunding / startup.fundingGoal) * 100) : 0;
   const pendingRequests = startup.investorRequests.filter((r) => r.status === "pending" || r.status === "pending_founder" || r.status === "pending_investor" || r.status === "pending_mentor").length;
+  const paidRequests = startup.investorRequests.filter((r) => r.status === "paid");
+  const paidAmount = paidRequests.reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
   useEffect(() => { setFormData({ name: startup.name, description: startup.description, BR: startup.BR, status: startup.status }); }, [startup]);
 
@@ -616,7 +924,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
   }, [expanded, startup.id]);
 
   const clearIdeaForm = () => {
-    setIdeaFormData({ title: "", description: "", category: "Tech", budget: "", timeline: "", expectedOutcomes: "", pitchDeckText: "" });
+    setIdeaFormData({ title: "", description: "", category: "Tech", customCategory: "", budget: "", timeline: "", expectedOutcomes: "", pitchDeckText: "" });
     setIdeaPhotoFile(null); setIdeaPitchFiles([]); setEditingIdeaId(null);
   };
 
@@ -628,7 +936,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
     try {
       const form = new FormData();
       form.append("title", ideaFormData.title); form.append("description", ideaFormData.description);
-      form.append("category", ideaFormData.category); form.append("budget", String(ideaFormData.budget || 0));
+      form.append("category", ideaFormData.category); if (ideaFormData.category === "Other") form.append("customCategory", ideaFormData.customCategory || ""); form.append("budget", String(ideaFormData.budget || 0));
       form.append("timeline", ideaFormData.timeline || ""); form.append("expectedOutcomes", ideaFormData.expectedOutcomes || "");
       form.append("pitchDeckText", ideaFormData.pitchDeckText || ""); form.append("isIdea", "true"); form.append("StartupId", startup.id);
       if (ideaPhotoFile) form.append("photo", ideaPhotoFile);
@@ -655,6 +963,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
     setEditingIdeaId(idea._id || idea.id);
     setIdeaFormData({
       title: idea.title || "", description: idea.description || "", category: idea.category || "Tech",
+      customCategory: idea.customCategory || "",
       budget: idea.budget || "", timeline: idea.timeline || "", expectedOutcomes: idea.expectedOutcomes || "", pitchDeckText: idea.pitchDeckText || ""
     });
     setIdeaPhotoFile(null); setIdeaPitchFiles([]); setIdeaFormOpen(true);
@@ -779,6 +1088,10 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
                     <StatCard icon={DollarSign} label="Capital Raised" value={formatCurrency(startup.currentFunding)} />
                   )}
 
+                  {paidAmount > 0 && (
+                    <StatCard icon={HandCoins} label="Paid Investments" value={formatCurrency(paidAmount)} />
+                  )}
+
                   {startup.investorRequests && startup.investorRequests.length > 0 && (
                     <StatCard icon={Users} label="Total Investors" value={String(startup.investorRequests.length)} />
                   )}
@@ -808,7 +1121,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
                   </h4>
                   <div className="space-y-4">
                     {startup.investorRequests.map((req) => (
-                      <InvestorRequestCard key={req.id} request={req} startupId={startup.id} onAction={onRequestAction} />
+                      <InvestorRequestCard key={req.id} request={req} startupId={startup.id} onAction={onRequestAction} onPayout={onPayout} />
                     ))}
                   </div>
                 </div>
@@ -838,7 +1151,17 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
                          </div>
                          <div>
                             <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Category</label>
-                            <input className={inputClass} value={ideaFormData.category} onChange={(e) => setIdeaFormData((p) => ({ ...p, category: e.target.value }))} placeholder="e.g. SaaS" />
+                            <select className={inputClass} value={ideaFormData.category} onChange={(e) => setIdeaFormData((p) => ({ ...p, category: e.target.value, customCategory: e.target.value === "Other" ? p.customCategory : "" }))}>
+                              <option value="Tech">Tech</option>
+                              <option value="Health">Health</option>
+                              <option value="Education">Education</option>
+                              <option value="Finance">Finance</option>
+                              <option value="Agriculture">Agriculture</option>
+                              <option value="Other">Other</option>
+                            </select>
+                            {ideaFormData.category === "Other" && (
+                              <input className={`${inputClass} mt-3`} value={ideaFormData.customCategory} onChange={(e) => setIdeaFormData((p) => ({ ...p, customCategory: e.target.value }))} placeholder="Specify custom category (required)" />
+                            )}
                          </div>
                       </div>
                       <div>
@@ -956,11 +1279,12 @@ function UploadField({ label, accept, multiple = false, onChange, files = [], on
   );
 }
 
-function InvestorRequestCard({ request, startupId, onAction }) {
+function InvestorRequestCard({ request, startupId, onAction, onPayout }) {
   const statusIcons = {
     pending_founder: <Clock className="w-4 h-4 text-yellow-400" />,
     pending_investor: <Clock className="w-4 h-4 text-yellow-400" />,
     pending_mentor: <Clock className="w-4 h-4 text-yellow-400" />,
+    paid: <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
     approved: <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
     rejected: <XCircle className="w-4 h-4 text-red-400" />,
     withdrawn: <XCircle className="w-4 h-4 text-slate-500" />
@@ -970,6 +1294,7 @@ function InvestorRequestCard({ request, startupId, onAction }) {
     pending_founder: "bg-yellow-500/10 border-yellow-500/20 text-yellow-400",
     pending_investor: "bg-yellow-500/10 border-yellow-500/20 text-yellow-400",
     pending_mentor: "bg-yellow-500/10 border-yellow-500/20 text-yellow-400",
+    paid: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
     approved: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
     rejected: "bg-red-500/10 border-red-500/20 text-red-400",
     withdrawn: "bg-slate-500/10 border-slate-500/20 text-slate-400"
@@ -978,6 +1303,7 @@ function InvestorRequestCard({ request, startupId, onAction }) {
   const normalizedStatus = request.status || "pending";
   const canFounderDecide = normalizedStatus === "pending_founder" || normalizedStatus === "pending";
   const canWithdraw = normalizedStatus === "pending_founder" || normalizedStatus === "pending_investor" || normalizedStatus === "pending";
+  const isPaid = normalizedStatus === "paid";
 
   const requestedUserName = request.createdBy?.name || request.investorName;
   const requestedUserEmail = request.createdBy?.email || request.investorId?.email;
@@ -1032,6 +1358,27 @@ function InvestorRequestCard({ request, startupId, onAction }) {
                   Withdraw Request
                 </button>
               )}
+            </div>
+          )}
+
+          {isPaid && (
+            <div className="space-y-3">
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-widest">
+                Invested {formatCurrency(request.amount)} for {request.ideaTitle}
+              </div>
+              <button
+                onClick={() => {
+                  const suggested = Math.max(1, Math.round(Number(request.amount || 0) * 0.05));
+                  const raw = window.prompt("Monthly return amount to send to investor (USD)", String(suggested));
+                  if (raw == null) return;
+                  const amount = Number(raw);
+                  if (!Number.isFinite(amount) || amount <= 0) return;
+                  onPayout?.(startupId, request, amount);
+                }}
+                className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white transition-colors shadow-[0_0_15px_rgba(37,99,235,0.3)]"
+              >
+                Send Monthly Return
+              </button>
             </div>
           )}
         </div>

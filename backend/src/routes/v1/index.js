@@ -23,6 +23,7 @@ import {
   setMentorDecision,
   getRequestsByStartup,
   getRequestsByInvestor,
+  getRequestsByIdea,
   setRequestStatus
 } from "../../controllers/requestController.js";
 import { handlePostAssetsUpload } from "../../middlewares/upload.middleware.js";
@@ -81,6 +82,7 @@ router.patch("/requests/:id/mentor-decision", setMentorDecision); // set mentor 
 router.patch("/requests/:id/status", setRequestStatus); // set request status (approved/rejected/withdrawn)
 router.get("/requests/startup/:startupId", getRequestsByStartup); // get requests for a startup
 router.get("/requests/investor/:investorId", getRequestsByInvestor); // get requests for an investor
+router.get("/requests/idea/:ideaId", getRequestsByIdea); // get requests for an idea
 
 //user
 router.use("/auth", authRoutes);

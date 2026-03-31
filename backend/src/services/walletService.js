@@ -444,3 +444,72 @@ export const executeInvestment = async (investor, amount, startupId, startupOwne
     session.endSession();
   }
 };
+
+/**
+ * Founder monthly payout to investor.
+ * Atomically deducts founder wallet and credits investor wallet.
+ */
+export const executeFounderPayout = async (founder, amount, startupId, investorId, requestId = null) => {
+  const numericAmount = Number(amount);
+  if (!startupId || !investorId) {
+    throw new AppError('startupId and investorId are required', 400);
+  }
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    throw new AppError('Invalid payout amount', 400);
+  }
+  if (String(founder.id) === String(investorId)) {
+    throw new AppError('Founder and investor cannot be the same user', 400);
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const founderWallet = await walletRepo.findByUser(founder.id, session);
+    if (!founderWallet || founderWallet.balance < numericAmount) {
+      throw new AppError('Insufficient funds for payout', 400);
+    }
+
+    let investorWallet = await walletRepo.findByUser(investorId, session);
+    if (!investorWallet) {
+      const [createdWallet] = await walletRepo.create([{ userId: investorId }], { session });
+      investorWallet = createdWallet;
+    }
+
+    founderWallet.balance -= numericAmount;
+    await walletRepo.save(founderWallet, session);
+
+    investorWallet.balance += numericAmount;
+    await walletRepo.save(investorWallet, session);
+
+    const payoutContext = requestId ? ` for request ${requestId}` : '';
+
+    await txRepo.createMany([
+      {
+        walletId: founderWallet._id,
+        userId: founder.id,
+        type: 'Withdrawal',
+        amount: -numericAmount,
+        status: 'Completed',
+        description: `Monthly investor payout${payoutContext}`,
+        relatedStartupId: startupId,
+      },
+      {
+        walletId: investorWallet._id,
+        userId: investorId,
+        type: 'Deposit',
+        amount: numericAmount,
+        status: 'Completed',
+        description: `Monthly return from startup ${startupId}`,
+        relatedStartupId: startupId,
+      },
+    ], session);
+
+    await session.commitTransaction();
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
+  }
+};
