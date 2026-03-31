@@ -1,7 +1,8 @@
 // FilterBar.jsx
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import SearchBar from "@/components/SearchBar";
 
 const quickFilters = ["SaaS", "Fintech", "AI/ML", "AI Risk < 20%", "HealthTech"];
 
@@ -11,16 +12,7 @@ export function FilterBar({ searchQuery, onSearchChange, activeFilters, onToggle
   return (
     <>
       <div className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search by industry or AI keyword..."
-            className="w-full pl-11 pr-4 py-3 rounded-full bg-white/5 border border-white/[0.07] text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/30 transition-all"
-          />
-        </div>
+        <SearchBar value={searchQuery} onChange={onSearchChange} placeholder="Search by industry or AI keyword..." />
 
         <div className="flex items-center gap-2 flex-wrap">
           {quickFilters.map((f) => (

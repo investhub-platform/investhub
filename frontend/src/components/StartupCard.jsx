@@ -11,6 +11,7 @@ export function StartupCard({ startup, index }) {
   const fundingPercent = goal > 0 ? Math.round((current / goal) * 100) : 0;
 
   const location = useLocation();
+  const detailPath = startup?.isIdea ? `/app/idea/${startup._id || startup.id}` : `/app/startup/${startup._id || startup.id}`;
 
   // Generate a consistent pseudo-random gradient for startups without logos
   const gradientClass = [
@@ -27,23 +28,30 @@ export function StartupCard({ startup, index }) {
       transition={{ delay: index * 0.05, duration: 0.5, ease: "easeOut" }}
       className="h-full"
     >
-      <Link to={`/app/startup/${startup._id || startup.id}`} state={{ background: location, startup }} className="block h-full">
+      <Link to={detailPath} state={{ background: location, startup }} className="block h-full">
         <div className="group flex flex-col h-full bg-[#0B0D10] rounded-[1.5rem] border border-white/5 overflow-hidden transition-all duration-300 hover:border-white/15 hover:shadow-2xl hover:shadow-blue-900/10 hover:-translate-y-1">
           
           {/* Top Banner Area */}
-          <div className={`h-24 w-full bg-gradient-to-br ${gradientClass} relative overflow-hidden border-b border-white/5`}>
-            {/* Ambient abstract shapes inside banner */}
-            <div className="absolute top-[-50%] left-[-10%] w-32 h-32 bg-white/5 rounded-full blur-[20px]" />
-            <div className="absolute bottom-[-50%] right-[-10%] w-32 h-32 bg-black/20 rounded-full blur-[20px]" />
-            
-            <div className="absolute -bottom-5 left-5 w-14 h-14 rounded-xl bg-[#0B0D10] border border-white/10 flex items-center justify-center text-xl font-bold text-white shadow-lg overflow-hidden">
-               {startup.logo ? (
-                 <img src={startup.logo} alt="logo" className="w-full h-full object-cover" />
-               ) : (
-                 <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                   {startup.name.charAt(0)}
-                 </span>
-               )}
+          <div className={`h-24 w-full relative overflow-hidden border-b border-white/5 ${startup.recordType === "idea" || startup.isIdea ? "bg-transparent" : `bg-gradient-to-br ${gradientClass}`}`}>
+            {/* If this is an idea post and has a cover image, show it as the large banner */}
+            { (startup.recordType === "idea" || startup.isIdea) && startup.photoUrl ? (
+              <img src={startup.photoUrl} alt={`${startup.name} cover`} className="w-full h-full object-cover" />
+            ) : (
+              // decorative ambient shapes for gradient/banner
+              <>
+                <div className={`absolute inset-0 bg-gradient-to-br ${gradientClass}`} />
+                <div className="absolute top-[-50%] left-[-10%] w-32 h-32 bg-white/5 rounded-full blur-[20px]" />
+                <div className="absolute bottom-[-50%] right-[-10%] w-32 h-32 bg-black/20 rounded-full blur-[20px]" />
+              </>
+            )}
+
+            {/* Small logo/avatar overlay. For idea posts, this is the startup logo (small) shown on top of the cover. If no logo, fall back to gradient/initial. */}
+            <div className="absolute -bottom-5 left-5 w-14 h-14 md:w-16 md:h-16 rounded-xl bg-[#0B0D10] border border-white/10 flex items-center justify-center text-xl font-bold text-white shadow-lg overflow-hidden">
+              {startup.logo ? (
+                <img src={startup.logo} alt="logo" className="w-full h-full object-cover" />
+              ) : (
+                <span className="inline-block w-full h-full flex items-center justify-center text-2xl font-black text-white">{(startup.name || "?").charAt(0)}</span>
+              )}
             </div>
           </div>
 

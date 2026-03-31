@@ -110,6 +110,22 @@ export const setMentorDecision = async (req, res, next) => {
   }
 };
 
+/**
+ * Set investor decision
+ * PATCH /requests/:id/investor-decision
+ */
+export const setInvestorDecision = async (req, res, next) => {
+  try {
+    const data = await requestService.setInvestorDecisionOnRequest(
+      req.params.id,
+      req.body
+    );
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getRequestsByStartup = async (req, res, next) => {
   try {
     const startupId = req.params.startupId;
@@ -133,6 +149,16 @@ export const setRequestStatus = async (req, res, next) => {
   }
 };
 
+export const getRequestsByInvestor = async (req, res, next) => {
+  try {
+    const investorId = req.params.investorId;
+    const data = await requestService.getRequestsByInvestorId(investorId);
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   listRequests,
   getRequest,
@@ -140,7 +166,9 @@ export default {
   updateRequest,
   withdrawRequest,
   setFounderDecision,
+  setInvestorDecision,
   setMentorDecision,
   getRequestsByStartup,
+  getRequestsByInvestor,
   setRequestStatus
 };
