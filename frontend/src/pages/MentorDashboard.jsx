@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppNavbar from "../components/layout/AppNavBar";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
+import SearchBar from "@/components/SearchBar";
 import {
   Plus,
   Calendar,
@@ -38,6 +39,7 @@ const MentorDashboard = () => {
   const [activeView, setActiveView] = useState("browse");
   const [tab, setTab] = useState("all-events");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -70,7 +72,12 @@ const MentorDashboard = () => {
     const eventStatus = getEventStatus(event.date);
     const ownerMatch = tab === "my-events" ? isOwnerEvent(event, user) : true;
     const statusMatch = statusFilter === "all" ? true : eventStatus === statusFilter;
-    return ownerMatch && statusMatch;
+    const matchesSearch = !searchQuery || (
+      String(event.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      String(event.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      String(event.organizerName || event.organizer?.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    return ownerMatch && statusMatch && matchesSearch;
   });
 
   return (
@@ -171,6 +178,10 @@ const MentorDashboard = () => {
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search events, topics, or organizers..." />
                   </div>
 
                   {/* Loading State */}

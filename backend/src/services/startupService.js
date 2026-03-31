@@ -87,6 +87,7 @@ export const createNewStartup = async (payload, userId) => {
       name: name.trim(),
       description: payload.description || null,
       BR: payload.BR || null,
+      ImgURL: payload.ImgURL || null,
       UserID: resolvedUserId,
       userId: resolvedUserId,
       status: payload.status || "pending",
@@ -123,6 +124,7 @@ export const updateExistingStartup = async (id, payload, userId) => {
       ...(resolvedUserId
         ? { UserID: resolvedUserId, userId: resolvedUserId }
         : {}),
+      ...(payload.ImgURL !== undefined ? { ImgURL: payload.ImgURL } : {}),
       updatedUtc: new Date(),
       updatedBy: userId
     };

@@ -1,8 +1,13 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import InvestorDashboard from "../../../frontend/src/pages/InvestorDashboard";
+
+jest.mock("../../../frontend/src/features/auth/useAuth", () => ({
+  useAuth: () => ({
+    user: { id: "founder-1", roles: ["Founder"] },
+  }),
+}));
 
 jest.mock("../../../frontend/src/lib/axios", () => ({
   __esModule: true,
@@ -45,6 +50,7 @@ describe("InvestorDashboard integration", () => {
           {
             _id: "idea-1",
             title: "MedAI",
+            isIdea: true,
             description: "Clinical co-pilot. Second sentence",
             category: "HealthTech",
             budget: 100000,
@@ -65,15 +71,15 @@ describe("InvestorDashboard integration", () => {
 
     expect(await screen.findByText(/MedAI/)).toBeInTheDocument();
     expect(screen.getByText(/clinical co-pilot/i)).toBeInTheDocument();
-    expect(api.get).toHaveBeenCalledWith("/v1/ideas/all");
+    expect(api.get).toHaveBeenCalledWith("/v1/ideas");
   });
 
   it("renders multiple startup cards from API response", async () => {
     api.get.mockResolvedValue({
       data: {
         data: [
-          { _id: "1", title: "AlphaTech", category: "SaaS", budget: 1000, createdBy: "u1", description: "SaaS solution" },
-          { _id: "2", title: "BetaHealth", category: "HealthTech", budget: 2000, createdBy: "u2", description: "Health tech platform" },
+          { _id: "1", title: "AlphaTech", isIdea: true, category: "SaaS", budget: 1000, createdBy: "u1", description: "SaaS solution" },
+          { _id: "2", title: "BetaHealth", isIdea: true, category: "HealthTech", budget: 2000, createdBy: "u2", description: "Health tech platform" },
         ],
       },
     });
@@ -86,6 +92,6 @@ describe("InvestorDashboard integration", () => {
 
     await screen.findByText(/AlphaTech/);
     expect(screen.getByText(/BetaHealth/)).toBeInTheDocument();
-    expect(api.get).toHaveBeenCalledWith("/v1/ideas/all");
+    expect(api.get).toHaveBeenCalledWith("/v1/ideas");
   });
 });

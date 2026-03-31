@@ -41,8 +41,41 @@ export const getRequestsByStartupId = async (startupId) => {
   }
 };
 
+export const getRequestsByInvestorId = async (investorId) => {
+  if (!investorId) {
+    throw new AppError("investorId is required", 400);
+  }
+
+  try {
+    const requests = await requestRepository.findByInvestorId(investorId);
+    return requests || [];
+  } catch (error) {
+    throw new AppError("Failed to fetch requests for investor", 500);
+  }
+};
+
+export const getRequestsByIdeaId = async (ideaId) => {
+  if (!ideaId) {
+    throw new AppError("ideaId is required", 400);
+  }
+
+  try {
+    const requests = await requestRepository.findByIdeaId(ideaId);
+    return requests || [];
+  } catch (error) {
+    throw new AppError("Failed to fetch requests for idea", 500);
+  }
+};
+
 export const updateRequestStatus = async (id, status, updatedBy) => {
-  const validStatuses = ["approved", "rejected", "withdrawn"];
+  const validStatuses = [
+    "pending_founder",
+    "pending_investor",
+    "pending_mentor",
+    "approved",
+    "rejected",
+    "withdrawn"
+  ];
   if (!id) {
     throw new AppError("Request ID is required", 400);
   }
@@ -81,15 +114,44 @@ export const updateRequestStatus = async (id, status, updatedBy) => {
 
 export const createNewRequest = async (payload) => {
   // Validate required fields
-  const { investorId, amount, createdBy } = payload;
-  if (!investorId || amount == null) {
-    throw new AppError("investorId and amount are required", 400);
+  const {
+    investorId,
+    founderId,
+    ideaId,
+    direction,
+    requestStatus,
+    amount,
+    createdBy
+  } = payload;
+
+  if (!investorId || !founderId || !ideaId || amount == null) {
+    throw new AppError("investorId, founderId, ideaId and amount are required", 400);
   }
+
+  if (!["investor_to_startup", "startup_to_investor"].includes(direction)) {
+    throw new AppError("direction must be 'investor_to_startup' or 'startup_to_investor'", 400);
+  }
+
+  const allowedStatuses = [
+    "pending_founder",
+    "pending_investor",
+    "pending_mentor",
+    "approved",
+    "rejected",
+    "withdrawn"
+  ];
+
+  if (requestStatus && !allowedStatuses.includes(requestStatus)) {
+    throw new AppError("Invalid requestStatus", 400);
+  }
+
+  const derivedStatus = direction === "startup_to_investor" ? "pending_investor" : "pending_founder";
 
   // Ensure createdBy is set
   const requestPayload = {
     ...payload,
-    createdBy: payload.createdBy || investorId
+    requestStatus: requestStatus || derivedStatus,
+    createdBy: payload.createdBy || (direction === "startup_to_investor" ? founderId : investorId)
   };
 
   try {
@@ -121,6 +183,19 @@ export const withdrawRequestById = async (id, updatedBy) => {
 
     // Apply business logic: update status
     request.requestStatus = "withdrawn";
+    if (request.direction === "startup_to_investor") {
+      request.investorDecision = {
+        decision: "reject",
+        comment: "Withdrawn by requester",
+        decidedAt: new Date()
+      };
+    } else {
+      request.founderDecision = {
+        decision: "reject",
+        comment: "Withdrawn by requester",
+        decidedAt: new Date()
+      };
+    }
     if (updatedBy) request.updatedBy = updatedBy;
 
     return await requestRepository.save(request);
@@ -145,6 +220,14 @@ export const setFounderDecisionOnRequest = async (id, decisionData) => {
     const request = await requestRepository.findByIdForUpdate(id);
     if (!request) {
       throw new AppError("Request not found", 404);
+    }
+
+    if (request.direction !== "investor_to_startup") {
+      throw new AppError("Founder decision is only valid for investor-to-startup requests", 400);
+    }
+
+    if (request.requestStatus !== "pending_founder") {
+      throw new AppError("Request is not awaiting founder decision", 400);
     }
 
     // Apply business logic: set founder decision and update status
@@ -203,5 +286,45 @@ export const setMentorDecisionOnRequest = async (id, decisionData) => {
   } catch (error) {
     if (error instanceof AppError) throw error;
     throw new AppError("Failed to set mentor decision", 500);
+  }
+};
+
+export const setInvestorDecisionOnRequest = async (id, decisionData) => {
+  const { decision, comment, updatedBy } = decisionData;
+
+  if (!["accept", "reject"].includes(decision)) {
+    throw new AppError(
+      "Invalid decision value. Must be 'accept' or 'reject'",
+      400
+    );
+  }
+
+  try {
+    const request = await requestRepository.findByIdForUpdate(id);
+    if (!request) {
+      throw new AppError("Request not found", 404);
+    }
+
+    if (request.direction !== "startup_to_investor") {
+      throw new AppError("Investor decision is only valid for startup-to-investor requests", 400);
+    }
+
+    if (request.requestStatus !== "pending_investor") {
+      throw new AppError("Request is not awaiting investor decision", 400);
+    }
+
+    request.investorDecision = {
+      decision,
+      comment,
+      decidedAt: new Date()
+    };
+
+    request.requestStatus = decision === "accept" ? "pending_mentor" : "rejected";
+    if (updatedBy) request.updatedBy = updatedBy;
+
+    return await requestRepository.save(request);
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError("Failed to set investor decision", 500);
   }
 };

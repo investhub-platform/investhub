@@ -14,7 +14,7 @@ import StartupOwnerDashboard from "../pages/StartupOwnerDashboard";
 import StartupDetails from "../pages/StartupDetails";
 import StartupModal from "../pages/StartupModal";
 import PortfolioPage from "../pages/app/PortfolioPage";
-import MessagesPage from "../pages/app/MessagesPage";
+import InvestmentDashboard from "../pages/app/InvestmentDashboard";
 import SettingsPage from "../pages/app/SettingsPage";
 import WalletPage from "../pages/app/WalletPage";
 import TransactionsPage from "../pages/app/TransactionsPage";
@@ -41,10 +41,12 @@ export default function AppRoutes() {
         <Route path="/app" element={<Navigate to="/app/explore" replace />} />
         <Route path="/app/explore" element={<InvestorDashboard />} />
         <Route path="/app/portfolio" element={<PortfolioPage />} />
-        <Route path="/app/messages" element={<MessagesPage />} />
+          <Route path="/app/deals" element={<InvestmentDashboard />} />
         <Route path="/app/mentor" element={<MentorDashboard />} />
         <Route path="/app/founder" element={<StartupOwnerDashboard />} />
         <Route path="/app/startup/:id" element={<StartupDetails />} />
+        <Route path="/app/idea/:id" element={<StartupDetails />} />
+        <Route path="/app/plan/:id" element={<StartupDetails />} />
         <Route path="/app/profile" element={<ProfilePage />} />
         <Route path="/app/wallet" element={<WalletPage />} />
         <Route path="/app/wallet/transactions" element={<TransactionsPage />} />
@@ -64,6 +66,8 @@ export default function AppRoutes() {
       {background && (
         <Routes>
           <Route path="/app/startup/:id" element={<StartupModal />} />
+          <Route path="/app/idea/:id" element={<StartupModal />} />
+          <Route path="/app/plan/:id" element={<StartupModal />} />
         </Routes>
       )}
     </>

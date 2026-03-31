@@ -9,14 +9,18 @@ import Idea from "../models/Idea.js";
  * Find all records (Ideas + Investment Plans)
  */
 export const findAllRecords = async () => {
-  return await Idea.find({ deletedUtc: null }).lean();
+  return await Idea.find({ deletedUtc: null })
+    .populate("StartupId", "_id name description BR ImgURL status UserID")
+    .lean();
 };
 
 /**
  * Find all Ideas only
  */
 export const findAllIdeasOnly = async () => {
-  return await Idea.find({ deletedUtc: null, isIdea: true }).lean();
+  return await Idea.find({ deletedUtc: null, isIdea: true })
+    .populate("StartupId", "_id name description BR ImgURL status UserID")
+    .lean();
 };
 
 /**
@@ -30,7 +34,7 @@ export const findAllPlansOnly = async () => {
  * Find by ID
  */
 export const findById = async (id) => {
-  return await Idea.findById(id);
+  return await Idea.findById(id).populate("StartupId", "_id name description BR ImgURL status UserID");
 };
 
 /**
