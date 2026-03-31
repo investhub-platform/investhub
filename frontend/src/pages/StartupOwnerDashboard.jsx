@@ -9,6 +9,9 @@ import { formatCurrency } from "@/data/mockData";
 import {
   Plus,
   X,
+  Upload,
+  FileText,
+  ImageUp,
   CheckCircle2,
   Clock,
   XCircle,
@@ -29,6 +32,13 @@ const resolveAssetUrl = (url) => {
     ? baseFromApi.replace(/\/api\/?$/, "")
     : "http://localhost:5000").replace(/\/+$/, "");
   return raw.startsWith("/") ? `${base}${raw}` : `${base}/${raw}`;
+};
+
+const formatFileSize = (size = 0) => {
+  const value = Number(size || 0);
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 };
 
 const StartupOwnerDashboard = () => {
@@ -504,11 +514,12 @@ const StartupOwnerDashboard = () => {
               {isPlanFormOpen && (
                 <form
                   onSubmit={handlePlanSubmit}
-                  className="obsidian-card p-5 mb-6 space-y-4"
+                  className="obsidian-card p-5 mb-6 space-y-4 border border-white/10"
                 >
-                  <h3 className="text-lg font-semibold">
+                  <h3 className="text-lg font-semibold mb-1">
                     {editingPlanId ? "Edit" : "New"} Investment Plan
                   </h3>
+                  <p className="text-xs text-muted-foreground mb-2">Create a stronger mandate with media and pitch context.</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <input
                       className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 text-sm"
@@ -596,25 +607,24 @@ const StartupOwnerDashboard = () => {
                     rows={3}
                   />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Plan Photo (optional)</label>
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        onChange={(e) => setPlanPhotoFile(e.target.files?.[0] || null)}
-                        className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Pitch Deck Files (optional)</label>
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/png,image/jpeg,image/webp,application/pdf,.doc,.docx,text/plain"
-                        onChange={(e) => setPlanPitchFiles(Array.from(e.target.files || []))}
-                        className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/8 text-xs"
-                      />
-                    </div>
+                    <UploadField
+                      label="Plan Photo (optional)"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={(e) => setPlanPhotoFile(e.target.files?.[0] || null)}
+                      files={planPhotoFile ? [planPhotoFile] : []}
+                      onClear={() => setPlanPhotoFile(null)}
+                      helperText="Recommended: landscape image under 2MB"
+                      icon="image"
+                    />
+                    <UploadField
+                      label="Pitch Deck Files (optional)"
+                      multiple
+                      accept="image/png,image/jpeg,image/webp,application/pdf,.doc,.docx,text/plain"
+                      onChange={(e) => setPlanPitchFiles(Array.from(e.target.files || []))}
+                      files={planPitchFiles}
+                      onClear={() => setPlanPitchFiles([])}
+                      helperText="Upload screenshots, PDF, DOCX, or text files"
+                    />
                   </div>
                   <div className="flex justify-end gap-2">
                     <button
@@ -1136,7 +1146,7 @@ function StartupManageCard({
                 )}
 
                 {ideaFormOpen && (
-                  <form onSubmit={handleIdeaSubmit} className="space-y-2 mb-4">
+                  <form onSubmit={handleIdeaSubmit} className="space-y-3 mb-4 rounded-xl border border-white/10 bg-white/2 p-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <input
                         className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/8 text-sm"
@@ -1224,18 +1234,23 @@ function StartupManageCard({
                       rows={3}
                     />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <input
-                        type="file"
+                      <UploadField
+                        label="Idea Photo (optional)"
                         accept="image/png,image/jpeg,image/webp"
                         onChange={(e) => setIdeaPhotoFile(e.target.files?.[0] || null)}
-                        className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/8 text-xs"
+                        files={ideaPhotoFile ? [ideaPhotoFile] : []}
+                        onClear={() => setIdeaPhotoFile(null)}
+                        helperText="Used as cover image on cards/details"
+                        icon="image"
                       />
-                      <input
-                        type="file"
+                      <UploadField
+                        label="Pitch Deck Files (optional)"
                         multiple
                         accept="image/png,image/jpeg,image/webp,application/pdf,.doc,.docx,text/plain"
                         onChange={(e) => setIdeaPitchFiles(Array.from(e.target.files || []))}
-                        className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/8 text-xs"
+                        files={ideaPitchFiles}
+                        onClear={() => setIdeaPitchFiles([])}
+                        helperText="Attach supporting files for investors"
                       />
                     </div>
                     <div className="flex justify-end gap-2">
@@ -1353,6 +1368,60 @@ function StatCard({ icon: Icon, label, value }) {
       <Icon className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-sm font-semibold mt-0.5">{value}</p>
+    </div>
+  );
+}
+
+function UploadField({
+  label,
+  accept,
+  multiple = false,
+  onChange,
+  files = [],
+  onClear,
+  helperText,
+  icon = "file"
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/3 p-3">
+      <label className="text-xs text-muted-foreground mb-2 block">{label}</label>
+      <label className="flex items-center justify-between gap-3 cursor-pointer rounded-lg border border-dashed border-white/20 px-3 py-2.5 hover:border-white/35 transition-colors">
+        <div className="flex items-center gap-2 text-xs text-slate-300">
+          {icon === "image" ? <ImageUp className="w-4 h-4 text-blue-300" /> : <Upload className="w-4 h-4 text-blue-300" />}
+          <span>{multiple ? "Choose files" : "Choose file"}</span>
+        </div>
+        <span className="text-[11px] text-slate-500">{multiple ? "multiple" : "single"}</span>
+        <input
+          type="file"
+          multiple={multiple}
+          accept={accept}
+          onChange={onChange}
+          className="hidden"
+        />
+      </label>
+
+      {helperText && <p className="text-[11px] text-slate-500 mt-2">{helperText}</p>}
+
+      {files.length > 0 && (
+        <div className="mt-2 space-y-1.5">
+          {files.map((file, idx) => (
+            <div key={`${file.name}-${idx}`} className="flex items-center justify-between gap-3 rounded-md bg-white/5 px-2.5 py-1.5">
+              <div className="min-w-0 flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <p className="text-[11px] text-slate-300 truncate">{file.name}</p>
+              </div>
+              <span className="text-[10px] text-slate-500 shrink-0">{formatFileSize(file.size)}</span>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-[11px] text-red-300 hover:text-red-200"
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1514,8 +1583,9 @@ function CreateStartupForm({ onClose, onSuccess }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="obsidian-card p-6 max-w-2xl space-y-5">
+    <form onSubmit={onSubmit} className="obsidian-card p-6 max-w-2xl space-y-5 border border-white/10">
       <h2 className="text-xl font-semibold">Submit New Startup</h2>
+      <p className="text-xs text-muted-foreground">Improve discoverability with a clear description and optional visual identity.</p>
       {error && <div className="text-sm text-destructive">{error}</div>}
       <div>
         <label className="text-sm text-muted-foreground mb-1.5 block">
@@ -1558,17 +1628,15 @@ function CreateStartupForm({ onClose, onSuccess }) {
             }
           />
         </div>
-          <div>
-            <label className="text-sm text-muted-foreground mb-1.5 block">
-              Startup Photo (optional)
-            </label>
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
-              className={inputClass}
-            />
-          </div>
+        <UploadField
+          label="Startup Photo (optional)"
+          accept="image/png,image/jpeg,image/webp"
+          onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
+          files={photoFile ? [photoFile] : []}
+          onClear={() => setPhotoFile(null)}
+          helperText="Recommended size: 1200x630"
+          icon="image"
+        />
       </div>
 
       <motion.button
