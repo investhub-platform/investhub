@@ -5,6 +5,7 @@ import {
   fetchUnreadCount,
   markAsRead,
   markAllAsRead,
+  deleteNotification,
 } from "./api";
 import { useAuth } from "@/features/auth/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +22,6 @@ export default function NotificationDropdown() {
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
   const nav = useNavigate();
-
 
   // Load notifications
   const loadNotifications = useCallback(async () => {
@@ -57,22 +57,18 @@ export default function NotificationDropdown() {
 
   // Initial load + auto refresh
   useEffect(() => {
-    if (!isAuthed || !accessToken) {
-      return;
-    }
+    if (!isAuthed || !accessToken) return;
 
     const refresh = () => {
       void loadNotifications();
       void loadUnread();
     };
 
-    const initialTimeout = window.setTimeout(refresh, 0);
+    // initial load
+    refresh();
     const interval = window.setInterval(refresh, 10000); // every 10s
 
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, [isAuthed, accessToken, loadNotifications, loadUnread]);
 
   // Handle clicking outside to close
@@ -94,15 +90,14 @@ export default function NotificationDropdown() {
     setOpen(newState);
 
     if (newState) {
-      // Optional: refresh notifications when opening
       try {
         const [notifRes, unreadRes] = await Promise.all([
           fetchNotifications(),
           fetchUnreadCount(),
         ]);
 
-        setNotifications(notifRes.data.data.items || []);
-        setUnreadCount(unreadRes.data.data.count || 0);
+        setNotifications(notifRes.data?.data?.items || []);
+        setUnreadCount(unreadRes.data?.data?.count || 0);
       } catch (err) {
         console.error("Notification fetch error:", err);
       }
@@ -129,20 +124,18 @@ export default function NotificationDropdown() {
     }
   };
 
-
   // Delete notification (Subtle dismissal)
   const handleDelete = async (e, id) => {
     e.stopPropagation(); // Prevent triggering the read/navigate action
     try {
       await deleteNotification(id);
       setNotifications((prev) => prev.filter((n) => n._id !== id));
-      // Re-calculate unread count just in case an unread one was deleted
-      loadUnread();
+      void loadUnread();
     } catch (err) {
       console.error("Delete error:", err);
     }
   };
- main
+
   // Mark all read
   const handleMarkAll = async () => {
     try {
@@ -160,8 +153,8 @@ export default function NotificationDropdown() {
       <button
         onClick={handleOpen}
         className={`relative p-2.5 rounded-full border transition-all duration-300 ${
-          open 
-            ? "bg-blue-500/10 border-blue-500/30 text-blue-400" 
+          open
+            ? "bg-blue-500/10 border-blue-500/30 text-blue-400"
             : "bg-white/5 border-white/5 text-slate-300 hover:text-white hover:bg-white/10"
         }`}
       >
@@ -173,49 +166,25 @@ export default function NotificationDropdown() {
         )}
       </button>
 
-      {/* 📩 Dropdown */}
-      {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-[400px] overflow-y-auto bg-[#0B0D10] border border-white/10 rounded-xl shadow-xl p-2 z-50">
-
-          {/* Header */}
-          <div className="flex justify-between items-center px-2 py-1">
-            <span className="text-sm text-white font-semibold">
-              Notifications
-            </span>
-
-            <button
-              onClick={handleMarkAll}
-              className="text-xs text-blue-400 hover:underline flex items-center gap-1"
-            >
-              <CheckCheck className="w-4 h-4" />
-              Mark all
-            </button>
-          </div>
-
-          <div className="h-px bg-white/10 my-2" />
-
-          {/* Notification List */}
-          {notifications.length === 0 ? (
-            <p className="text-center text-sm text-gray-400 py-4">
-              No notifications
-            </p>
-          ) : (
-            notifications.map((n) => (
-              <div
-                key={n._id}
-                className={`p-3 rounded-lg mb-2 cursor-pointer ${
-                  n.isRead
-                    ? "bg-white/5"
-                    : "bg-blue-500/10 border border-blue-500/30"
-                }`}
-              >
-                {/* Click area */}
-                <div
-                  onClick={() => handleRead(n._id, n.actionUrl)}
-                  className="flex flex-col"
-                >
-                  <span className="text-sm font-semibold text-white">
-                    {n.title}
+      {/* 📩 Dropdown Panel */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed left-4 right-4 top-[85px] sm:absolute sm:top-[calc(100%+12px)] sm:left-auto sm:right-0 sm:w-[400px] max-h-[80vh] sm:max-h-[500px] flex flex-col bg-[#0B0D10]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center px-5 py-4 border-b border-white/5 bg-white/[0.02] shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-base text-white font-bold tracking-tight">
+                  Notifications
+                </span>
+                {unreadCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-wider">
+                    {unreadCount} new
                   </span>
                 )}
               </div>
@@ -231,7 +200,7 @@ export default function NotificationDropdown() {
             </div>
 
             {/* List */}
-            <div className="overflow-y-auto overscroll-contain flex-1">
+            <div className="overflow-y-auto overscroll-contain flex-1 relative">
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
                   <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 border border-white/5">
@@ -241,11 +210,13 @@ export default function NotificationDropdown() {
                   <p className="text-xs text-slate-400">No new notifications right now.</p>
                 </div>
               ) : (
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-white/5 pb-4">
                   {notifications.map((n) => (
                     <div
                       key={n._id}
-                      className="group relative flex items-start gap-4 p-5 hover:bg-white/[0.03] transition-colors cursor-pointer"
+                      className={`group relative flex items-start gap-4 p-5 hover:bg-white/[0.03] transition-colors cursor-pointer ${
+                        n.isRead ? "bg-transparent" : "bg-blue-500/[0.02]"
+                      }`}
                       onClick={() => handleRead(n._id, n.actionUrl)}
                     >
                       {/* Unread Glow Indicator */}
@@ -255,7 +226,11 @@ export default function NotificationDropdown() {
 
                       {/* Notification Content */}
                       <div className="flex-1 min-w-0 pr-6">
-                        <h4 className={`text-sm font-bold truncate mb-1 ${n.isRead ? "text-slate-300" : "text-white"}`}>
+                        <h4
+                          className={`text-sm font-bold truncate mb-1 ${
+                            n.isRead ? "text-slate-300" : "text-white"
+                          }`}
+                        >
                           {n.title}
                         </h4>
                         <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
@@ -266,7 +241,7 @@ export default function NotificationDropdown() {
                         </span>
                       </div>
 
-                      {/* Subtle Dismiss Button (Replaces the big red trash can) */}
+                      {/* Subtle Dismiss Button */}
                       <button
                         onClick={(e) => handleDelete(e, n._id)}
                         className="absolute right-4 top-5 p-1.5 text-slate-500 hover:text-white hover:bg-white/10 rounded-md transition-all opacity-0 group-hover:opacity-100 sm:flex hidden"
@@ -274,8 +249,8 @@ export default function NotificationDropdown() {
                       >
                         <X className="w-4 h-4" />
                       </button>
-                      
-                      {/* Always show dismiss on mobile since there's no hover */}
+
+                      {/* Always show dismiss on mobile since there is no hover */}
                       <button
                         onClick={(e) => handleDelete(e, n._id)}
                         className="absolute right-4 top-5 p-1.5 text-slate-500 hover:text-white rounded-md sm:hidden flex"
@@ -287,9 +262,9 @@ export default function NotificationDropdown() {
                 </div>
               )}
             </div>
-            
+
             {/* Optional Footer Fade */}
-            <div className="h-4 w-full bg-gradient-to-t from-[#0B0D10]/95 to-transparent absolute bottom-0 pointer-events-none" />
+            <div className="h-4 w-full bg-gradient-to-t from-[#0B0D10] to-transparent absolute bottom-0 pointer-events-none rounded-b-2xl" />
           </motion.div>
         )}
       </AnimatePresence>

@@ -5,15 +5,7 @@ import api from "@/lib/axios";
 // Use Vite environment variable
 const BASE_URL = import.meta.env.VITE_API_BASE + "/api/v1/notifications";
 
-// Helper to get token from localStorage
-const getToken = () => localStorage.getItem("accessToken");
-
-// Axios config with Authorization header
-const authConfig = () => ({
-  headers: {
-    Authorization: `Bearer ${getToken()}`,
-  },
-});
+// Axios config with Authorization header (not used here - api instance handles auth)
 
 // Get notifications
 export const fetchNotifications = (params) =>
