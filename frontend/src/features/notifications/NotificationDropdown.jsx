@@ -5,7 +5,6 @@ import {
   fetchUnreadCount,
   markAsRead,
   markAllAsRead,
-  deleteNotification,
 } from "./api";
 import { useAuth } from "@/features/auth/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +21,7 @@ export default function NotificationDropdown() {
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
   const nav = useNavigate();
+
 
   // Load notifications
   const loadNotifications = useCallback(async () => {
@@ -70,8 +70,8 @@ export default function NotificationDropdown() {
     const interval = window.setInterval(refresh, 10000); // every 10s
 
     return () => {
-      window.clearTimeout(initialTimeout);
-      window.clearInterval(interval);
+      isMounted = false;
+      clearInterval(interval);
     };
   }, [isAuthed, accessToken, loadNotifications, loadUnread]);
 
@@ -90,10 +90,22 @@ export default function NotificationDropdown() {
 
   // Toggle dropdown
   const handleOpen = async () => {
-    setOpen((prev) => !prev);
-    if (!open) {
-      await loadNotifications();
-      await loadUnread();
+    const newState = !open;
+    setOpen(newState);
+
+    if (newState) {
+      // Optional: refresh notifications when opening
+      try {
+        const [notifRes, unreadRes] = await Promise.all([
+          fetchNotifications(),
+          fetchUnreadCount(),
+        ]);
+
+        setNotifications(notifRes.data.data.items || []);
+        setUnreadCount(unreadRes.data.data.count || 0);
+      } catch (err) {
+        console.error("Notification fetch error:", err);
+      }
     }
   };
 
@@ -117,6 +129,7 @@ export default function NotificationDropdown() {
     }
   };
 
+
   // Delete notification (Subtle dismissal)
   const handleDelete = async (e, id) => {
     e.stopPropagation(); // Prevent triggering the read/navigate action
@@ -129,7 +142,7 @@ export default function NotificationDropdown() {
       console.error("Delete error:", err);
     }
   };
-
+ main
   // Mark all read
   const handleMarkAll = async () => {
     try {
@@ -160,25 +173,49 @@ export default function NotificationDropdown() {
         )}
       </button>
 
-      {/* 📩 Dropdown Panel */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="fixed left-4 right-4 top-[85px] sm:absolute sm:top-[calc(100%+12px)] sm:left-auto sm:right-0 sm:w-[400px] max-h-[80vh] sm:max-h-[500px] flex flex-col bg-[#0B0D10]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 overflow-hidden"
-          >
-            {/* Header */}
-            <div className="flex justify-between items-center px-5 py-4 border-b border-white/5 bg-white/[0.02]">
-              <div className="flex items-center gap-2">
-                <span className="text-base text-white font-bold tracking-tight">
-                  Notifications
-                </span>
-                {unreadCount > 0 && (
-                  <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-xs font-bold">
-                    {unreadCount} new
+      {/* 📩 Dropdown */}
+      {open && (
+        <div className="absolute right-0 mt-2 w-80 max-h-[400px] overflow-y-auto bg-[#0B0D10] border border-white/10 rounded-xl shadow-xl p-2 z-50">
+
+          {/* Header */}
+          <div className="flex justify-between items-center px-2 py-1">
+            <span className="text-sm text-white font-semibold">
+              Notifications
+            </span>
+
+            <button
+              onClick={handleMarkAll}
+              className="text-xs text-blue-400 hover:underline flex items-center gap-1"
+            >
+              <CheckCheck className="w-4 h-4" />
+              Mark all
+            </button>
+          </div>
+
+          <div className="h-px bg-white/10 my-2" />
+
+          {/* Notification List */}
+          {notifications.length === 0 ? (
+            <p className="text-center text-sm text-gray-400 py-4">
+              No notifications
+            </p>
+          ) : (
+            notifications.map((n) => (
+              <div
+                key={n._id}
+                className={`p-3 rounded-lg mb-2 cursor-pointer ${
+                  n.isRead
+                    ? "bg-white/5"
+                    : "bg-blue-500/10 border border-blue-500/30"
+                }`}
+              >
+                {/* Click area */}
+                <div
+                  onClick={() => handleRead(n._id, n.actionUrl)}
+                  className="flex flex-col"
+                >
+                  <span className="text-sm font-semibold text-white">
+                    {n.title}
                   </span>
                 )}
               </div>
