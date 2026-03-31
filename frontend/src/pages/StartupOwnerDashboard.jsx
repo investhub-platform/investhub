@@ -179,7 +179,13 @@ const StartupOwnerDashboard = () => {
   const handleUpdateStartup = async (startupId, payload) => {
     try {
       setLoading(true); setError("");
-      const res = await api.put(`/v1/startups/${startupId}`, payload);
+      let res;
+      // Support FormData payloads for file uploads (logo) or plain JSON
+      if (typeof FormData !== "undefined" && payload instanceof FormData) {
+        res = await api.put(`/v1/startups/${startupId}`, payload, { headers: { "Content-Type": "multipart/form-data" } });
+      } else {
+        res = await api.put(`/v1/startups/${startupId}`, payload);
+      }
       const updated = normalizeStartup(res?.data?.data);
       setStartups((prev) => prev.map((s) => (s.id === startupId ? updated : s)));
       setActionMessage("Startup updated successfully.");
@@ -579,6 +585,7 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
   const [ideaFormData, setIdeaFormData] = useState({ title: "", description: "", category: "Tech", budget: "", timeline: "", expectedOutcomes: "", pitchDeckText: "" });
   const [ideaPhotoFile, setIdeaPhotoFile] = useState(null);
   const [ideaPitchFiles, setIdeaPitchFiles] = useState([]);
+  const [startupLogoFile, setStartupLogoFile] = useState(null);
   const [ideaSaving, setIdeaSaving] = useState(false);
   const [editingIdeaId, setEditingIdeaId] = useState(null);
 
@@ -673,7 +680,19 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
     e.preventDefault();
     if (!formData.name.trim()) return;
     const normalizedStatus = formData.status === "approved" ? "Approved" : formData.status === "notapproved" ? "NotApproved" : "pending";
-    await onUpdate?.(startup.id, { name: formData.name.trim(), description: formData.description, BR: formData.BR, status: normalizedStatus });
+    // If a logo file was selected, submit as FormData so the file can be uploaded
+    if (startupLogoFile) {
+      const form = new FormData();
+      form.append("name", formData.name.trim());
+      form.append("description", formData.description || "");
+      form.append("BR", formData.BR || "");
+      form.append("status", normalizedStatus);
+      form.append("photo", startupLogoFile);
+      await onUpdate?.(startup.id, form);
+      setStartupLogoFile(null);
+    } else {
+      await onUpdate?.(startup.id, { name: formData.name.trim(), description: formData.description, BR: formData.BR, status: normalizedStatus });
+    }
     setIsEditing(false);
   };
 
@@ -736,6 +755,10 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">Description</label>
                       <textarea className={`${inputClass} min-h-[100px] resize-y`} value={formData.description} onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))} placeholder="Brief description" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <UploadField label="Startup Logo" accept="image/png,image/jpeg,image/webp" onChange={(e) => setStartupLogoFile(e.target.files?.[0] || null)} files={startupLogoFile ? [startupLogoFile] : []} onClear={() => setStartupLogoFile(null)} icon="image" />
+                      <div />
                     </div>
                     <div className="flex items-center justify-end gap-3 pt-2">
                       <button type="button" onClick={(e) => { e.stopPropagation(); setIsEditing(false); }} className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-white transition-colors">
