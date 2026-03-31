@@ -4,7 +4,12 @@ import AppNavbar from "../components/layout/AppNavBar";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { useAuth } from "@/features/auth/useAuth";
 import api from "@/lib/axios";
-import { formatCurrency } from "@/data/mockData";
+// Use a local formatter instead of mock data
+const formatCurrency = (value) => {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n) || n === 0) return "$0";
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+};
 import {
   Plus,
   X,
@@ -104,8 +109,9 @@ const StartupOwnerDashboard = () => {
     BR: startup.BR || "",
     status: String(startup.status || "pending").toLowerCase(),
     stage: startup.stage || "Pre-Seed",
-    fundingGoal: Number(startup.fundingGoal || 0),
-    currentFunding: Number(startup.currentFunding || 0),
+    // Prefer multiple possible fields returned by the API for real numbers
+    fundingGoal: Number(startup.budget || startup.fundingGoal || startup.goal || 0),
+    currentFunding: Number(startup.currentFunding || startup.raised || startup.capitalRaised || 0),
     investorRequests: startup.investorRequests || [],
     logoUrl: resolveAssetUrl(startup.ImgURL || startup.logo || startup.logoUrl || ""),
     logoInitials: (startup.name ? startup.name.slice(0, 2).toUpperCase() : "SU") || "SU",
@@ -746,10 +752,21 @@ function StartupManageCard({ startup, index, onUpdate, onDelete, onActionMessage
               {/* Stats Grid */}
               {startup.status !== "draft" && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <StatCard icon={DollarSign} label="Target Goal" value={formatCurrency(startup.fundingGoal)} />
-                  <StatCard icon={DollarSign} label="Capital Raised" value={formatCurrency(startup.currentFunding)} />
-                  <StatCard icon={Users} label="Total Investors" value={String(startup.investorRequests.length)} />
-                  <StatCard icon={Rocket} label="Current Stage" value={startup.stage} />
+                  {startup.fundingGoal > 0 && (
+                    <StatCard icon={DollarSign} label="Target Goal" value={formatCurrency(startup.fundingGoal)} />
+                  )}
+
+                  {startup.currentFunding > 0 && (
+                    <StatCard icon={DollarSign} label="Capital Raised" value={formatCurrency(startup.currentFunding)} />
+                  )}
+
+                  {startup.investorRequests && startup.investorRequests.length > 0 && (
+                    <StatCard icon={Users} label="Total Investors" value={String(startup.investorRequests.length)} />
+                  )}
+
+                  {startup.stage && (
+                    <StatCard icon={Rocket} label="Current Stage" value={startup.stage} />
+                  )}
                 </div>
               )}
 
