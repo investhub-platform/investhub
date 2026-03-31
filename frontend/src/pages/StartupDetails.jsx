@@ -19,7 +19,7 @@ import api from "@/lib/axios";
 import AppNavbar from "../components/layout/AppNavBar";
 import { useAuth } from "@/features/auth/useAuth";
 
-const tabs = ["Summary & Pitch", "AI Analysis", "Milestones", "Team"];
+const tabs = ["Summary & Pitch", "AI Analysis"];
 
 const StartupDetail = ({ isModal = false }) => {
   const { user } = useAuth();
@@ -532,8 +532,6 @@ const StartupDetail = ({ isModal = false }) => {
               >
                 {activeTab === 0 && <SummaryTab startup={startup} />}
                 {activeTab === 1 && <AIAnalysisTab startup={startup} />}
-                {activeTab === 2 && <MilestonesTab startup={startup} />}
-                {activeTab === 3 && <TeamTab startup={startup} />}
               </motion.div>
             </AnimatePresence>
           </div>
@@ -773,75 +771,7 @@ function AIAnalysisTab({ startup }) {
   );
 }
 
-function MilestonesTab({ startup }) {
-  return (
-    <div className="obsidian-card p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold">Milestones & Roadmap</h2>
-        <button className="flex items-center gap-1.5 text-xs text-primary hover:underline">
-          <ExternalLink className="w-3.5 h-3.5" />
-          View GitHub
-        </button>
-      </div>
-      <div className="space-y-4">
-        {startup.milestones.map((m, i) => (
-          <div key={i} className="flex items-start gap-3">
-            {m.completed ? (
-              <CheckCircle2 className="w-5 h-5 text-accent mt-0.5 shrink-0" />
-            ) : (
-              <Circle className="w-5 h-5 text-muted-foreground/40 mt-0.5 shrink-0" />
-            )}
-            <div className="flex-1">
-              <p className={`text-sm font-medium ${!m.completed ? "text-muted-foreground" : ""}`}>
-                {m.title || "Milestone"}
-              </p>
-              <p className="text-xs text-muted-foreground">{m.date || ""}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
-function TeamTab({ startup }) {
-  return (
-    <div className="space-y-4">
-      <div className="obsidian-card p-6">
-        <h2 className="text-lg font-semibold mb-4">Founding Team</h2>
-        <div className="grid gap-3">
-          {startup.team.map((member) => (
-            <div key={member.name} className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03]">
-              <div className="w-10 h-10 rounded-full gradient-blue flex items-center justify-center text-xs font-bold shrink-0">
-                {member.avatar || <Image className="w-4 h-4" />}
-              </div>
-              <div>
-                <p className="text-sm font-medium">{member.name}</p>
-                <p className="text-xs text-muted-foreground">{member.role}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="obsidian-card p-6">
-        <h2 className="text-lg font-semibold mb-4">Assigned Mentor</h2>
-        <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03]">
-          <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-xs font-bold text-accent shrink-0">
-            {startup.mentorName.split(" ").map((n) => n[0]).join("")}
-          </div>
-          <div>
-            <p className="text-sm font-medium">{startup.mentorName}</p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <Shield className="w-3 h-3 text-accent" />
-              <p className="text-xs text-accent">Verified Technical Mentor</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default StartupDetail;
 
