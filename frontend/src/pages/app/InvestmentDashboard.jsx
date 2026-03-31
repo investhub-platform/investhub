@@ -99,11 +99,13 @@ export default function InvestmentDashboard() {
     setError("");
     try {
       const userId = user?.id || user?._id;
-      const res = await api.get(`/v1/requests/investor/${userId}`);
-      setSentRequests(res?.data?.data || []);
+      const res = await api.get(`/v1/requests/investor/${userId}?t=${Date.now()}`);
+      const requests = res?.data?.data || [];
+      setSentRequests(requests);
+      console.log("Fetched sent requests:", requests.map(r => ({ id: r._id, status: r.requestStatus })));
     } catch (e) {
       setError("Failed to load investment requests");
-      console.error(e);
+      console.error("Fetch sent requests error:", e);
     } finally {
       setLoading(false);
     }
@@ -118,7 +120,7 @@ export default function InvestmentDashboard() {
     try {
       // First get all ideas created by founder
       const userId = user?.id || user?._id;
-      const allRequests = await api.get("/v1/requests");
+      const allRequests = await api.get(`/v1/requests?t=${Date.now()}`);
       
       // Filter for requests where founderId matches current user
       const founderRequests = (allRequests?.data?.data || []).filter(
@@ -126,9 +128,10 @@ export default function InvestmentDashboard() {
       );
       
       setReceivedRequests(founderRequests);
+      console.log("Fetched received requests:", founderRequests.map(r => ({ id: r._id, status: r.requestStatus })));
     } catch (e) {
       setError("Failed to load received requests");
-      console.error(e);
+      console.error("Fetch received requests error:", e);
     } finally {
       setLoading(false);
     }
@@ -151,17 +154,47 @@ export default function InvestmentDashboard() {
     setError("");
     try {
       const userId = user?.id || user?._id;
-      await api.patch(`/v1/requests/${requestId}/founder-decision`, {
+      const res = await api.patch(`/v1/requests/${requestId}/founder-decision`, {
         decision,
         comment: decisionComment || "",
         updatedBy: userId,
       });
+      
+      if (!res?.data) {
+        console.warn("Founder decision response missing");
+      }
+      
+      // Determine new status based on decision
+      const newStatus = decision === "accept" ? "pending_mentor" : "rejected";
+      
+      // Immediately update local state to show decision
+      setReceivedRequests(prevRequests =>
+        prevRequests.map(r =>
+          (r._id || r.id) === requestId
+            ? {
+                ...r,
+                requestStatus: newStatus,
+                founderDecision: {
+                  decision,
+                  comment: decisionComment || "",
+                  decidedAt: new Date()
+                }
+              }
+            : r
+        )
+      );
+      
       setSuccessMessage(`Request ${decision === "accept" ? "accepted" : "rejected"} successfully!`);
       setSelectedRequestForDecision(null);
       setDecisionComment("");
-      fetchReceivedRequests();
+      
+      // Refetch to ensure data is in sync with backend
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await fetchReceivedRequests();
     } catch (e) {
-      setError(e?.response?.data?.message || "Failed to update request");
+      const errorMsg = e?.response?.data?.message || e?.message || "Failed to update request";
+      setError(errorMsg);
+      console.error("Founder decision error:", e);
     } finally {
       setIsDecisionProcessing(false);
     }
@@ -189,19 +222,54 @@ export default function InvestmentDashboard() {
         throw new Error("Missing startup details required for wallet transfer");
       }
       
-      await api.post("/v1/wallets/invest", {
+      // Execute wallet transfer
+      const walletRes = await api.post("/v1/wallets/invest", {
         amount,
         startupOwnerId,
         startupId,
       });
+      
+      if (!walletRes?.data) {
+        throw new Error("Wallet transfer failed or no response received");
+      }
 
-      setSuccessMessage("Payment completed successfully!");
+      // Mark request as paid after successful wallet transfer
+      const userId = user?.id || user?._id;
+      const updateRes = await api.patch(`/v1/requests/${requestId}/status`, {
+        requestStatus: "paid",
+        updatedBy: userId,
+      });
+
+      if (!updateRes?.data) {
+        console.warn("Status update response missing, but payment succeeded.");
+      }
+
+      setSuccessMessage("Investment completed successfully!");
       await fetchWalletBalance();
+      
+      // Immediately update local state to show paid status
+      setSentRequests(prevRequests => 
+        prevRequests.map(r => 
+          (r._id || r.id) === requestId 
+            ? { ...r, requestStatus: "paid" } 
+            : r
+        )
+      );
+      
+      // Small delay to ensure backend has processed the update
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Close modal and clear selection
       setSelectedRequestForPayment(null);
       setPaymentMethod("wallet");
-      fetchSentRequests();
+
+      // Refetch both views to show updated paid status
+      await fetchSentRequests();
+      await fetchReceivedRequests();
     } catch (e) {
-      setError(e?.response?.data?.message || "Payment failed");
+      const errorMsg = e?.response?.data?.message || e?.message || "Payment failed";
+      setError(errorMsg);
+      console.error("Wallet payment error:", e);
     } finally {
       setIsPaymentProcessing(false);
     }
@@ -238,12 +306,17 @@ export default function InvestmentDashboard() {
     pending_mentor: {
       icon: <Clock className="w-4 h-4" />,
       color: "bg-blue-500/10 border-blue-500/20 text-blue-400",
-      label: "Pending Mentor Review"
+      label: "Approved - Ready to Pay"
     },
     approved: {
       icon: <Check className="w-4 h-4" />,
       color: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
       label: "Approved - Ready to Pay"
+    },
+    paid: {
+      icon: <Check className="w-4 h-4" />,
+      color: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
+      label: "Invested"
     },
     rejected: {
       icon: <X className="w-4 h-4" />,
@@ -253,6 +326,7 @@ export default function InvestmentDashboard() {
   };
 
   const getRequestStatus = (request) => {
+    if (request.requestStatus === "paid") return statusConfig.paid;
     if (request.requestStatus === "rejected") return statusConfig.rejected;
     if (request.requestStatus === "approved" || request.requestStatus === "pending_mentor") {
       return statusConfig.approved;
@@ -358,7 +432,7 @@ export default function InvestmentDashboard() {
                         const status = getRequestStatus(request);
                         const founderName = request.founderId?.name || "Unknown Founder";
                         const ideaTitle = request.ideaId?.title || "Unknown Idea";
-                        const canPay = request.requestStatus === "pending_mentor";
+                        const canPay = (request.requestStatus === "pending_mentor" || request.requestStatus === "approved") && request.requestStatus !== "paid";
                         
                         return (
                           <motion.div
@@ -413,9 +487,9 @@ export default function InvestmentDashboard() {
                               </button>
                             )}
 
-                            {request.requestStatus === "approved" && !canPay && (
+                            {request.requestStatus === "paid" && (
                               <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
-                                ✓ Approved by founder - Payment completed
+                                ✓ Invested {formatCurrency(request.amount)} successfully
                               </div>
                             )}
 
@@ -534,6 +608,12 @@ export default function InvestmentDashboard() {
                                 {request.founderDecision.comment && (
                                   <p className="mt-2 text-xs opacity-80">{request.founderDecision.comment}</p>
                                 )}
+                              </div>
+                            )}
+
+                            {request.requestStatus === "paid" && (
+                              <div className="mt-4 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
+                                ✓ Investor has paid {formatCurrency(request.amount)} for this idea
                               </div>
                             )}
                           </motion.div>

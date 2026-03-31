@@ -73,6 +73,7 @@ export const updateRequestStatus = async (id, status, updatedBy) => {
     "pending_investor",
     "pending_mentor",
     "approved",
+    "paid",
     "rejected",
     "withdrawn"
   ];
@@ -137,6 +138,7 @@ export const createNewRequest = async (payload) => {
     "pending_investor",
     "pending_mentor",
     "approved",
+    "paid",
     "rejected",
     "withdrawn"
   ];

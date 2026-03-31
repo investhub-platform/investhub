@@ -10,6 +10,7 @@ const ProgressReportSchema = new Schema({
   tasksCompleted: { type: String, default: "" },
   challenges: { type: String, default: "" },
   nextGoals: { type: String, default: "" },
+  monthlyIncome: { type: Number, default: 0, min: 0 },
   overallStatus: {
     type: String,
     enum: ["on_track", "delayed", "at_risk"],
