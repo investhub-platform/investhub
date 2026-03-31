@@ -19,37 +19,54 @@ export default function NotificationDropdown() {
 
   const nav = useNavigate();
 
-  // Fetch notifications + unread count
-  const fetchData = async () => {
-    try {
-      const [notifRes, unreadRes] = await Promise.all([
-        fetchNotifications(),
-        fetchUnreadCount(),
-      ]);
-
-      setNotifications(notifRes.data.data.items || []);
-      setUnreadCount(unreadRes.data.data.count || 0);
-    } catch (err) {
-      console.error("Notification fetch error:", err);
-    }
-  };
-
-  // Initial load + auto refresh
+  // Initial load + auto refresh (ESLint-safe)
   useEffect(() => {
-    fetchData();
+    let isMounted = true;
 
-    const interval = setInterval(fetchData, 10000);
+    const load = async () => {
+      try {
+        const [notifRes, unreadRes] = await Promise.all([
+          fetchNotifications(),
+          fetchUnreadCount(),
+        ]);
 
-    return () => clearInterval(interval);
+        if (!isMounted) return;
+
+        setNotifications(notifRes.data.data.items || []);
+        setUnreadCount(unreadRes.data.data.count || 0);
+      } catch (err) {
+        console.error("Notification fetch error:", err);
+      }
+    };
+
+    load();
+
+    const interval = setInterval(load, 10000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
-  // Toggle dropdown (fixed)
+  // Toggle dropdown
   const handleOpen = async () => {
     const newState = !open;
     setOpen(newState);
 
     if (newState) {
-      await fetchData();
+      // Optional: refresh notifications when opening
+      try {
+        const [notifRes, unreadRes] = await Promise.all([
+          fetchNotifications(),
+          fetchUnreadCount(),
+        ]);
+
+        setNotifications(notifRes.data.data.items || []);
+        setUnreadCount(unreadRes.data.data.count || 0);
+      } catch (err) {
+        console.error("Notification fetch error:", err);
+      }
     }
   };
 
@@ -127,7 +144,7 @@ export default function NotificationDropdown() {
 
           <div className="h-px bg-white/10 my-2" />
 
-          {/* List */}
+          {/* Notification List */}
           {notifications.length === 0 ? (
             <p className="text-center text-sm text-gray-400 py-4">
               No notifications
