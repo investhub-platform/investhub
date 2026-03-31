@@ -57,6 +57,7 @@ const StartupOwnerDashboard = () => {
     return {
       id: request._id || request.id,
       status: (request.requestStatus || "pending").toLowerCase(),
+      direction: request.direction || "investor_to_startup",
       amount: request.amount || 0,
       message: request.message || "",
       date:
@@ -201,15 +202,32 @@ const StartupOwnerDashboard = () => {
     }
   };
 
-  const handleRequestStatus = async (startupId, requestId, status) => {
+  const handleRequestStatus = async (startupId, request, status) => {
     try {
       setLoading(true);
       setError("");
 
-      await api.patch(`/v1/requests/${requestId}/status`, {
-        requestStatus: status,
-        updatedBy: user?.id || user?._id
-      });
+      const requestId = request?.id || request?._id;
+      const updatedBy = user?.id || user?._id;
+
+      if (status === "withdrawn") {
+        await api.patch(`/v1/requests/${requestId}/withdraw`, { updatedBy });
+      } else if (
+        request?.direction === "investor_to_startup" &&
+        (request?.status === "pending_founder" || request?.status === "pending") &&
+        (status === "approved" || status === "rejected")
+      ) {
+        await api.patch(`/v1/requests/${requestId}/founder-decision`, {
+          decision: status === "approved" ? "accept" : "reject",
+          comment: status === "approved" ? "Approved by founder" : "Rejected by founder",
+          updatedBy
+        });
+      } else {
+        await api.patch(`/v1/requests/${requestId}/status`, {
+          requestStatus: status,
+          updatedBy
+        });
+      }
 
       // Refresh one startup's request list
       const reqRes = await api.get(`/v1/requests/startup/${startupId}`);
@@ -683,6 +701,7 @@ function StartupManageCard({
     (r) =>
       r.status === "pending" ||
       r.status === "pending_founder" ||
+      r.status === "pending_investor" ||
       r.status === "pending_mentor"
   ).length;
 
@@ -1212,6 +1231,7 @@ function StatCard({ icon: Icon, label, value }) {
 function InvestorRequestCard({ request, startupId, onAction }) {
   const statusIcons = {
     pending_founder: <Clock className="w-4 h-4 text-yellow-400" />,
+    pending_investor: <Clock className="w-4 h-4 text-yellow-400" />,
     pending_mentor: <Clock className="w-4 h-4 text-yellow-400" />,
     approved: <CheckCircle2 className="w-4 h-4 text-accent" />,
     rejected: <XCircle className="w-4 h-4 text-destructive" />,
@@ -1219,9 +1239,11 @@ function InvestorRequestCard({ request, startupId, onAction }) {
   };
 
   const normalizedStatus = request.status || "pending";
-  const isPending =
+  const canFounderDecide =
+    normalizedStatus === "pending_founder" || normalizedStatus === "pending";
+  const canWithdraw =
     normalizedStatus === "pending_founder" ||
-    normalizedStatus === "pending_mentor" ||
+    normalizedStatus === "pending_investor" ||
     normalizedStatus === "pending";
 
   const requestedUserName = request.createdBy?.name || request.investorName;
@@ -1229,7 +1251,7 @@ function InvestorRequestCard({ request, startupId, onAction }) {
     request.createdBy?.email || request.investorId?.email;
 
   const handleAction = (actionStatus) => {
-    onAction?.(startupId, request.id, actionStatus);
+    onAction?.(startupId, request, actionStatus);
   };
 
   return (
@@ -1262,26 +1284,32 @@ function InvestorRequestCard({ request, startupId, onAction }) {
             {request.date}
           </p>
 
-          {isPending && (
+          {(canFounderDecide || canWithdraw) && (
             <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => handleAction("approved")}
-                className="flex-1 py-1.5 rounded-full gradient-blue text-xs font-semibold"
-              >
-                Approve
-              </button>
-              <button
-                onClick={() => handleAction("rejected")}
-                className="flex-1 py-1.5 rounded-full bg-white/5 border border-white/[0.07] text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Reject
-              </button>
-              <button
-                onClick={() => handleAction("withdrawn")}
-                className="flex-1 py-1.5 rounded-full bg-destructive/20 text-xs font-medium text-destructive hover:bg-destructive/30 transition-colors"
-              >
-                Withdraw
-              </button>
+              {canFounderDecide && (
+                <>
+                  <button
+                    onClick={() => handleAction("approved")}
+                    className="flex-1 py-1.5 rounded-full gradient-blue text-xs font-semibold"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleAction("rejected")}
+                    className="flex-1 py-1.5 rounded-full bg-white/5 border border-white/[0.07] text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Reject
+                  </button>
+                </>
+              )}
+              {canWithdraw && (
+                <button
+                  onClick={() => handleAction("withdrawn")}
+                  className="flex-1 py-1.5 rounded-full bg-destructive/20 text-xs font-medium text-destructive hover:bg-destructive/30 transition-colors"
+                >
+                  Withdraw
+                </button>
+              )}
             </div>
           )}
         </div>

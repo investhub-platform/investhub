@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BriefcaseBusiness, Mail, Landmark, Building2, SearchX, ArrowRight, User } from "lucide-react";
+import { BriefcaseBusiness, Mail, Landmark, Building2, SearchX, User, Send } from "lucide-react";
 import AppNavbar from "../components/layout/AppNavBar";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { FilterBar } from "@/components/FilterBar";
 import SearchBar from "@/components/SearchBar";
 import { StartupCard } from "@/components/StartupCard";
+import { useAuth } from "@/features/auth/useAuth";
 import api from "@/lib/axios";
 
 const arrayify = (value) => {
@@ -48,6 +49,10 @@ const normalizeMandate = (item, index) => {
     id: item?._id || item?.id || `${mandateTitle}-${index}`,
     mandateTitle,
     investorName,
+    investorId:
+      (typeof createdBy === "object" ? createdBy?._id : createdBy) ||
+      item?.investorId ||
+      null,
     preferredIndustries,
     minCheck,
     maxCheck,
@@ -66,6 +71,7 @@ const formatMoney = (value) => {
 };
 
 const InvestorDashboard = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("startups");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState([]);
@@ -77,6 +83,16 @@ const InvestorDashboard = () => {
   const [mandates, setMandates] = useState([]);
   const [mandatesLoading, setMandatesLoading] = useState(true);
   const [mandatesError, setMandatesError] = useState("");
+
+  const [pitchModalOpen, setPitchModalOpen] = useState(false);
+  const [selectedMandate, setSelectedMandate] = useState(null);
+  const [pitchForm, setPitchForm] = useState({
+    ideaId: "",
+    amount: "",
+    message: ""
+  });
+  const [pitchSubmitting, setPitchSubmitting] = useState(false);
+  const [pitchFeedback, setPitchFeedback] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -171,6 +187,103 @@ const InvestorDashboard = () => {
       );
     });
   }, [mandates, searchQuery]);
+
+  const currentUserId = user?.id || user?._id || "";
+
+  const founderIdeas = useMemo(() => {
+    if (!currentUserId) return [];
+
+    return startups
+      .filter((s) => {
+        const owner = s?.raw?.createdBy;
+        const ownerId = typeof owner === "object" ? owner?._id || owner?.id : owner;
+        return String(ownerId || "") === String(currentUserId);
+      })
+      .map((s) => ({
+        id: s._id || s.id,
+        title: s.name || "Untitled",
+        startupId: s?.raw?.StartupId || null,
+        industry: s.industry || ""
+      }));
+  }, [startups, currentUserId]);
+
+  const canPitchMandates = founderIdeas.length > 0;
+
+  const openPitchModal = (mandate) => {
+    setPitchFeedback("");
+    setSelectedMandate(mandate);
+    setPitchForm({
+      ideaId: founderIdeas[0]?.id || "",
+      amount: "",
+      message: ""
+    });
+    setPitchModalOpen(true);
+  };
+
+  const closePitchModal = () => {
+    if (pitchSubmitting) return;
+    setPitchModalOpen(false);
+    setSelectedMandate(null);
+    setPitchFeedback("");
+  };
+
+  const submitPitch = async (event) => {
+    event.preventDefault();
+    setPitchFeedback("");
+
+    if (!selectedMandate?.investorId) {
+      setPitchFeedback("This mandate is missing an investor reference.");
+      return;
+    }
+
+    if (!currentUserId) {
+      setPitchFeedback("Please login again to submit a pitch.");
+      return;
+    }
+
+    if (!pitchForm.ideaId) {
+      setPitchFeedback("Please select a startup idea to pitch.");
+      return;
+    }
+
+    const amountValue = Number(pitchForm.amount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      setPitchFeedback("Please enter a valid amount greater than 0.");
+      return;
+    }
+
+    const selectedIdea = founderIdeas.find((i) => String(i.id) === String(pitchForm.ideaId));
+    if (!selectedIdea) {
+      setPitchFeedback("Selected startup idea was not found.");
+      return;
+    }
+
+    try {
+      setPitchSubmitting(true);
+      await api.post("/v1/requests", {
+        investorId: selectedMandate.investorId,
+        founderId: currentUserId,
+        ideaId: selectedIdea.id,
+        mandateId: selectedMandate.id,
+        direction: "startup_to_investor",
+        requestStatus: "pending_investor",
+        amount: amountValue,
+        message: pitchForm.message?.trim() || null,
+        StartupsId: selectedIdea.startupId ? String(selectedIdea.startupId) : null,
+        SendId: String(currentUserId),
+        UserId: String(selectedMandate.investorId),
+        createdBy: currentUserId
+      });
+
+      setPitchFeedback("Pitch submitted. Waiting for investor review.");
+      setPitchModalOpen(false);
+      setSelectedMandate(null);
+    } catch (e) {
+      setPitchFeedback(e?.response?.data?.message || "Failed to submit pitch.");
+    } finally {
+      setPitchSubmitting(false);
+    }
+  };
 
   // Helper for Mandate Card Gradients
   const getGradient = (index) => {
@@ -392,7 +505,17 @@ const InvestorDashboard = () => {
                                 </div>
                               </div>
 
-                              {mandate.contactEmail ? (
+                              {canPitchMandates && mandate.investorId ? (
+                                <button
+                                  type="button"
+                                  onClick={() => openPitchModal(mandate)}
+                                  className="inline-flex items-center gap-2 px-4 h-10 rounded-full bg-blue-600 hover:bg-blue-500 transition-colors text-white shadow-lg shadow-blue-500/20 text-xs font-bold"
+                                  title="Pitch Startup"
+                                >
+                                  <Send className="w-3.5 h-3.5" />
+                                  Pitch
+                                </button>
+                              ) : mandate.contactEmail ? (
                                 <a
                                   href={`mailto:${mandate.contactEmail}`}
                                   className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-500 transition-colors text-white shadow-lg shadow-blue-500/20"
@@ -418,6 +541,98 @@ const InvestorDashboard = () => {
           </div>
         </main>
       </div>
+
+      <AnimatePresence>
+        {pitchModalOpen && selectedMandate && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              onClick={closePitchModal}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              className="fixed z-[60] inset-x-4 top-[10vh] mx-auto max-w-xl bg-[#0B0D10] border border-white/10 rounded-3xl shadow-2xl p-6"
+            >
+              <h3 className="text-xl font-black text-white mb-1">Pitch This Mandate</h3>
+              <p className="text-sm text-slate-400 mb-5">
+                Pitching to <span className="text-white font-semibold">{selectedMandate.investorName}</span> for mandate <span className="text-white font-semibold">{selectedMandate.mandateTitle}</span>.
+              </p>
+
+              <form onSubmit={submitPitch} className="space-y-4">
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">Select Startup Idea</label>
+                  <select
+                    value={pitchForm.ideaId}
+                    onChange={(e) => setPitchForm((prev) => ({ ...prev, ideaId: e.target.value }))}
+                    className="w-full px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    required
+                  >
+                    {founderIdeas.map((idea) => (
+                      <option key={idea.id} value={idea.id} className="bg-[#0B0D10]">
+                        {idea.title}{idea.industry ? ` • ${idea.industry}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">Amount Requested (USD)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={pitchForm.amount}
+                    onChange={(e) => setPitchForm((prev) => ({ ...prev, amount: e.target.value }))}
+                    className="w-full px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    placeholder="10000"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">Pitch Message</label>
+                  <textarea
+                    rows={4}
+                    value={pitchForm.message}
+                    onChange={(e) => setPitchForm((prev) => ({ ...prev, message: e.target.value }))}
+                    className="w-full px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    placeholder="Explain why your startup fits this investor mandate..."
+                  />
+                </div>
+
+                {pitchFeedback && (
+                  <div className="text-sm rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-slate-200">
+                    {pitchFeedback}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={closePitchModal}
+                    className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-semibold text-slate-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={pitchSubmitting}
+                    className="px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-sm font-bold text-white"
+                  >
+                    {pitchSubmitting ? "Submitting..." : "Submit Pitch"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

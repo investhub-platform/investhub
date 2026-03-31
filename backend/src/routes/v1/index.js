@@ -19,8 +19,10 @@ import {
   updateRequest,
   withdrawRequest,
   setFounderDecision,
+  setInvestorDecision,
   setMentorDecision,
   getRequestsByStartup,
+  getRequestsByInvestor,
   setRequestStatus
 } from "../../controllers/requestController.js";
 
@@ -73,9 +75,11 @@ router.post("/requests", createRequest); // create a new request
 router.put("/requests/:id", updateRequest); // update a request completely
 router.patch("/requests/:id/withdraw", withdrawRequest); // withdraw a request
 router.patch("/requests/:id/founder-decision", setFounderDecision); // set founder decision
+router.patch("/requests/:id/investor-decision", setInvestorDecision); // set investor decision
 router.patch("/requests/:id/mentor-decision", setMentorDecision); // set mentor decision
 router.patch("/requests/:id/status", setRequestStatus); // set request status (approved/rejected/withdrawn)
 router.get("/requests/startup/:startupId", getRequestsByStartup); // get requests for a startup
+router.get("/requests/investor/:investorId", getRequestsByInvestor); // get requests for an investor
 
 //user
 router.use("/auth", authRoutes);

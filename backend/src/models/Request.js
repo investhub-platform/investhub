@@ -12,25 +12,44 @@ const DecisionSchema = new Schema(
 
 const RequestSchema = new Schema(
   {
+    // Deal Participants
     investorId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    ideaId: { type: Schema.Types.ObjectId, ref: "Idea" },
+    founderId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+
+    // The Deal Assets
+    ideaId: { type: Schema.Types.ObjectId, ref: "Idea", required: true },
+    mandateId: { type: Schema.Types.ObjectId, ref: "Idea", default: null },
+
+    // Flow Control
+    direction: {
+      type: String,
+      enum: ["investor_to_startup", "startup_to_investor"],
+      required: true
+    },
+
     SendId: { type: String, default: null },
     UserId: { type: String, default: null },
     StartupsId: { type: String, default: null },
+
+    // Deal Terms
     amount: { type: Number, required: true, min: 0 },
     message: { type: String, default: null },
     requestStatus: {
       type: String,
       enum: [
         "pending_founder",
+        "pending_investor",
         "pending_mentor",
         "approved",
         "rejected",
         "withdrawn"
       ],
-      default: "pending_founder"
+      required: true
     },
+
+    // The Approvals
     founderDecision: { type: DecisionSchema, default: () => ({}) },
+    investorDecision: { type: DecisionSchema, default: () => ({}) },
     mentorDecision: { type: DecisionSchema, default: () => ({}) },
     finalApprovedAmount: { type: Number, default: null, min: 0 }
   },
