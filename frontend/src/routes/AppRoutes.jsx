@@ -18,6 +18,11 @@ import MessagesPage from "../pages/app/MessagesPage";
 import SettingsPage from "../pages/app/SettingsPage";
 import WalletPage from "../pages/app/WalletPage";
 import TransactionsPage from "../pages/app/TransactionsPage";
+import AdminLayout from "../features/admin/components/AdminLayout";
+import AdminDashboardPage from "../features/admin/pages/AdminDashboardPage";
+import AdminUsersPage from "../features/admin/pages/AdminUsersPage";
+import AdminUserPage from "../features/admin/pages/AdminUserPage";
+import AdminStartupsPage from "../features/admin/pages/AdminStartupsPage";
 
 export default function AppRoutes() {
   const location = useLocation();
@@ -55,8 +60,14 @@ export default function AppRoutes() {
 
       {/* Admin */}
       <Route element={<AdminRoute />}>
-        <Route path="/admin/users" element={<div className="min-h-screen bg-[#020617] text-white p-6">Admin Users</div>} />
-        <Route path="/admin/users/:id" element={<div className="min-h-screen bg-[#020617] text-white p-6">Admin User Details</div>} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="users/:id" element={<AdminUserPage />} />
+          <Route path="startups" element={<AdminStartupsPage />} />
+        </Route>
+         
       </Route>
 
       {/* 404 */}
