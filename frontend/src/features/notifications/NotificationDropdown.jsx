@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import { Bell, Trash2, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck } from "lucide-react";
 import {
   fetchNotifications,
   fetchUnreadCount,
   markAsRead,
   markAllAsRead,
-  deleteNotification,
 } from "./api";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -20,49 +19,37 @@ export default function NotificationDropdown() {
 
   const nav = useNavigate();
 
-  // Load notifications
-  const loadNotifications = async () => {
+  // Fetch notifications + unread count
+  const fetchData = async () => {
     try {
-      const res = await fetchNotifications();
-      setNotifications(res.data.data.items);
-    } catch (err) {
-      console.error("Notification load error:", err);
-    }
-  };
+      const [notifRes, unreadRes] = await Promise.all([
+        fetchNotifications(),
+        fetchUnreadCount(),
+      ]);
 
-  // Load unread count
-  const loadUnread = async () => {
-    try {
-      const res = await fetchUnreadCount();
-      setUnreadCount(res.data.data.count);
+      setNotifications(notifRes.data.data.items || []);
+      setUnreadCount(unreadRes.data.data.count || 0);
     } catch (err) {
-      console.error("Unread count error:", err);
+      console.error("Notification fetch error:", err);
     }
   };
 
   // Initial load + auto refresh
   useEffect(() => {
-    const refresh = () => {
-      void loadNotifications();
-      void loadUnread();
-    };
+    fetchData();
 
-    const initialTimeout = window.setTimeout(refresh, 0);
+    const interval = setInterval(fetchData, 10000);
 
-    const interval = window.setInterval(refresh, 10000); // every 10s
-
-    return () => {
-      window.clearTimeout(initialTimeout);
-      window.clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, []);
 
-  // Toggle dropdown
+  // Toggle dropdown (fixed)
   const handleOpen = async () => {
-    setOpen((prev) => !prev);
-    if (!open) {
-      await loadNotifications();
-      await loadUnread();
+    const newState = !open;
+    setOpen(newState);
+
+    if (newState) {
+      await fetchData();
     }
   };
 
@@ -88,25 +75,15 @@ export default function NotificationDropdown() {
     }
   };
 
-  // Delete notification
-  const handleDelete = async (id) => {
-    try {
-      await deleteNotification(id);
-      setNotifications((prev) =>
-        prev.filter((n) => n._id !== id)
-      );
-    } catch (err) {
-      console.error("Delete error:", err);
-    }
-  };
-
   // Mark all read
   const handleMarkAll = async () => {
     try {
       await markAllAsRead();
+
       setNotifications((prev) =>
         prev.map((n) => ({ ...n, isRead: true }))
       );
+
       setUnreadCount(0);
     } catch (err) {
       console.error("Mark all error:", err);
@@ -132,7 +109,7 @@ export default function NotificationDropdown() {
       {/* 📩 Dropdown */}
       {open && (
         <div className="absolute right-0 mt-2 w-80 max-h-[400px] overflow-y-auto bg-[#0B0D10] border border-white/10 rounded-xl shadow-xl p-2 z-50">
-          
+
           {/* Header */}
           <div className="flex justify-between items-center px-2 py-1">
             <span className="text-sm text-white font-semibold">
@@ -181,16 +158,6 @@ export default function NotificationDropdown() {
                   <span className="text-[10px] text-gray-500 mt-1">
                     {dayjs(n.createdUtc).fromNow()}
                   </span>
-                </div>
-
-                {/* Delete */}
-                <div className="flex justify-end mt-2">
-                  <button
-                    onClick={() => handleDelete(n._id)}
-                    className="text-red-400 hover:text-red-300 cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
                 </div>
               </div>
             ))
