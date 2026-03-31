@@ -7,6 +7,7 @@ import {
   markAllAsRead,
   deleteNotification,
 } from "./api";
+import { useAuth } from "@/features/auth/useAuth";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -15,6 +16,7 @@ import { motion, AnimatePresence } from "framer-motion";
 dayjs.extend(relativeTime);
 
 export default function NotificationDropdown() {
+  const { isAuthed, accessToken } = useAuth();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -23,26 +25,44 @@ export default function NotificationDropdown() {
 
   // Load notifications
   const loadNotifications = async () => {
+    if (!isAuthed || !accessToken) {
+      setNotifications([]);
+      return;
+    }
     try {
       const res = await fetchNotifications();
       setNotifications(res.data.data.items);
     } catch (err) {
-      console.error("Notification load error:", err);
+      if (err?.response?.status !== 401) {
+        console.error("Notification load error:", err);
+      }
     }
   };
 
   // Load unread count
   const loadUnread = async () => {
+    if (!isAuthed || !accessToken) {
+      setUnreadCount(0);
+      return;
+    }
     try {
       const res = await fetchUnreadCount();
       setUnreadCount(res.data.data.count);
     } catch (err) {
-      console.error("Unread count error:", err);
+      if (err?.response?.status !== 401) {
+        console.error("Unread count error:", err);
+      }
     }
   };
 
   // Initial load + auto refresh
   useEffect(() => {
+    if (!isAuthed || !accessToken) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
     const refresh = () => {
       void loadNotifications();
       void loadUnread();
@@ -55,7 +75,7 @@ export default function NotificationDropdown() {
       window.clearTimeout(initialTimeout);
       window.clearInterval(interval);
     };
-  }, []);
+  }, [isAuthed, accessToken]);
 
   // Handle clicking outside to close
   useEffect(() => {

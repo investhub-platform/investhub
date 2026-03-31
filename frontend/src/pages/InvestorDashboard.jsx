@@ -120,6 +120,8 @@ const InvestorDashboard = () => {
         const normalized = ideaItems.map((it) => ({
           id: it._id || it.id,
           _id: it._id || it.id,
+          isIdea: true,
+          recordType: "idea",
           name: it.title || it.name || "Untitled",
           tagline: (it.description && String(it.description).split(". ")[0]) || (it.aiSummary ? it.aiSummary.split("\n")[0] : ""),
           tags: arrayify(it.category ? [it.category] : it.tags),

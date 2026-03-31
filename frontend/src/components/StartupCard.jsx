@@ -11,6 +11,7 @@ export function StartupCard({ startup, index }) {
   const fundingPercent = goal > 0 ? Math.round((current / goal) * 100) : 0;
 
   const location = useLocation();
+  const detailPath = startup?.isIdea ? `/app/idea/${startup._id || startup.id}` : `/app/startup/${startup._id || startup.id}`;
 
   // Generate a consistent pseudo-random gradient for startups without logos
   const gradientClass = [
@@ -27,7 +28,7 @@ export function StartupCard({ startup, index }) {
       transition={{ delay: index * 0.05, duration: 0.5, ease: "easeOut" }}
       className="h-full"
     >
-      <Link to={`/app/startup/${startup._id || startup.id}`} state={{ background: location, startup }} className="block h-full">
+      <Link to={detailPath} state={{ background: location, startup }} className="block h-full">
         <div className="group flex flex-col h-full bg-[#0B0D10] rounded-[1.5rem] border border-white/5 overflow-hidden transition-all duration-300 hover:border-white/15 hover:shadow-2xl hover:shadow-blue-900/10 hover:-translate-y-1">
           
           {/* Top Banner Area */}

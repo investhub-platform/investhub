@@ -49,10 +49,22 @@ const StartupDetail = ({ isModal = false }) => {
     let mounted = true;
 
     const hydrateLinkedStartup = async (record) => {
+      if (record?.startupProfile) return record;
+
+      if (record?.raw?.StartupId && typeof record.raw.StartupId === "object") {
+        return {
+          ...record,
+          startupProfile: normalize(record.raw.StartupId, "startup"),
+        };
+      }
+
       const startupRef =
         typeof record?.startupRefId === "object"
           ? record?.startupRefId?._id || record?.startupRefId?.id
           : record?.startupRefId;
+
+      const isObjectId = /^[a-fA-F0-9]{24}$/.test(String(startupRef || ""));
+      if (!isObjectId) return record;
 
       if (!startupRef) return record;
 
@@ -70,31 +82,126 @@ const StartupDetail = ({ isModal = false }) => {
     };
 
     const load = async () => {
-      if (passed) {
-        const next = await hydrateLinkedStartup(normalize(passed, inferPassedType(passed)));
-        if (mounted) setStartup(next);
-        return;
-      }
+      const passedType = passed ? inferPassedType(passed) : null;
+      const isStartupRoute = location.pathname.includes("/startup/");
+      const isIdeaRoute = location.pathname.includes("/idea/");
+      const isPlanRoute = location.pathname.includes("/plan/");
 
-      setLoading(true);
-      try {
+      const preferIdeaFetch = isIdeaRoute || isPlanRoute || passedType === "idea" || passedType === "plan";
+      const preferStartupFetch = isStartupRoute && passedType !== "idea" && passedType !== "plan";
+
+      const fetchIdea = async () => {
         const resIdea = await api.get(`/v1/ideas/${id}`);
-        if (!mounted) return;
+        if (!mounted) return false;
 
         const data = resIdea?.data?.data;
         const type = data?.isIdea === false ? "plan" : "idea";
         const normalized = normalize(data, type);
         const withStartup = await hydrateLinkedStartup(normalized);
-        if (mounted) setStartup(withStartup);
-      } catch {
-        try {
-          const res = await api.get(`/v1/startups/${id}`);
-          if (!mounted) return;
-          const data = res?.data?.data;
+        if (mounted) {
+          setStartup(withStartup);
+          setError(null);
+        }
+        return true;
+      };
+
+      const fetchStartup = async () => {
+        const resStartup = await api.get(`/v1/startups/${id}`);
+        if (!mounted) return false;
+        const data = resStartup?.data?.data;
+        if (mounted) {
           setStartup(normalize(data, "startup"));
-        } catch (err) {
-          console.error("Failed to load detail", err);
-          if (mounted) setError("Record not found");
+          setError(null);
+        }
+        return true;
+      };
+
+      setLoading(true);
+
+      try {
+        if (preferIdeaFetch) {
+          try {
+            await fetchIdea();
+            return;
+          } catch (ideaErr) {
+            const ideaStatus = ideaErr?.response?.status;
+            if (ideaStatus && ideaStatus !== 404) {
+              if (mounted) setError("Failed to load record");
+              return;
+            }
+
+            if (passed) {
+              const fallback = await hydrateLinkedStartup(normalize(passed, passedType || "idea"));
+              if (mounted) {
+                setStartup(fallback);
+                setError(null);
+              }
+              return;
+            }
+
+            if (isStartupRoute) {
+              try {
+                await fetchStartup();
+                return;
+              } catch (startupErr) {
+                const startupStatus = startupErr?.response?.status;
+                if (startupStatus !== 404) {
+                  console.error("Failed to load detail", startupErr);
+                }
+                if (mounted) setError("Record not found");
+                return;
+              }
+            }
+
+            if (mounted) setError("Record not found");
+            return;
+          }
+        }
+
+        if (preferStartupFetch) {
+          try {
+            await fetchStartup();
+            return;
+          } catch (startupErr) {
+            const startupStatus = startupErr?.response?.status;
+            if (startupStatus && startupStatus !== 404) {
+              console.error("Failed to load detail", startupErr);
+              if (mounted) setError("Failed to load record");
+              return;
+            }
+
+            try {
+              await fetchIdea();
+              return;
+            } catch (ideaErr) {
+              const ideaStatus = ideaErr?.response?.status;
+              if (ideaStatus && ideaStatus !== 404) {
+                console.error("Failed to load detail", ideaErr);
+              }
+              if (mounted) setError("Record not found");
+              return;
+            }
+          }
+        }
+
+        try {
+          await fetchIdea();
+        } catch (ideaErr) {
+          const ideaStatus = ideaErr?.response?.status;
+          if (ideaStatus && ideaStatus !== 404) {
+            if (mounted) setError("Failed to load record");
+            return;
+          }
+
+          try {
+            await fetchStartup();
+          } catch (startupErr) {
+            const startupStatus = startupErr?.response?.status;
+            if (startupStatus && startupStatus !== 404) {
+              console.error("Failed to load detail", startupErr);
+            }
+            if (mounted) setError("Record not found");
+          }
         }
       } finally {
         if (mounted) setLoading(false);
@@ -105,7 +212,7 @@ const StartupDetail = ({ isModal = false }) => {
     return () => {
       mounted = false;
     };
-  }, [id, passed]);
+  }, [id, passed, location.pathname]);
 
   useEffect(() => {
     let mounted = true;
@@ -148,6 +255,39 @@ const StartupDetail = ({ isModal = false }) => {
   const amountNumber = Number(investAmount || 0);
   const minAmount = 10000;
   const isPlan = startup.recordType === "plan";
+  const isIdeaLikeRecord = startup.recordType === "idea" || startup.recordType === "plan";
+
+  const ideaCategory =
+    startup.raw?.category === "Other"
+      ? startup.raw?.customCategory || "Other"
+      : startup.raw?.customCategory || startup.raw?.category || startup.industry || "N/A";
+
+  const detailsRows = isIdeaLikeRecord
+    ? [
+        ["Category", ideaCategory],
+        ["Budget", startup.fundingGoal ? formatCurrency(startup.fundingGoal) : "N/A"],
+        ["Timeline", startup.raw?.timeline || "N/A"],
+        ["Status", formatStatusLabel(startup.raw?.status)],
+        ["Version", startup.raw?.currentVersion ? `v${startup.raw.currentVersion}` : "N/A"],
+        ["Created", formatDisplayDate(startup.raw?.createdUtc)],
+        ["Pitch Files", `${startup.pitchDeckFiles?.length || 0} attached`],
+      ]
+    : [
+        ["Stage", startup.startupProfile?.stage || startup.stage || "N/A"],
+        [
+          "Tech Stack",
+          startup.startupProfile?.techStack?.length
+            ? startup.startupProfile.techStack.join(", ")
+            : startup.techStack?.length
+            ? startup.techStack.join(", ")
+            : "N/A",
+        ],
+        ["Industry", startup.startupProfile?.industry || startup.industry || "N/A"],
+        [
+          "Milestones",
+          `${startup.startupProfile?.milestonesCompleted ?? startup.milestonesCompleted}/${startup.startupProfile?.milestonesTotal ?? startup.milestonesTotal} Completed`,
+        ],
+      ];
 
   const openInvestModal = () => {
     setInvestError("");
@@ -306,33 +446,42 @@ const StartupDetail = ({ isModal = false }) => {
             )}
 
             <div className="obsidian-card p-5">
-              <h3 className="text-sm font-semibold mb-4">{isPlan ? "Mandate Details" : "Startup Details"}</h3>
+              <h3 className="text-sm font-semibold mb-4">
+                {startup.recordType === "idea"
+                  ? "Idea Details"
+                  : isPlan
+                  ? "Mandate Details"
+                  : "Startup Details"}
+              </h3>
               <div className="space-y-3 text-sm">
-                {[
-                  ["Stage", startup.startupProfile?.stage || startup.stage || "N/A"],
-                  ["Tech Stack", startup.startupProfile?.techStack?.length ? startup.startupProfile.techStack.join(", ") : (startup.techStack?.length ? startup.techStack.join(", ") : "N/A")],
-                  ["Industry", startup.startupProfile?.industry || startup.industry || "N/A"],
-                  ["Milestones", `${startup.startupProfile?.milestonesCompleted ?? startup.milestonesCompleted}/${startup.startupProfile?.milestonesTotal ?? startup.milestonesTotal} Completed`],
-                ].map(([label, value]) => (
+                {detailsRows.map(([label, value]) => (
                   <div key={label} className="flex justify-between gap-3">
                     <span className="text-muted-foreground">{label}</span>
                     <span className="font-medium text-right">{value}</span>
                   </div>
                 ))}
               </div>
-              <div className="mt-5">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                  <span>Funding Progress</span>
-                  <span>{fundingPercent}%</span>
+              {isIdeaLikeRecord && startup.raw?.expectedOutcomes && (
+                <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <p className="text-xs text-muted-foreground mb-1">Expected Outcomes</p>
+                  <p className="text-sm text-slate-200 whitespace-pre-wrap">{startup.raw.expectedOutcomes}</p>
                 </div>
-                <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                  <div className="h-full rounded-full gradient-blue" style={{ width: `${fundingPercent}%` }} />
+              )}
+              {!isIdeaLikeRecord && (
+                <div className="mt-5">
+                  <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                    <span>Funding Progress</span>
+                    <span>{fundingPercent}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                    <div className="h-full rounded-full gradient-blue" style={{ width: `${fundingPercent}%` }} />
+                  </div>
+                  <div className="flex justify-between text-xs mt-1.5">
+                    <span className="text-muted-foreground">{formatCurrency(startup.currentFunding)}</span>
+                    <span className="text-muted-foreground">{formatCurrency(startup.fundingGoal)}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-xs mt-1.5">
-                  <span className="text-muted-foreground">{formatCurrency(startup.currentFunding)}</span>
-                  <span className="text-muted-foreground">{formatCurrency(startup.fundingGoal)}</span>
-                </div>
-              </div>
+              )}
             </div>
 
             {startup.recordType === "idea" && startup.startupProfile && (
@@ -806,6 +955,20 @@ function arrayify(value) {
   if (Array.isArray(value)) return value;
   if (value == null || value === "") return [];
   return [value];
+}
+
+function formatDisplayDate(value) {
+  if (!value) return "N/A";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "N/A";
+  return d.toLocaleDateString();
+}
+
+function formatStatusLabel(value) {
+  if (!value) return "N/A";
+  return String(value)
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
 function resolveAssetUrl(url) {

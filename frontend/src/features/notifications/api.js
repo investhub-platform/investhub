@@ -1,34 +1,24 @@
 // src/features/notifications/api.js
-import axios from "axios";
+import api from "@/lib/axios";
 
-const BASE_URL = "http://localhost:5000/api/v1/notifications";
-
-// Helper to get token from localStorage
-const getToken = () => localStorage.getItem("accessToken");
-
-// Axios config with Authorization header
-const authConfig = () => ({
-  headers: {
-    Authorization: `Bearer ${getToken()}`,
-  },
-});
+const BASE_URL = "/v1/notifications";
 
 // Get notifications
 export const fetchNotifications = (params) =>
-  axios.get(BASE_URL, { params, ...authConfig() });
+  api.get(BASE_URL, { params });
 
 // Get unread count
 export const fetchUnreadCount = () =>
-  axios.get(`${BASE_URL}/unread-count`, authConfig());
+  api.get(`${BASE_URL}/unread-count`);
 
 // Mark single as read
 export const markAsRead = (id) =>
-  axios.patch(`${BASE_URL}/${id}/read`, null, authConfig());
+  api.patch(`${BASE_URL}/${id}/read`);
 
 // Mark all as read
 export const markAllAsRead = () =>
-  axios.patch(`${BASE_URL}/read-all`, null, authConfig());
+  api.patch(`${BASE_URL}/read-all`);
 
 // Delete notification
 export const deleteNotification = (id) =>
-  axios.delete(`${BASE_URL}/${id}`, authConfig());
+  api.delete(`${BASE_URL}/${id}`);
