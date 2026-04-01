@@ -24,6 +24,7 @@ import AdminUsersPage from "../features/admin/pages/AdminUsersPage";
 import AdminUserPage from "../features/admin/pages/AdminUserPage";
 import AdminStartupsPage from "../features/admin/pages/AdminStartupsPage";
 import AdminRevenuePage from "../features/admin/pages/AdminRevenuePage";
+import MessagesPage from "../pages/app/MessagesPage";
 
 export default function AppRoutes() {
   const location = useLocation();
