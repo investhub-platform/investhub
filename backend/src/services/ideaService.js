@@ -60,7 +60,15 @@ export const createNewIdea = async ({ userId, ...data }) => {
     throw new AppError("Missing required fields", 400);
   }
 
-  const isIdea = data.isIdea !== undefined ? data.isIdea : true;
+  const isIdea =
+    data.isIdea !== undefined
+      ? String(data.isIdea).toLowerCase() === "true"
+      : true;
+
+  const normalizedBudget = Number(data.budget);
+  if (!Number.isFinite(normalizedBudget) || normalizedBudget < 0) {
+    throw new AppError("Budget must be a valid positive number", 400);
+  }
 
   if (isIdea && !data.StartupId) {
     throw new AppError("StartupId is required for Idea", 400);
@@ -79,7 +87,10 @@ export const createNewIdea = async ({ userId, ...data }) => {
 
   const payload = {
     ...data,
+    budget: normalizedBudget,
     isIdea,
+    pitchDeckText: data.pitchDeckText || null,
+    pitchDeckFiles: Array.isArray(data.pitchDeckFiles) ? data.pitchDeckFiles : [],
     createdBy: userId,
     updatedBy: userId,
     createdUtc: new Date(),
@@ -117,7 +128,22 @@ export const updateIdea = async (id, { userId, regenerateAI, ...data }) => {
   const keyFields = ["title", "description", "category", "budget", "timeline", "expectedOutcomes"];
   const isKeyFieldUpdated = keyFields.some((field) => field in data);
 
+  if (data.isIdea !== undefined) {
+    data.isIdea = String(data.isIdea).toLowerCase() === "true";
+  }
+  if (data.budget !== undefined) {
+    const nextBudget = Number(data.budget);
+    if (!Number.isFinite(nextBudget) || nextBudget < 0) {
+      throw new AppError("Budget must be a valid positive number", 400);
+    }
+    data.budget = nextBudget;
+  }
+
   Object.assign(idea, data);
+
+  if (data.pitchDeckFiles && Array.isArray(data.pitchDeckFiles)) {
+    idea.pitchDeckFiles = data.pitchDeckFiles;
+  }
   idea.updatedBy = userId;
   idea.updatedUtc = new Date();
   idea.currentVersion += 1;

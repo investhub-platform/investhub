@@ -71,6 +71,7 @@ export const getStartupDashboard = async (startupOwnerId, IdeaModel) => {
       reports: reports.map(r => ({
         weekNumber: r.weekNumber,
         reportDate: r.reportDate,
+        monthlyIncome: r.monthlyIncome,
         overallStatus: r.overallStatus,
         milestones: r.milestones,
         attachments: r.attachments

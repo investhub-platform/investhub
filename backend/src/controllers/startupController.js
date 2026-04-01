@@ -1,5 +1,7 @@
 import * as startupService from "../services/startupService.js";
 
+const toAssetPath = (file) => (file ? `/uploads/posts/${file.filename}` : null);
+
 /**
  * StartupController
  * Handles HTTP requests and responses
@@ -66,7 +68,12 @@ export const getStartupsByStatusController = async (req, res, next) => {
 export const createStartup = async (req, res, next) => {
   try {
     const userId = req.user?.id;
-    const data = await startupService.createNewStartup(req.body, userId);
+    const photoFile = req.files?.photo?.[0] || null;
+    const payload = {
+      ...req.body,
+      ...(photoFile ? { ImgURL: toAssetPath(photoFile) } : {})
+    };
+    const data = await startupService.createNewStartup(payload, userId);
     res.status(201).json({ data });
   } catch (error) {
     next(error);
@@ -80,9 +87,14 @@ export const createStartup = async (req, res, next) => {
 export const updateStartup = async (req, res, next) => {
   try {
     const userId = req.user?.id;
+    const photoFile = req.files?.photo?.[0] || null;
+    const payload = {
+      ...req.body,
+      ...(photoFile ? { ImgURL: toAssetPath(photoFile) } : {})
+    };
     const data = await startupService.updateExistingStartup(
       req.params.id,
-      req.body,
+      payload,
       userId
     );
     res.json({ data });

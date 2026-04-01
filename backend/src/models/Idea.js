@@ -52,6 +52,23 @@ const IdeaSchema = new Schema(
       default: null
     },
 
+    pitchDeckText: {
+      type: String,
+      default: null
+    },
+
+    pitchDeckFiles: {
+      type: [
+        {
+          url: { type: String, required: true },
+          originalName: { type: String, default: null },
+          mimeType: { type: String, default: null },
+          size: { type: Number, default: null }
+        }
+      ],
+      default: []
+    },
+
     currentVersion: {
       type: Number,
       default: 1

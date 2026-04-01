@@ -6,6 +6,7 @@ const StartupSchema = new Schema(
     name: { type: String, required: true, trim: true },
     description: { type: String, default: null },
     BR: { type: String, default: null }, // Business Registration
+    ImgURL: { type: String, default: null },
     UserID: { type: Schema.Types.ObjectId, ref: "User", required: true },
     status: {
       type: String,

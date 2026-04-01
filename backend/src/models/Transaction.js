@@ -7,14 +7,14 @@ const transactionSchema = mongoose.Schema(
       ref: 'Wallet',
       required: true,
     },
-    userId: { // Who performed the action
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true
     },
     type: {
       type: String,
-      enum: ['Deposit', 'Withdrawal', 'Investment', 'Refund'], 
+      enum: ['Deposit', 'Withdrawal', 'Investment', 'Refund', 'PlatformFee'],
       required: true,
     },
     amount: {
@@ -25,8 +25,7 @@ const transactionSchema = mongoose.Schema(
       type: String,
       default: 'LKR'
     },
-    // For PayHere integration
-    paymentId: { type: String }, 
+    paymentId: { type: String },
     status: {
       type: String,
       enum: ['Pending', 'Completed', 'Failed'],
@@ -34,7 +33,6 @@ const transactionSchema = mongoose.Schema(
     },
     completedAt: { type: Date },
     description: { type: String },
-    // If this was an investment, link to the startup
     relatedStartupId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Startup'

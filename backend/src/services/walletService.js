@@ -10,11 +10,11 @@ import AppError from '../utils/AppError.js';
  * Database operations are delegated to walletRepository / transactionRepository.
  */
 
+const PLATFORM_FEE_PERCENT = Number(process.env.PLATFORM_FEE_PERCENT || 5);
+const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
+
 // ─── Wallet ──────────────────────────────────────────────────────────────────
 
-/**
- * Return the user's wallet, auto-creating it if this is their first access.
- */
 export const getOrCreateWallet = async (userId) => {
   let wallet = await walletRepo.findByUser(userId);
   if (!wallet) wallet = await walletRepo.create({ userId });
@@ -23,24 +23,24 @@ export const getOrCreateWallet = async (userId) => {
 
 // ─── Transaction History ──────────────────────────────────────────────────────
 
-/**
- * Fetch the transaction history for a user with optional filters.
- * Supported query keys: type, status, startDate, endDate.
- */
 export const getTransactionHistory = async (
   userId,
   { type, status, startDate, endDate, paymentId } = {}
 ) => {
   const filter = {};
 
-  if (type)   filter.type   = type;
+  if (type) filter.type = type;
   if (status) filter.status = status;
   if (paymentId) filter.paymentId = paymentId;
 
   if (startDate || endDate) {
     filter.createdAt = {};
     if (startDate) filter.createdAt.$gte = new Date(startDate);
-    if (endDate)   filter.createdAt.$lte = new Date(new Date(endDate).setHours(23, 59, 59, 999));
+    if (endDate) {
+      filter.createdAt.$lte = new Date(
+        new Date(endDate).setHours(23, 59, 59, 999)
+      );
+    }
   }
 
   return txRepo.findByUser(userId, filter);
@@ -48,25 +48,27 @@ export const getTransactionHistory = async (
 
 // ─── Deposit ──────────────────────────────────────────────────────────────────
 
-/**
- * Build the PayHere payment parameters and record a Pending transaction.
- * Returns the payload the frontend needs to open the PayHere popup.
- */
 export const initiateDeposit = async (userId, user, amount, options = {}) => {
-  const merchantId     = (process.env.PAYHERE_MERCHANT_ID || '').trim();
+  const merchantId = (process.env.PAYHERE_MERCHANT_ID || '').trim();
   const merchantSecret = (process.env.PAYHERE_SECRET || '').trim();
-  const currency       = (process.env.PAYHERE_CURRENCY || 'LKR').trim().toUpperCase();
+  const currency = (process.env.PAYHERE_CURRENCY || 'LKR').trim().toUpperCase();
 
-  // Primary sources for frontend/backend URLs are environment variables.
-  // For local reproduction you may pass `frontendUrl`/`backendUrl` in the
-  // request body and set `PAYHERE_ALLOW_LOCAL=true` in your env to allow
-  // developer overrides (safe for testing only).
-  const allowLocalOverrides = String(process.env.PAYHERE_ALLOW_LOCAL || '').toLowerCase() === 'true';
+  const allowLocalOverrides =
+    String(process.env.PAYHERE_ALLOW_LOCAL || '').toLowerCase() === 'true';
+
   const frontendEnv = (process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
   const backendEnv = (process.env.BACKEND_URL || '').trim().replace(/\/$/, '');
 
-  const frontendUrlRaw = allowLocalOverrides && options.frontendUrl ? String(options.frontendUrl).trim() : frontendEnv;
-  const backendUrlRaw = allowLocalOverrides && options.backendUrl ? String(options.backendUrl).trim() : backendEnv;
+  const frontendUrlRaw =
+    allowLocalOverrides && options.frontendUrl
+      ? String(options.frontendUrl).trim()
+      : frontendEnv;
+
+  const backendUrlRaw =
+    allowLocalOverrides && options.backendUrl
+      ? String(options.backendUrl).trim()
+      : backendEnv;
+
   const frontendUrl = frontendUrlRaw ? frontendUrlRaw.replace(/\/$/, '') : '';
   const backendUrl = backendUrlRaw ? backendUrlRaw.replace(/\/$/, '') : '';
 
@@ -74,8 +76,16 @@ export const initiateDeposit = async (userId, user, amount, options = {}) => {
     throw new AppError('Payment gateway not configured', 500);
   }
 
-  if (!frontendUrl || !backendUrl || !/^https?:\/\//i.test(frontendUrl) || !/^https?:\/\//i.test(backendUrl)) {
-    throw new AppError('FRONTEND_URL and BACKEND_URL must be valid absolute URLs for PayHere', 500);
+  if (
+    !frontendUrl ||
+    !backendUrl ||
+    !/^https?:\/\//i.test(frontendUrl) ||
+    !/^https?:\/\//i.test(backendUrl)
+  ) {
+    throw new AppError(
+      'FRONTEND_URL and BACKEND_URL must be valid absolute URLs for PayHere',
+      500
+    );
   }
 
   const amt = parseFloat(amount);
@@ -84,16 +94,28 @@ export const initiateDeposit = async (userId, user, amount, options = {}) => {
   }
 
   const frontendHost = (() => {
-    try { return new URL(frontendUrl).host; } catch { return 'invalid'; }
+    try {
+      return new URL(frontendUrl).host;
+    } catch {
+      return 'invalid';
+    }
   })();
+
   const backendHost = (() => {
-    try { return new URL(backendUrl).host; } catch { return 'invalid'; }
+    try {
+      return new URL(backendUrl).host;
+    } catch {
+      return 'invalid';
+    }
   })();
 
   const orderId = `ORDER_${Date.now()}_${String(userId).slice(-6)}`;
-  // Per PayHere SDK spec:
-  // hash = UPPER(MD5(merchant_id + order_id + amount + currency + UPPER(MD5(merchant_secret))))
-  const hashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
+
+  const hashedSecret = crypto
+    .createHash('md5')
+    .update(merchantSecret)
+    .digest('hex')
+    .toUpperCase();
 
   if (!/^[A-F0-9]{32}$/.test(hashedSecret)) {
     throw new AppError('Invalid PAYHERE secret/hash configuration', 500);
@@ -106,7 +128,6 @@ export const initiateDeposit = async (userId, user, amount, options = {}) => {
     .digest('hex')
     .toUpperCase();
 
-  // Non-sensitive diagnostics to troubleshoot PayHere authorization issues in deployed environments.
   console.info('[PayHere] initiateDeposit payload meta', {
     orderId,
     amount: amountFormatted,
@@ -117,56 +138,55 @@ export const initiateDeposit = async (userId, user, amount, options = {}) => {
     hashSource: 'derived-from-merchant-secret',
   });
 
-  // Ensure wallet exists before creating the pending transaction
   const wallet = await getOrCreateWallet(userId);
 
   await txRepo.create({
-    walletId:    wallet._id,
+    walletId: wallet._id,
     userId,
-    type:        'Deposit',
-    amount:      amt,
+    type: 'Deposit',
+    amount: amt,
     currency,
-    paymentId:   orderId,
-    status:      'Pending',
+    paymentId: orderId,
+    status: 'Pending',
     description: 'Top-up via PayHere',
   });
 
-  const [firstNameRaw = '', ...restName] = String(user?.name || '').trim().split(/\s+/);
+  const [firstNameRaw = '', ...restName] = String(user?.name || '')
+    .trim()
+    .split(/\s+/);
+
   const firstName = firstNameRaw || 'InvestHub';
   const lastName = restName.join(' ') || 'User';
-  const phone = String(user?.profile?.phone || process.env.PAYHERE_DEFAULT_PHONE || '0770000000');
+  const phone = String(
+    user?.profile?.phone || process.env.PAYHERE_DEFAULT_PHONE || '0770000000'
+  );
   const city = process.env.PAYHERE_DEFAULT_CITY || 'Colombo';
   const address = process.env.PAYHERE_DEFAULT_ADDRESS || 'InvestHub';
   const country = process.env.PAYHERE_DEFAULT_COUNTRY || 'Sri Lanka';
 
   return {
     merchant_id: merchantId,
-    return_url:  `${frontendUrl}/app/wallet`,
-    cancel_url:  `${frontendUrl}/app/wallet`,
-    notify_url:  `${backendUrl}/api/v1/wallets/notify`,
-    order_id:    orderId,
-    items:       'Wallet Top-up',
+    return_url: `${frontendUrl}/app/wallet`,
+    cancel_url: `${frontendUrl}/app/wallet`,
+    notify_url: `${backendUrl}/api/v1/wallets/notify`,
+    order_id: orderId,
+    items: 'Wallet Top-up',
     currency,
-    amount:      amountFormatted,
+    amount: amountFormatted,
     hash,
-    first_name:  firstName,
-    last_name:   lastName,
-    email:       user.email || '',
+    first_name: firstName,
+    last_name: lastName,
+    email: user.email || '',
     phone,
     address,
     city,
     country,
-    custom_1:    String(userId),
+    custom_1: String(userId),
   };
 };
 
 // ─── PayHere Webhook ──────────────────────────────────────────────────────────
 
-/**
- * Verify the PayHere server-to-server notification and, on success,
- * atomically update the transaction status and wallet balance.
- * Throws AppError on any failure so the controller can respond accordingly.
- */
 export const processPayhereNotify = async ({
   merchant_id,
   order_id,
@@ -175,12 +195,20 @@ export const processPayhereNotify = async ({
   status_code,
   md5sig,
 }) => {
-  if (!merchant_id || !order_id || !payhere_amount || !payhere_currency || !status_code || !md5sig) {
+  if (
+    !merchant_id ||
+    !order_id ||
+    !payhere_amount ||
+    !payhere_currency ||
+    !status_code ||
+    !md5sig
+  ) {
     throw new AppError('Missing payment notification fields', 400);
   }
 
   const merchantSecret = (process.env.PAYHERE_SECRET || '').trim();
   const expectedMerchantId = (process.env.PAYHERE_MERCHANT_ID || '').trim();
+
   if (!merchantSecret || !expectedMerchantId) {
     throw new AppError('Payment gateway not configured', 500);
   }
@@ -189,9 +217,11 @@ export const processPayhereNotify = async ({
     throw new AppError('Invalid merchant id', 400);
   }
 
-  // Per PayHere notification verification spec:
-  // md5sig = UPPER(MD5(merchant_id + order_id + payhere_amount + payhere_currency + status_code + UPPER(MD5(merchant_secret))))
-  const hashedSecret = crypto.createHash('md5').update(merchantSecret).digest('hex').toUpperCase();
+  const hashedSecret = crypto
+    .createHash('md5')
+    .update(merchantSecret)
+    .digest('hex')
+    .toUpperCase();
 
   if (!/^[A-F0-9]{32}$/.test(hashedSecret)) {
     throw new AppError('Invalid PAYHERE secret/hash configuration', 500);
@@ -199,7 +229,14 @@ export const processPayhereNotify = async ({
 
   const localMd5sig = crypto
     .createHash('md5')
-    .update(merchant_id + order_id + payhere_amount + payhere_currency + status_code + hashedSecret)
+    .update(
+      merchant_id +
+        order_id +
+        payhere_amount +
+        payhere_currency +
+        status_code +
+        hashedSecret
+    )
     .digest('hex')
     .toUpperCase();
 
@@ -214,7 +251,9 @@ export const processPayhereNotify = async ({
   }
 
   if (transaction.status !== 'Pending') {
-    console.warn('[WalletService] Transaction not found or already processed', { order_id });
+    console.warn('[WalletService] Transaction not found or already processed', {
+      order_id,
+    });
     return;
   }
 
@@ -229,20 +268,18 @@ export const processPayhereNotify = async ({
   session.startTransaction();
 
   try {
-    // Guard against tampered amounts
     const expected = parseFloat(transaction.amount).toFixed(2);
-    const received  = parseFloat(payhere_amount).toFixed(2);
+    const received = parseFloat(payhere_amount).toFixed(2);
+
     if (expected !== received) {
       await session.abortTransaction();
       throw new AppError('Amount mismatch', 400);
     }
 
-    // Mark transaction complete
-    transaction.status      = 'Completed';
+    transaction.status = 'Completed';
     transaction.completedAt = new Date();
     await txRepo.save(transaction, session);
 
-    // Credit the wallet
     const wallet = await walletRepo.findById(transaction.walletId, session);
     wallet.balance += parseFloat(payhere_amount);
     await walletRepo.save(wallet, session);
@@ -259,11 +296,11 @@ export const processPayhereNotify = async ({
 
 // ─── Deposit Failure + Status ───────────────────────────────────────────────
 
-/**
- * Mark a pending deposit as failed from frontend callback events.
- * This is best-effort and idempotent; completed payments are not altered.
- */
-export const markDepositFailed = async (userId, orderId, reason = 'Payment dismissed or failed in popup') => {
+export const markDepositFailed = async (
+  userId,
+  orderId,
+  reason = 'Payment dismissed or failed in popup'
+) => {
   if (!orderId) {
     throw new AppError('orderId is required', 400);
   }
@@ -282,9 +319,6 @@ export const markDepositFailed = async (userId, orderId, reason = 'Payment dismi
   return txRepo.save(transaction);
 };
 
-/**
- * Return current status of a deposit order for the requesting user.
- */
 export const getDepositStatus = async (userId, orderId) => {
   if (!orderId) {
     throw new AppError('orderId is required', 400);
@@ -305,18 +339,17 @@ export const getDepositStatus = async (userId, orderId) => {
   };
 };
 
-/**
- * Local/sandbox fallback: confirm a deposit from client callback when
- * PayHere notify_url is not reachable (e.g., localhost development).
- * Disabled by default and must never be used in production.
- */
 export const confirmDepositFromClientCallback = async (userId, orderId) => {
   if (!orderId) {
     throw new AppError('orderId is required', 400);
   }
 
-  const allowClientConfirm = String(process.env.PAYHERE_ALLOW_CLIENT_CONFIRM || '').toLowerCase() === 'true';
-  const sandboxMode = String(process.env.PAYHERE_SANDBOX || '').toLowerCase() === 'true';
+  const allowClientConfirm =
+    String(process.env.PAYHERE_ALLOW_CLIENT_CONFIRM || '').toLowerCase() ===
+    'true';
+
+  const sandboxMode =
+    String(process.env.PAYHERE_SANDBOX || '').toLowerCase() === 'true';
 
   if (!allowClientConfirm || !sandboxMode) {
     throw new AppError('Client-side payment confirmation is disabled', 403);
@@ -373,23 +406,36 @@ export const confirmDepositFromClientCallback = async (userId, orderId) => {
   };
 };
 
-// ─── Investment (Atomic Transfer) ─────────────────────────────────────────────
+// ─── Investment (Atomic Transfer + Platform Fee) ─────────────────────────────
 
-/**
- * Atomically deduct funds from the investor's wallet and credit the startup's wallet.
- * Creates two transaction records (debit + credit) in the same Mongo session.
- */
-export const executeInvestment = async (investor, amount, startupId, startupOwnerId) => {
+export const executeInvestment = async (
+  investor,
+  amount,
+  startupId,
+  startupOwnerId
+) => {
   const numericAmount = Number(amount);
+
   if (!startupId || !startupOwnerId) {
     throw new AppError('startupId and startupOwnerId are required', 400);
   }
+
   if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
     throw new AppError('Invalid investment amount', 400);
   }
+
   if (String(investor.id) === String(startupOwnerId)) {
     throw new AppError('You cannot invest in your own startup', 400);
   }
+
+  if (!ADMIN_USER_ID) {
+    throw new AppError('ADMIN_USER_ID is not configured', 500);
+  }
+
+  const platformFee = Number(
+    ((numericAmount * PLATFORM_FEE_PERCENT) / 100).toFixed(2)
+  );
+  const startupNetAmount = Number((numericAmount - platformFee).toFixed(2));
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -402,36 +448,136 @@ export const executeInvestment = async (investor, amount, startupId, startupOwne
 
     let startupWallet = await walletRepo.findByUser(startupOwnerId, session);
     if (!startupWallet) {
-      const [createdWallet] = await walletRepo.create([{ userId: startupOwnerId }], { session });
+      const [createdWallet] = await walletRepo.create(
+        [{ userId: startupOwnerId }],
+        { session }
+      );
       startupWallet = createdWallet;
     }
 
-    // Debit investor
+    let adminWallet = await walletRepo.findByUser(ADMIN_USER_ID, session);
+    if (!adminWallet) {
+      const [createdAdminWallet] = await walletRepo.create(
+        [{ userId: ADMIN_USER_ID }],
+        { session }
+      );
+      adminWallet = createdAdminWallet;
+    }
+
+    // 1. Debit full amount from investor
     investorWallet.balance -= numericAmount;
     await walletRepo.save(investorWallet, session);
 
-    // Credit startup
-    startupWallet.balance += numericAmount;
+    // 2. Credit 95% to startup owner
+    startupWallet.balance += startupNetAmount;
     await walletRepo.save(startupWallet, session);
 
-    // Record both sides of the transfer
+    // 3. Credit 5% to admin/platform
+    adminWallet.balance += platformFee;
+    await walletRepo.save(adminWallet, session);
+
+    // 4. Record all transaction entries
+    await txRepo.createMany(
+      [
+        {
+          walletId: investorWallet._id,
+          userId: investor.id,
+          type: 'Investment',
+          amount: -numericAmount,
+          status: 'Completed',
+          completedAt: new Date(),
+          description: `Investment in Startup ${startupId}`,
+          relatedStartupId: startupId,
+        },
+        {
+          walletId: startupWallet._id,
+          userId: startupOwnerId,
+          type: 'Deposit',
+          amount: startupNetAmount,
+          status: 'Completed',
+          completedAt: new Date(),
+          description: `Investment received after ${PLATFORM_FEE_PERCENT}% platform fee`,
+          relatedStartupId: startupId,
+        },
+        {
+          walletId: adminWallet._id,
+          userId: ADMIN_USER_ID,
+          type: 'PlatformFee',
+          amount: platformFee,
+          status: 'Completed',
+          completedAt: new Date(),
+          description: `Platform fee collected from startup investment ${startupId}`,
+          relatedStartupId: startupId,
+        },
+      ],
+      session
+    );
+
+    await session.commitTransaction();
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
+  }
+};
+
+/**
+ * Founder monthly payout to investor.
+ * Atomically deducts founder wallet and credits investor wallet.
+ */
+export const executeFounderPayout = async (founder, amount, startupId, investorId, requestId = null) => {
+  const numericAmount = Number(amount);
+  if (!startupId || !investorId) {
+    throw new AppError('startupId and investorId are required', 400);
+  }
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    throw new AppError('Invalid payout amount', 400);
+  }
+  if (String(founder.id) === String(investorId)) {
+    throw new AppError('Founder and investor cannot be the same user', 400);
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const founderWallet = await walletRepo.findByUser(founder.id, session);
+    if (!founderWallet || founderWallet.balance < numericAmount) {
+      throw new AppError('Insufficient funds for payout', 400);
+    }
+
+    let investorWallet = await walletRepo.findByUser(investorId, session);
+    if (!investorWallet) {
+      const [createdWallet] = await walletRepo.create([{ userId: investorId }], { session });
+      investorWallet = createdWallet;
+    }
+
+    founderWallet.balance -= numericAmount;
+    await walletRepo.save(founderWallet, session);
+
+    investorWallet.balance += numericAmount;
+    await walletRepo.save(investorWallet, session);
+
+    const payoutContext = requestId ? ` for request ${requestId}` : '';
+
     await txRepo.createMany([
       {
-        walletId:         investorWallet._id,
-        userId:           investor.id,
-        type:             'Investment',
-        amount:           -numericAmount,
-        status:           'Completed',
-        description:      `Investment in Startup ${startupId}`,
+        walletId: founderWallet._id,
+        userId: founder.id,
+        type: 'Withdrawal',
+        amount: -numericAmount,
+        status: 'Completed',
+        description: `Monthly investor payout${payoutContext}`,
         relatedStartupId: startupId,
       },
       {
-        walletId:         startupWallet._id,
-        userId:           startupOwnerId,
-        type:             'Deposit',
-        amount:           numericAmount,
-        status:           'Completed',
-        description:      `Investment received from ${investor.name}`,
+        walletId: investorWallet._id,
+        userId: investorId,
+        type: 'Deposit',
+        amount: numericAmount,
+        status: 'Completed',
+        description: `Monthly return from startup ${startupId}`,
         relatedStartupId: startupId,
       },
     ], session);

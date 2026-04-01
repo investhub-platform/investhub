@@ -110,6 +110,65 @@ export const setMentorDecision = async (req, res, next) => {
   }
 };
 
+/**
+ * Set investor decision
+ * PATCH /requests/:id/investor-decision
+ */
+export const setInvestorDecision = async (req, res, next) => {
+  try {
+    const data = await requestService.setInvestorDecisionOnRequest(
+      req.params.id,
+      req.body
+    );
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getRequestsByStartup = async (req, res, next) => {
+  try {
+    const startupId = req.params.startupId;
+    const data = await requestService.getRequestsByStartupId(startupId);
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const setRequestStatus = async (req, res, next) => {
+  try {
+    const data = await requestService.updateRequestStatus(
+      req.params.id,
+      req.body.requestStatus,
+      req.body.updatedBy
+    );
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getRequestsByInvestor = async (req, res, next) => {
+  try {
+    const investorId = req.params.investorId;
+    const data = await requestService.getRequestsByInvestorId(investorId);
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getRequestsByIdea = async (req, res, next) => {
+  try {
+    const ideaId = req.params.ideaId;
+    const data = await requestService.getRequestsByIdeaId(ideaId);
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   listRequests,
   getRequest,
@@ -117,5 +176,10 @@ export default {
   updateRequest,
   withdrawRequest,
   setFounderDecision,
-  setMentorDecision
+  setInvestorDecision,
+  setMentorDecision,
+  getRequestsByStartup,
+  getRequestsByInvestor,
+  getRequestsByIdea,
+  setRequestStatus
 };
