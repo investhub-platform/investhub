@@ -14,7 +14,7 @@ import StartupOwnerDashboard from "../pages/StartupOwnerDashboard";
 import StartupDetails from "../pages/StartupDetails";
 import StartupModal from "../pages/StartupModal";
 import PortfolioPage from "../pages/app/PortfolioPage";
-import MessagesPage from "../pages/app/MessagesPage";
+import InvestmentDashboard from "../pages/app/InvestmentDashboard";
 import SettingsPage from "../pages/app/SettingsPage";
 import WalletPage from "../pages/app/WalletPage";
 import TransactionsPage from "../pages/app/TransactionsPage";
@@ -35,11 +35,28 @@ export default function AppRoutes() {
       <Routes location={background || location}>
         <Route path="/" element={<LandingPage />} />
 
-        <Route path="/auth/login" element={<LoginPage />} />
-        <Route path="/auth/register" element={<RegisterPage />} />
-        <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
-        <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+      {/* Auth pages ( create next) */}
+       <Route path="/auth/login" element={<LoginPage />} />
+      <Route path="/auth/register" element={<RegisterPage />} />
+      <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+      {/* Protected */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/app" element={<Navigate to="/app/explore" replace />} />
+        <Route path="/app/explore" element={<InvestorDashboard />} />
+        <Route path="/app/portfolio" element={<PortfolioPage />} />
+          <Route path="/app/deals" element={<InvestmentDashboard />} />
+        <Route path="/app/mentor" element={<MentorDashboard />} />
+        <Route path="/app/founder" element={<StartupOwnerDashboard />} />
+        <Route path="/app/startup/:id" element={<StartupDetails />} />
+        <Route path="/app/idea/:id" element={<StartupDetails />} />
+        <Route path="/app/plan/:id" element={<StartupDetails />} />
+        <Route path="/app/profile" element={<ProfilePage />} />
+        <Route path="/app/wallet" element={<WalletPage />} />
+        <Route path="/app/wallet/transactions" element={<TransactionsPage />} />
+        <Route path="/app/settings" element={<SettingsPage />} />
+      </Route>
 
         <Route element={<ProtectedRoute />}>
           <Route path="/app" element={<Navigate to="/app/explore" replace />} />

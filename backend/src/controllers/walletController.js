@@ -110,3 +110,16 @@ export const investInStartup = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Founder monthly payout to investor (Atomic Transfer)
+// @route   POST /api/v1/wallets/payout
+// @access  Private
+export const payoutToInvestor = async (req, res, next) => {
+  try {
+    const { amount, startupId, investorId, requestId } = req.body;
+    await walletService.executeFounderPayout(req.user, amount, startupId, investorId, requestId);
+    res.status(200).json({ message: 'Monthly payout successful' });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -75,6 +75,20 @@ export const findByInvestorId = async (investorId) => {
     .lean();
 };
 
+export const findByIdeaId = async (ideaId) => {
+  return await Request.find({
+    ideaId,
+    deletedUtc: null
+  })
+    .populate("createdBy", "_id name email role")
+    .populate("investorId", "_id name email role")
+    .populate("founderId", "_id name email role")
+    .populate("ideaId", "_id title StartupId")
+    .populate("mandateId", "_id title")
+    .sort({ createdUtc: -1 })
+    .lean();
+};
+
 export const findByIdForUpdate = async (id) => {
   return await Request.findById(id);
 };

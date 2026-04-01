@@ -8,7 +8,7 @@ const navLinks = [
   { label: "Explore", path: "/app/explore" },
   { label: "Portfolio", path: "/app/portfolio" },
   { label: "Wallet", path: "/app/wallet" },
-  { label: "Messages", path: "/app/messages" },
+  { label: "Deals", path: "/app/deals" },
 ];
 
 function getActivePath(pathname, links) {

@@ -122,7 +122,7 @@ export default function InvestmentModal({
                     onClick={submitInvestment}
                     disabled={investSubmitting}
                   >
-                    {investSubmitting ? <><Loader className="w-5 h-5 animate-spin" /> Processing...</> : "Confirm & Transfer"}
+                    {investSubmitting ? <><Loader className="w-5 h-5 animate-spin" /> Sending Request...</> : "Send Request to Founder"}
                   </button>
                 </div>
               </div>
@@ -133,9 +133,9 @@ export default function InvestmentModal({
                 <div className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
                   <CheckCircle2 className="w-10 h-10 text-emerald-400" />
                 </div>
-                <h3 className="text-2xl font-black text-white mb-2">Investment Secured!</h3>
+                <h3 className="text-2xl font-black text-white mb-2">Request Sent!</h3>
                 <p className="text-slate-400 font-medium mb-8 leading-relaxed max-w-sm mx-auto">
-                  Your capital of <strong className="text-white">{formatCurrency(investSuccess?.amount || amountNumber)}</strong> has been placed in escrow for {startup.name}.
+                  Your investment request of <strong className="text-white">{formatCurrency(investSuccess?.amount || amountNumber)}</strong> has been sent to the founder of {startup.name}. You&apos;ll be notified once they review it.
                 </p>
 
                 <button

@@ -54,12 +54,26 @@ export const getRequestsByInvestorId = async (investorId) => {
   }
 };
 
+export const getRequestsByIdeaId = async (ideaId) => {
+  if (!ideaId) {
+    throw new AppError("ideaId is required", 400);
+  }
+
+  try {
+    const requests = await requestRepository.findByIdeaId(ideaId);
+    return requests || [];
+  } catch (error) {
+    throw new AppError("Failed to fetch requests for idea", 500);
+  }
+};
+
 export const updateRequestStatus = async (id, status, updatedBy) => {
   const validStatuses = [
     "pending_founder",
     "pending_investor",
     "pending_mentor",
     "approved",
+    "paid",
     "rejected",
     "withdrawn"
   ];
@@ -124,6 +138,7 @@ export const createNewRequest = async (payload) => {
     "pending_investor",
     "pending_mentor",
     "approved",
+    "paid",
     "rejected",
     "withdrawn"
   ];
