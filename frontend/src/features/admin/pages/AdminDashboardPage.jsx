@@ -4,16 +4,16 @@ import {
   RefreshCw,
   Users,
   UserCheck,
-  UserX,
   Shield,
   Building2,
-  CheckCircle2,
   Clock3,
   XCircle,
   ArrowRight,
+  DollarSign,
+  ReceiptText,
 } from "lucide-react";
 import AdminStatCard from "../components/AdminStatCard";
-import { listUsers } from "../api/adminApi";
+import { listUsers, getPlatformIncome } from "../api/adminApi";
 import { getAllStartups } from "../api/startupAdminApi";
 
 function formatDate(value) {
@@ -23,6 +23,15 @@ function formatDate(value) {
   } catch {
     return "-";
   }
+}
+
+function formatCurrency(value) {
+  const amount = Number(value || 0);
+  return new Intl.NumberFormat("en-LK", {
+    style: "currency",
+    currency: "LKR",
+    maximumFractionDigits: 2,
+  }).format(amount);
 }
 
 function getStatusBadgeClasses(status) {
@@ -84,6 +93,13 @@ function DonutLegend({ items = [] }) {
 export default function AdminDashboardPage() {
   const [users, setUsers] = useState([]);
   const [startups, setStartups] = useState([]);
+  const [incomeData, setIncomeData] = useState({
+    totalIncome: 0,
+    feePercent: 5,
+    transactionCount: 0,
+    transactions: [],
+  });
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -95,16 +111,26 @@ export default function AdminDashboardPage() {
 
       setError("");
 
-      const [usersRes, startupsRes] = await Promise.all([
+      const [usersRes, startupsRes, incomeRes] = await Promise.all([
         listUsers({ page: 1, limit: 100 }),
         getAllStartups(),
+        getPlatformIncome(),
       ]);
 
       const usersData = usersRes?.data || [];
       const startupsData = startupsRes?.data || [];
+      const incomePayload = incomeRes?.data || {};
 
       setUsers(Array.isArray(usersData) ? usersData : []);
       setStartups(Array.isArray(startupsData) ? startupsData : []);
+      setIncomeData({
+        totalIncome: Number(incomePayload?.totalIncome || 0),
+        feePercent: Number(incomePayload?.feePercent || 5),
+        transactionCount: Number(incomePayload?.transactionCount || 0),
+        transactions: Array.isArray(incomePayload?.transactions)
+          ? incomePayload.transactions
+          : [],
+      });
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to load dashboard data");
     } finally {
@@ -162,6 +188,10 @@ export default function AdminDashboardPage() {
     return startups.filter((s) => s.status === "pending").slice(0, 5);
   }, [startups]);
 
+  const recentFeeTransactions = useMemo(() => {
+    return [...(incomeData.transactions || [])].slice(0, 3);
+  }, [incomeData.transactions]);
+
   const userStatusChartData = [
     {
       label: "Active Users",
@@ -210,7 +240,7 @@ export default function AdminDashboardPage() {
 
   const approvedPct = (stats.approvedStartups / startupTotal) * 100;
   const pendingPct = (stats.pendingStartups / startupTotal) * 100;
- 
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -254,8 +284,7 @@ export default function AdminDashboardPage() {
               InvestHub Platform Overview
             </h1>
             <p className="text-slate-400 mt-3 max-w-2xl">
-              Monitor user growth, startup approval activity, and overall platform
-              status from one place.
+              Monitor users, startups, and recent platform revenue updates from one place.
             </p>
           </div>
 
@@ -282,11 +311,18 @@ export default function AdminDashboardPage() {
             >
               Review Startups
             </Link>
+
+            <Link
+              to="/admin/revenue"
+              className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 hover:bg-emerald-500/15 px-5 py-3 text-sm font-semibold text-emerald-200 transition"
+            >
+              View Revenue
+            </Link>
           </div>
         </div>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-6">
+      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
         <AdminStatCard
           title="Total Users"
           value={stats.totalUsers}
@@ -302,20 +338,6 @@ export default function AdminDashboardPage() {
           icon={<UserCheck className="w-5 h-5" />}
         />
         <AdminStatCard
-          title="Suspended Users"
-          value={stats.suspendedUsers}
-          subtitle="Restricted accounts"
-          accent="red"
-          icon={<UserX className="w-5 h-5" />}
-        />
-        <AdminStatCard
-          title="Admins"
-          value={stats.adminUsers}
-          subtitle="Users with admin access"
-          accent="purple"
-          icon={<Shield className="w-5 h-5" />}
-        />
-        <AdminStatCard
           title="Pending Startups"
           value={stats.pendingStartups}
           subtitle="Awaiting review"
@@ -323,11 +345,11 @@ export default function AdminDashboardPage() {
           icon={<Clock3 className="w-5 h-5" />}
         />
         <AdminStatCard
-          title="Approved Startups"
-          value={stats.approvedStartups}
-          subtitle="Platform-approved startups"
-          accent="green"
-          icon={<CheckCircle2 className="w-5 h-5" />}
+          title="Platform Revenue"
+          value={formatCurrency(incomeData.totalIncome)}
+          subtitle={`${incomeData.transactionCount} fee transactions`}
+          accent="purple"
+          icon={<DollarSign className="w-5 h-5" />}
         />
       </section>
 
@@ -433,33 +455,57 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="rounded-[2rem] border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-[0_0_20px_rgba(15,23,42,0.25)]">
-          <h2 className="text-xl font-semibold text-white mb-1">Role Distribution</h2>
+          <h2 className="text-xl font-semibold text-white mb-1">Revenue Activity</h2>
           <p className="text-slate-400 text-sm mb-5">
-            Current breakdown of user roles
+            Latest platform fee updates
           </p>
 
-          <div className="space-y-4">
-            {Object.keys(stats.roleCounts).length === 0 ? (
-              <div className="text-slate-400">No role data available.</div>
-            ) : (
-              Object.entries(stats.roleCounts).map(([role, count]) => (
-                <div key={role}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-slate-300 capitalize">{role}</span>
-                    <span className="text-white font-semibold">{count}</span>
-                  </div>
-                  <div className="h-2.5 rounded-full bg-white/5 overflow-hidden border border-white/5">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400"
-                      style={{
-                        width: `${stats.totalUsers ? (count / stats.totalUsers) * 100 : 0}%`,
-                      }}
-                    />
+          {recentFeeTransactions.length === 0 ? (
+            <div className="text-slate-400">No recent revenue activity.</div>
+          ) : (
+            <div className="space-y-3">
+              {recentFeeTransactions.map((tx) => (
+                <div
+                  key={tx._id}
+                  className="rounded-2xl border border-white/10 bg-[#0f172a] p-4"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 flex items-center justify-center">
+                          <ReceiptText className="w-5 h-5 text-emerald-300" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-white font-semibold truncate">
+                            {formatCurrency(tx.amount)}
+                          </h3>
+                          <p className="text-slate-400 text-xs mt-1">
+                            {formatDate(tx.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <p className="text-slate-400 text-sm mt-3 line-clamp-2">
+                        {tx.description || "Platform fee collected"}
+                      </p>
+                    </div>
+
+                    <span className="inline-flex rounded-full px-3 py-1 text-xs font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-400/20">
+                      {tx.status}
+                    </span>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+
+              <Link
+                to="/admin/revenue"
+                className="inline-flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition pt-2"
+              >
+                View full revenue details
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
@@ -567,6 +613,16 @@ export default function AdminDashboardPage() {
                 {stats.totalUsers
                   ? `${Math.round((stats.adminUsers / stats.totalUsers) * 100)}%`
                   : "0%"}
+              </span>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <DollarSign className="w-5 h-5 text-cyan-300" />
+                <span className="text-slate-300">Current Fee Rate</span>
+              </div>
+              <span className="text-cyan-300 font-semibold">
+                {incomeData.feePercent}%
               </span>
             </div>
           </div>

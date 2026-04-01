@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Users, Building } from "lucide-react";
+import { LayoutDashboard, Users, Building, DollarSign } from "lucide-react";
 
 const links = [
   {
@@ -16,6 +16,11 @@ const links = [
     label: "Startups",
     to: "/admin/startups",
     icon: Building,
+  },
+  {
+    label: "Revenue",
+    to: "/admin/revenue",
+    icon: DollarSign,
   },
 ];
 

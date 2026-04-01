@@ -23,6 +23,8 @@ import AdminDashboardPage from "../features/admin/pages/AdminDashboardPage";
 import AdminUsersPage from "../features/admin/pages/AdminUsersPage";
 import AdminUserPage from "../features/admin/pages/AdminUserPage";
 import AdminStartupsPage from "../features/admin/pages/AdminStartupsPage";
+import AdminRevenuePage from "../features/admin/pages/AdminRevenuePage";
+import MessagesPage from "../pages/app/MessagesPage";
 
 export default function AppRoutes() {
   const location = useLocation();
@@ -32,8 +34,7 @@ export default function AppRoutes() {
   return (
     <>
       <Routes location={background || location}>
-      {/* Public */}
-      <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<LandingPage />} />
 
       {/* Auth pages ( create next) */}
        <Route path="/auth/login" element={<LoginPage />} />
@@ -58,20 +59,34 @@ export default function AppRoutes() {
         <Route path="/app/settings" element={<SettingsPage />} />
       </Route>
 
-      {/* Admin */}
-      <Route element={<AdminRoute />}>
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboardPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="users/:id" element={<AdminUserPage />} />
-          <Route path="startups" element={<AdminStartupsPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/app" element={<Navigate to="/app/explore" replace />} />
+          <Route path="/app/explore" element={<InvestorDashboard />} />
+          <Route path="/app/portfolio" element={<PortfolioPage />} />
+          <Route path="/app/messages" element={<MessagesPage />} />
+          <Route path="/app/mentor" element={<MentorDashboard />} />
+          <Route path="/app/founder" element={<StartupOwnerDashboard />} />
+          <Route path="/app/startup/:id" element={<StartupDetails />} />
+          <Route path="/app/idea/:id" element={<StartupDetails />} />
+          <Route path="/app/plan/:id" element={<StartupDetails />} />
+          <Route path="/app/profile" element={<ProfilePage />} />
+          <Route path="/app/wallet" element={<WalletPage />} />
+          <Route path="/app/wallet/transactions" element={<TransactionsPage />} />
+          <Route path="/app/settings" element={<SettingsPage />} />
         </Route>
-         
-      </Route>
 
-      {/* 404 */}
-      <Route path="*" element={<div className="min-h-screen bg-[#020617] text-white p-6">404</div>} />
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="users/:id" element={<AdminUserPage />} />
+            <Route path="startups" element={<AdminStartupsPage />} />
+            <Route path="revenue" element={<AdminRevenuePage />} />
+          </Route>
+        </Route>
+
+        <Route path="*" element={<div className="min-h-screen bg-[#020617] text-white p-6">404</div>} />
       </Routes>
 
       {background && (
