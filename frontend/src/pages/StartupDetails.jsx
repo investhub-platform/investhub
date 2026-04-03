@@ -10,7 +10,7 @@ import StartupDetailsHero from "@/components/startup-details/StartupDetailsHero"
 import StartupDetailsSidebar from "@/components/startup-details/StartupDetailsSidebar";
 import InvestmentModal from "@/components/startup-details/InvestmentModal";
 import SummaryTab from "@/components/startup-details/SummaryTab";
-import AIAnalysisTab from "@/components/startup-details/AIAnalysisTab";
+// import AIAnalysisTab from "@/components/startup-details/AIAnalysisTab";
 import AIAnalysisContainer from "@/components/startup-details/AIAnalysisContainer";
 
 const tabs = ["Summary & Pitch", "AI Analysis"];
