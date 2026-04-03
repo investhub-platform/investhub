@@ -10,7 +10,8 @@ import StartupDetailsHero from "@/components/startup-details/StartupDetailsHero"
 import StartupDetailsSidebar from "@/components/startup-details/StartupDetailsSidebar";
 import InvestmentModal from "@/components/startup-details/InvestmentModal";
 import SummaryTab from "@/components/startup-details/SummaryTab";
-import AIAnalysisTab from "@/components/startup-details/AIAnalysisTab";
+// import AIAnalysisTab from "@/components/startup-details/AIAnalysisTab";
+import AIAnalysisContainer from "@/components/startup-details/AIAnalysisContainer";
 
 const tabs = ["Summary & Pitch", "AI Analysis"];
 
@@ -374,7 +375,9 @@ const StartupDetail = ({ isModal = false }) => {
                 transition={{ duration: 0.2 }}
               >
                 {activeTab === 0 && <SummaryTab startup={startup} />}
-                {activeTab === 1 && <AIAnalysisTab startup={startup} />}
+                {activeTab === 1 && (
+                  <AIAnalysisContainer startupId={startup.id} startup={startup} />
+                )}
               </motion.div>
             </AnimatePresence>
           </div>

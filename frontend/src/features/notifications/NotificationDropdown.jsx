@@ -8,7 +8,6 @@ import {
   deleteNotification,
 } from "./api";
 import { useAuth } from "@/features/auth/useAuth";
-import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,7 +20,6 @@ export default function NotificationDropdown() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
-  const nav = useNavigate();
 
   // Load notifications
   const loadNotifications = useCallback(async () => {
@@ -104,8 +102,8 @@ export default function NotificationDropdown() {
     }
   };
 
-  // Mark as read + navigate
-  const handleRead = async (id, actionUrl) => {
+  // Mark as read (navigation removed)
+  const handleRead = async (id) => {
     try {
       await markAsRead(id);
 
@@ -115,10 +113,7 @@ export default function NotificationDropdown() {
 
       setUnreadCount((prev) => Math.max(prev - 1, 0));
 
-      if (actionUrl) {
-        nav(actionUrl);
-        setOpen(false);
-      }
+      // Navigation intentionally removed
     } catch (err) {
       console.error("Mark read error:", err);
     }
@@ -126,7 +121,7 @@ export default function NotificationDropdown() {
 
   // Delete notification (Subtle dismissal)
   const handleDelete = async (e, id) => {
-    e.stopPropagation(); // Prevent triggering the read/navigate action
+    e.stopPropagation(); // Prevent triggering the read action
     try {
       await deleteNotification(id);
       setNotifications((prev) => prev.filter((n) => n._id !== id));
@@ -217,7 +212,7 @@ export default function NotificationDropdown() {
                       className={`group relative flex items-start gap-4 p-5 hover:bg-white/[0.03] transition-colors cursor-pointer ${
                         n.isRead ? "bg-transparent" : "bg-blue-500/[0.02]"
                       }`}
-                      onClick={() => handleRead(n._id, n.actionUrl)}
+                      onClick={() => handleRead(n._id)}
                     >
                       {/* Unread Glow Indicator */}
                       {!n.isRead && (
