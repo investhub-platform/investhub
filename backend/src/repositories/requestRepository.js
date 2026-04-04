@@ -1,4 +1,5 @@
 import Request from "../models/Request.js";
+import Idea from "../models/Idea.js";
 
 /**
  * RequestRepository
@@ -7,11 +8,21 @@ import Request from "../models/Request.js";
  */
 
 export const findAll = async () => {
-  return await Request.find().lean();
+  return await Request.find()
+    .populate("investorId", "_id name email role")
+    .populate("founderId", "_id name email role")
+    .populate("ideaId", "_id title StartupId")
+    .populate("mandateId", "_id title")
+    .lean();
 };
 
 export const findById = async (id) => {
-  return await Request.findById(id).lean();
+  return await Request.findById(id)
+    .populate("investorId", "_id name email role")
+    .populate("founderId", "_id name email role")
+    .populate("ideaId", "_id title StartupId")
+    .populate("mandateId", "_id title")
+    .lean();
 };
 
 export const create = async (payload) => {
@@ -32,16 +43,49 @@ export const save = async (doc) => {
 
 export const findByStartupId = async (startupId) => {
   const startupIdStr = String(startupId);
+  const ideas = await Idea.find({ StartupId: startupIdStr, isIdea: true }).select("_id").lean();
+  const ideaIds = ideas.map((i) => i._id);
+
   return await Request.find({
     deletedUtc: null,
     $or: [
       { StartupsId: startupIdStr },
-      { ideaId: startupIdStr },
+      { ideaId: { $in: ideaIds } },
       { startupId: startupIdStr }
     ]
   })
     .populate("createdBy", "_id name email role")
     .populate("investorId", "_id name email role")
+    .populate("founderId", "_id name email role")
+    .populate("ideaId", "_id title StartupId")
+    .populate("mandateId", "_id title")
+    .lean();
+};
+
+export const findByInvestorId = async (investorId) => {
+  return await Request.find({
+    investorId,
+    deletedUtc: null
+  })
+    .populate("createdBy", "_id name email role")
+    .populate("investorId", "_id name email role")
+    .populate("founderId", "_id name email role")
+    .populate("ideaId", "_id title StartupId")
+    .populate("mandateId", "_id title")
+    .lean();
+};
+
+export const findByIdeaId = async (ideaId) => {
+  return await Request.find({
+    ideaId,
+    deletedUtc: null
+  })
+    .populate("createdBy", "_id name email role")
+    .populate("investorId", "_id name email role")
+    .populate("founderId", "_id name email role")
+    .populate("ideaId", "_id title StartupId")
+    .populate("mandateId", "_id title")
+    .sort({ createdUtc: -1 })
     .lean();
 };
 

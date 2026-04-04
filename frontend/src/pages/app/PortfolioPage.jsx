@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import AppNavbar from "../../components/layout/AppNavBar";
 import { DesktopSidebar } from "../../components/DesktopSidebar";
 import api from "../../lib/axios";
@@ -29,7 +29,7 @@ export default function PortfolioPage() {
 
   const { fetchMe } = useAuth();
 
-  const fetchPortfolios = async () => {
+  const fetchPortfolios = useCallback(async () => {
     try {
       const res = await api.get("/v1/portfolios");
       setPortfolios(res.data.data);
@@ -38,7 +38,7 @@ export default function PortfolioPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -57,7 +57,7 @@ export default function PortfolioPage() {
 
     loadUserData();
     fetchPortfolios();
-  }, []);
+  }, [fetchMe, fetchPortfolios]);
 
   const handleCreatePortfolio = async (e) => {
     e.preventDefault();

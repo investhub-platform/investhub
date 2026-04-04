@@ -32,7 +32,7 @@ function getApiErrorMessage(err, fallback) {
 const sidebarItems = [
   { icon: Compass, label: "Explore", path: "/app/explore" },
   { icon: Briefcase, label: "Portfolio", path: "/app/portfolio" },
-  { icon: MessageSquare, label: "Messages", path: "/app/messages" },
+  { icon: MessageSquare, label: "Deals", path: "/app/deals" },
   { icon: Wallet, label: "Wallet", path: "/app/wallet" },
   { icon: BarChart3, label: "Mentor Hub", path: "/app/mentor" },
   { icon: TrendingUp, label: "Founder Hub", path: "/app/founder" },

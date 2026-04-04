@@ -7,6 +7,7 @@ import {
   getDepositStatus,
   confirmDepositFromClient,
   investInStartup,
+  payoutToInvestor,
   getWalletHistory,
 } from '../../controllers/walletController.js';
 import { protect } from '../../middlewares/auth.middleware.js';
@@ -22,5 +23,6 @@ router.get('/deposit/status/:orderId', protect, getDepositStatus);
 router.post('/deposit/confirm-client', protect, confirmDepositFromClient);
 router.post('/notify', payhereNotify);
 router.post('/invest', protect, investInStartup);
+router.post('/payout', protect, payoutToInvestor);
 
 export default router;
