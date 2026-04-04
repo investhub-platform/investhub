@@ -49,7 +49,7 @@ export default function SummaryTab({ startup }) {
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Pitch Summary</h2>
+            <h2 className="text-2xl font-bold text-white tracking-tight">AI Pitch Summary</h2>
             <span className="px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1">
               <Sparkles className="w-3 h-3" /> AI
             </span>
