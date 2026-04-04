@@ -53,7 +53,7 @@ export default function AIAnalysisTab({ startup }) {
             AI Pre-Seed Evaluation
           </h2>
           <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">
-            Powered by AI Engine
+            Powered by InvestHub AI Engine
           </p>
         </div>
       </div>
