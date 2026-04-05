@@ -1,14 +1,19 @@
 import express from "express";
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
-import path from "path";
 import router from "./routes/index.js";
 import errorHandler from "./middlewares/error.middleware.js";
 import cookieParser from "cookie-parser";
+import fs from 'fs';
 
-dotenv.config();
+// Load backend .env relative to this file to ensure env vars are available
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
 const app = express();
 
@@ -55,7 +60,19 @@ app.use(
 );
 app.use(morgan("dev"));
 app.use(cookieParser());
-app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
+// Serve uploaded files from the repository's backend/uploads directory.
+// Use __dirname so this works regardless of the process cwd in deployment.
+const uploadsDir = path.resolve(__dirname, '..', 'uploads');
+// Ensure uploads directory exists so static middleware has a path to serve.
+if (!fs.existsSync(uploadsDir)) {
+  try {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    console.info('[Server] Created uploads directory at', uploadsDir);
+  } catch (err) {
+    console.warn('[Server] Could not create uploads directory', err);
+  }
+}
+app.use('/uploads', express.static(uploadsDir));
 
 app.use("/api", router);
 
