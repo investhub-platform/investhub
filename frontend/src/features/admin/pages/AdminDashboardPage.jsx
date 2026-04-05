@@ -27,9 +27,9 @@ function formatDate(value) {
 
 function formatCurrency(value) {
   const amount = Number(value || 0);
-  return new Intl.NumberFormat("en-LK", {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "LKR",
+    currency: "USD",
     maximumFractionDigits: 2,
   }).format(amount);
 }
