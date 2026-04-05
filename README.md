@@ -9,8 +9,8 @@ InvestHub is a web application that connects startups with technical mentors and
 
 InvestHub is a crowdfunding / startup-investment platform composed of two main services:
 
-- `frontend` — React + Vite application (deployed to Vercel)
-- `backend` — Node.js (Express) API with MongoDB (deployed to Render)
+- `frontend` — React + Vite application (deployed to Vercel) - https://investhub-seven.vercel.app/
+- `backend` — Node.js (Express) API with MongoDB (deployed to Render) - https://investhub-backend.onrender.com
 
 This README explains the architecture, how to run locally, important environment variables, deployment notes for Vercel (frontend) and Render (backend), and common troubleshooting steps.
 
