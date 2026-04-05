@@ -17,6 +17,10 @@ jest.unstable_mockModule("../../../backend/src/services/emailService.js", () => 
 
 const { default: app } = await import("../../../backend/src/app.js");
 const { default: User } = await import("../../../backend/src/models/User.js");
+const { default: Startup } = await import("../../../backend/src/models/Startup.js");
+const { default: Idea } = await import("../../../backend/src/models/Idea.js");
+const { default: Request } = await import("../../../backend/src/models/Request.js");
+const { default: Wallet } = await import("../../../backend/src/models/Wallet.js");
 
 let mongo;
 
@@ -33,6 +37,10 @@ describe("Auth + User API integration", () => {
 
   afterEach(async () => {
     await User.deleteMany({});
+    await Startup.deleteMany({});
+    await Idea.deleteMany({});
+    await Request.deleteMany({});
+    await Wallet.deleteMany({});
     jest.clearAllMocks();
   });
 
@@ -78,5 +86,85 @@ describe("Auth + User API integration", () => {
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
     expect(res.body.message).toMatch(/unauthorized/i);
+  });
+
+  it("returns startups persisted in MongoDB", async () => {
+    const founder = await User.create({
+      name: "Founder One",
+      email: "founder1@example.com",
+      passwordHash: "hash",
+      status: "active",
+      roles: ["user"],
+    });
+
+    await Startup.create({
+      name: "Green Farm",
+      description: "Agri startup",
+      UserID: founder._id,
+      createdBy: founder._id,
+      status: "pending",
+    });
+
+    const res = await request(app).get("/api/v1/startups");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].name).toBe("Green Farm");
+  });
+
+  it("creates an investment request and stores it in MongoDB", async () => {
+    const investor = await User.create({
+      name: "Investor One",
+      email: "investor1@example.com",
+      passwordHash: "hash",
+      status: "active",
+      roles: ["user"],
+    });
+
+    const founder = await User.create({
+      name: "Founder Two",
+      email: "founder2@example.com",
+      passwordHash: "hash",
+      status: "active",
+      roles: ["user"],
+    });
+
+    const startup = await Startup.create({
+      name: "Seed Startup",
+      description: "Seeded for integration testing",
+      UserID: founder._id,
+      createdBy: founder._id,
+      status: "pending",
+    });
+
+    const idea = await Idea.create({
+      StartupId: startup._id,
+      title: "Seed Idea",
+      description: "An idea used for request creation tests",
+      category: "Tech",
+      budget: 2500,
+      isIdea: true,
+      status: "pending_review",
+      createdBy: founder._id,
+    });
+
+    const res = await request(app)
+      .post("/api/v1/requests")
+      .send({
+        investorId: investor._id.toString(),
+        founderId: founder._id.toString(),
+        ideaId: idea._id.toString(),
+        amount: 1500,
+        message: "Please consider this investment request.",
+        direction: "investor_to_startup",
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.requestStatus).toBe("pending_founder");
+
+    const stored = await Request.findOne({ ideaId: idea._id });
+    expect(stored).toBeTruthy();
+    expect(stored.amount).toBe(1500);
+    expect(stored.requestStatus).toBe("pending_founder");
   });
 });
