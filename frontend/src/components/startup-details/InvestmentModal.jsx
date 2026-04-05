@@ -58,7 +58,7 @@ export default function InvestmentModal({
                     type="text"
                     value={investAmount}
                     onChange={(e) => setInvestAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                    placeholder="10,000"
+                    placeholder={formatCurrency(minAmount)}
                     className="w-full px-5 py-4 rounded-xl bg-[#1A1D24] border border-white/5 text-white font-bold text-lg focus:outline-none focus:border-blue-500/50 transition-all shadow-inner"
                   />
                   <div className="flex justify-between items-center mt-2 px-1">

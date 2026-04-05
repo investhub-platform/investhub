@@ -238,7 +238,7 @@ const StartupDetail = ({ isModal = false }) => {
     : 0;
 
   const amountNumber = Number(investAmount || 0);
-  const minAmount = 10000;
+  const minAmount = 1000;
   const isPlan = startup.recordType === "plan";
   const isIdeaLikeRecord = startup.recordType === "idea" || startup.recordType === "plan";
 
