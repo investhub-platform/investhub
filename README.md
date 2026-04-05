@@ -46,6 +46,16 @@ Documentation files:
 These files cover the primary backend flows, request payloads, headers, and Postman environment values required to test authentication, wallet payments, events, and evaluations.
 
 Swagger/OpenAPI is not generated in the repository at this time, so Postman is the main API documentation source.
+You can also find a starter OpenAPI (Swagger) specification and a ready-to-import Postman collection in the `backend/doc` folder:
+
+- `backend/doc/openapi.yaml` — OpenAPI 3.0 starter spec (view in Swagger Editor or import into Swagger UI)
+- `backend/doc/investhub_postman_collection.json` — minimal Postman collection covering login, get current user, get wallet, and creating an investment request
+
+How to use the OpenAPI / Postman files:
+
+- Swagger Editor: open `https://editor.swagger.io/` and paste the contents of `backend/doc/openapi.yaml` to view interactive docs.
+- Local Swagger UI: you can serve `openapi.yaml` with any static Swagger UI instance, or add `swagger-ui-express` to the backend to serve it at `/api/docs`.
+- Postman: Import `backend/doc/investhub_postman_collection.json` into Postman and set an environment variable `baseUrl` (e.g., `https://investhub-backend.onrender.com/api`), `accessToken` and `userId` (optional). The repo already contains `backend/doc/investhub_postman_environment.json` with recommended env values.
 
 ## Local development
 
