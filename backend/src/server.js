@@ -1,8 +1,15 @@
 // src/server.js
 import dotenv from "dotenv";
-dotenv.config();
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Load backend .env reliably relative to this file, regardless of cwd
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 console.log("SMTP_HOST:", process.env.SMTP_HOST);
 console.log("SMTP_PORT:", process.env.SMTP_PORT);
+console.log("ADMIN_USER_ID:", process.env.ADMIN_USER_ID);
 
 
 import http from "http";

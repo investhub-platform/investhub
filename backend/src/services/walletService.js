@@ -10,8 +10,8 @@ import AppError from '../utils/AppError.js';
  * Database operations are delegated to walletRepository / transactionRepository.
  */
 
-const PLATFORM_FEE_PERCENT = Number(process.env.PLATFORM_FEE_PERCENT || 5);
-const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
+const PLATFORM_FEE_PERCENT = () => Number(process.env.PLATFORM_FEE_PERCENT || 5);
+const getAdminUserId = () => process.env.ADMIN_USER_ID;
 
 // ─── Wallet ──────────────────────────────────────────────────────────────────
 
@@ -428,12 +428,12 @@ export const executeInvestment = async (
     throw new AppError('You cannot invest in your own startup', 400);
   }
 
-  if (!ADMIN_USER_ID) {
+  if (!getAdminUserId()) {
     throw new AppError('ADMIN_USER_ID is not configured', 500);
   }
 
   const platformFee = Number(
-    ((numericAmount * PLATFORM_FEE_PERCENT) / 100).toFixed(2)
+    ((numericAmount * PLATFORM_FEE_PERCENT()) / 100).toFixed(2)
   );
   const startupNetAmount = Number((numericAmount - platformFee).toFixed(2));
 
@@ -455,6 +455,7 @@ export const executeInvestment = async (
       startupWallet = createdWallet;
     }
 
+    const ADMIN_USER_ID = getAdminUserId();
     let adminWallet = await walletRepo.findByUser(ADMIN_USER_ID, session);
     if (!adminWallet) {
       const [createdAdminWallet] = await walletRepo.create(
