@@ -33,6 +33,20 @@ Key features:
 - Database: MongoDB Atlas (connection via `MONGO_URI`).
 - Deployments: Frontend on Vercel, Backend on Render. Static uploads served from `backend/uploads` (see storage notes).
 
+## API documentation
+
+The backend API is documented using Postman-based test guides and the included Postman environment export in `backend/doc`.
+
+Documentation files:
+- [backend/doc/USER_AND_WALLET_TESTS.md](backend/doc/USER_AND_WALLET_TESTS.md)
+- [backend/doc/EVALUATIONS_POSTMAN_TESTS.md](backend/doc/EVALUATIONS_POSTMAN_TESTS.md)
+- [backend/doc/EVENTS_POSTMAN_TESTS.md](backend/doc/EVENTS_POSTMAN_TESTS.md)
+- [backend/doc/investhub_postman_environment.json](backend/doc/investhub_postman_environment.json)
+
+These files cover the primary backend flows, request payloads, headers, and Postman environment values required to test authentication, wallet payments, events, and evaluations.
+
+Swagger/OpenAPI is not generated in the repository at this time, so Postman is the main API documentation source.
+
 ## Local development
 
 Prereqs:
@@ -89,6 +103,86 @@ Frontend (high level):
 Note: Keep secrets out of Git and set them in the host's environment settings (Vercel / Render dashboard).
 
 ## Deployment notes
+
+### Deployment section
+
+This section contains the deployment details required for the project submission.
+
+#### Backend deployment platform and setup steps
+
+- Platform: Render
+- Live backend API: https://investhub-backend.onrender.com
+- Setup steps:
+  1. Create a new Render Web Service from the backend repository.
+  2. Set the root directory to `backend`.
+  3. Use `npm install` during build if required by the Render configuration.
+  4. Use `npm start` as the start command.
+  5. Set the backend environment variables in the Render dashboard.
+  6. Configure MongoDB Atlas network access so Render can connect to the database.
+  7. Deploy and confirm the backend starts successfully in the Render logs.
+
+#### Frontend deployment platform and setup steps
+
+- Platform: Vercel
+- Live frontend application: https://investhub-seven.vercel.app/
+- Setup steps:
+  1. Create a new Vercel project from the frontend repository.
+  2. Set the root directory to `frontend`.
+  3. Use `npm run build` as the build command.
+  4. Use `dist` as the output directory.
+  5. Set the frontend environment variables in Vercel.
+  6. Deploy and verify the app loads correctly in production.
+
+#### Environment variables used
+
+The following environment variables are used by the deployed application. Secrets are intentionally not shown.
+
+Backend variables:
+- `PORT`
+- `MONGO_URI`
+- `JWT_ACCESS_SECRET`
+- `JWT_REFRESH_SECRET`
+- `ACCESS_TOKEN_EXPIRES`
+- `REFRESH_TOKEN_EXPIRES`
+- `COOKIE_SECURE`
+- `PAYHERE_MERCHANT_ID`
+- `PAYHERE_SECRET`
+- `PAYHERE_CURRENCY`
+- `PAYHERE_ALLOW_LOCAL`
+- `PAYHERE_SANDBOX`
+- `PAYHERE_ALLOW_CLIENT_CONFIRM`
+- `PAYHERE_SECRET_HASH`
+- `PAYHERE_TRUST_SECRET_HASH`
+- `PAYHERE_DEFAULT_PHONE`
+- `PAYHERE_DEFAULT_ADDRESS`
+- `PAYHERE_DEFAULT_CITY`
+- `PAYHERE_DEFAULT_COUNTRY`
+- `BACKEND_URL`
+- `FRONTEND_URL`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_FROM`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL`
+- `OPENROUTER_API_KEY`
+- `ADMIN_USER_ID`
+- `PLATFORM_FEE_PERCENT`
+
+Frontend variables:
+- `VITE_API_BASE_URL`
+- Other `VITE_*` values used by the frontend
+
+#### Screenshots or evidence of successful deployment
+
+Deployment evidence is included in the repository workspace:
+- Frontend deployed screenshot: [deployment/frontend-vercel.png](deployment/frontend-vercel.png)
+- Backend deployed screenshot: [deployment/render-deployment.png](deployment/render-deployment.png)
+
+#### Static uploads in production
+
+Uploaded files are served from `backend/uploads`. In a production environment, the storage must be persistent. If the deployment platform uses ephemeral storage, uploaded images can be lost after a restart or redeploy unless persistent storage or cloud object storage is configured.
 
 Frontend (Vercel)
 
