@@ -1,83 +1,159 @@
-# InvestHub Platform
+# InvestHub
 
-## InvestHub is a web application that connects startups with technical mentors and investors. The project uses a MERN stack (MongoDB, Express, React, Node) and is split into `backend` and `frontend` folders.
+InvestHub is a web application that connects startups with technical mentors and investors. The project uses a MERN stack (MongoDB, Express, React, Node) and is split into `backend` and `frontend` folders.
 
 **Quick Overview**
 - **Project:** InvestHub
 - **Purpose:** Connect startups with technical mentors and investors
 - **Tech stack:** MERN (MongoDB, Express, React, Node)
 
-**Prerequisites**
-- **Node.js:** v16+ (install from https://nodejs.org/)
-- **npm or yarn:** npm comes with Node.js
-- **MongoDB:** Atlas or local MongoDB instance
+InvestHub is a crowdfunding / startup-investment platform composed of two main services:
 
-**Getting Started (local)**
-1. Clone the repository and open a terminal in the repository root.
+- `frontend` — React + Vite application (deployed to Vercel)
+- `backend` — Node.js (Express) API with MongoDB (deployed to Render)
 
-2. Backend: install and run
+This README explains the architecture, how to run locally, important environment variables, deployment notes for Vercel (frontend) and Render (backend), and common troubleshooting steps.
 
-```powershell
+## Project overview
+
+InvestHub allows users to discover startups and startup ideas, top-up wallets via PayHere, invest in startups (platform collects a configurable platform fee), and manage funds. The admin panel surfaces platform revenue and fee transactions.
+
+Key features:
+- User accounts, JWT auth
+- Wallets + transactions
+- PayHere integration for wallet top-ups
+- Investment requests (investor -> founder flow) with platform fee split
+- Admin dashboard for revenue and fee monitoring
+- Static uploads for avatars, posts, and startup images
+
+## Architecture
+
+- Frontend: React (Vite). Routes include Explore, Portfolio, Wallet, Deals, Admin.
+- Backend: Express, Mongoose, transaction/wallet services handle business rules (atomic transfers, fee handling).
+- Database: MongoDB Atlas (connection via `MONGO_URI`).
+- Deployments: Frontend on Vercel, Backend on Render. Static uploads served from `backend/uploads` (see storage notes).
+
+## Local development
+
+Prereqs:
+- Node.js 18+ (tested with Node 20+)
+- npm
+- MongoDB instance (Atlas recommended)
+
+Backend
+
+1. Copy and edit `backend/.env` with your values (example provided in repository).
+2. From repo root:
+
+```bash
 cd backend
 npm install
-# Create a `.env` file (see required variables below)
 npm run dev
 ```
 
-The backend will start on port `5000` by default (configurable via `PORT`). API routes are mounted under `/api` (for example `http://localhost:5000/api`).
+The backend will run on `http://localhost:5000` by default (see `PORT`). It loads `backend/.env` relative to the service folder.
 
-3. Frontend: install and run
+Frontend
 
-```powershell
+1. Update `frontend/.env` with frontend-specific env values if any.
+2. From repo root:
+
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-The frontend runs with Vite on port `5173` by default.
+The frontend dev server runs on `http://localhost:5173` by default.
 
-4. Open the app in your browser at `http://localhost:5173` and ensure the backend is available at `http://localhost:5000`.
+## Important environment variables
 
-**Environment variables (example keys)**
-Create a `backend/.env` file with the values your environment requires. Example keys used by the backend:
+Backend (high level):
 
-- `PORT` (optional) — server port, default `5000`
-- `MONGO_URI` — MongoDB connection string (required)
-- `BACKEND_URL` — base backend URL (e.g. `http://localhost:5000`)
-- `FRONTEND_URL` — frontend URL (e.g. `http://localhost:5173`)
-- `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` — JWT secrets
-- `ACCESS_TOKEN_EXPIRES`, `REFRESH_TOKEN_EXPIRES` — token expiry (e.g. `15m`, `7d`)
-- SMTP settings: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
-- Payment/dev keys used in repo: `PAYHERE_MERCHANT_ID`, `PAYHERE_SECRET`, `PAYHERE_CURRENCY`, `PAYHERE_SANDBOX`
-- Optional AI keys: `GEMINI_API_KEY`, `GEMINI_MODEL` (if AI features are used)
+- `PORT` — backend port
+- `MONGO_URI` — MongoDB connection string
+- `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` — auth secrets
+- `ADMIN_USER_ID` — ObjectId of the admin platform user (used as platform wallet owner). **Required in production**.
+- `PLATFORM_FEE_PERCENT` — platform fee percent (default `5`)
+- PayHere related:
+  - `PAYHERE_MERCHANT_ID`
+  - `PAYHERE_SECRET`
+  - `PAYHERE_CURRENCY` (e.g., `LKR` or `USD`)
+  - `PAYHERE_ALLOW_LOCAL`, `PAYHERE_SANDBOX`, `PAYHERE_ALLOW_CLIENT_CONFIRM`
+- Email (SMTP): `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
 
-Do not commit your real secrets. Use environment-specific secret stores for production.
+Frontend (high level):
+- `VITE_API_BASE_URL` — API base URL for the frontend
+- Any runtime flags for feature toggles
 
-**Run notes**
-- Development backend: `npm run dev` (uses `nodemon` to restart on changes)
-- Production backend: `npm start`
-- Frontend dev: `npm run dev` (Vite)
+Note: Keep secrets out of Git and set them in the host's environment settings (Vercel / Render dashboard).
 
-**Database**
-- Use a MongoDB URI for `MONGO_URI`. For local development you can use `mongodb://localhost:27017/investhub`.
+## Deployment notes
 
-**Common commands**
-- Install all dependencies (from root):
+Frontend (Vercel)
 
-```powershell
-cd backend
-npm install
-cd ../frontend
-npm install
+- Framework: Vite
+- Build command: `npm run build`
+- Output directory: `dist`
+- Environment variables to set in Vercel: `VITE_API_BASE_URL`, `VITE_OTHER_KEYS` (if used)
+- Rewrites: ensure API calls are targeted to the Render backend base URL.
+
+Backend (Render)
+
+- Service type: Web Service
+- Runtime: Node
+- Start command: `npm start` (or `npm run dev` for staging)
+- Environment variables: set all backend env vars listed above in the Render dashboard.
+- Health check: configure a simple HTTP health check such as `/` or `/api/health` if you add one.
+
+Static uploads & persistent storage
+
+- The app serves uploads from `backend/uploads`. On simple deployments this folder must exist and be writable by the service. For durable, scalable deployments use cloud object storage (S3, GCS, or similar) and serve files from there. The codebase includes a small change that ensures `backend/uploads` exists at startup, but uploaded files will not persist across ephemeral instances unless a persistent volume or cloud storage is used.
+
+Recommended: configure uploads to use an S3 bucket and change file upload/serve code to generate signed URLs for production.
+
+## Admin & platform config
+
+- `ADMIN_USER_ID` must point to an existing admin user's `_id` in MongoDB. The platform wallet and fee transactions are associated with this user. If `ADMIN_USER_ID` is missing the backend will throw an error when attempting to execute investment fee flows.
+- `PLATFORM_FEE_PERCENT` controls the percentage collected from investments (default 5%).
+
+## Min investment amount
+
+- The frontend enforces a minimum investment amount (now set to `$1,000`). For production safety you should also enforce the same minimum on the backend (server-side validation) to avoid bypass by manipulated clients.
+
+## Troubleshooting
+
+- 500 errors referencing `ADMIN_USER_ID is not configured` — ensure `ADMIN_USER_ID` is defined in the environment and corresponds to a valid MongoDB user id.
+- Images 404 in production — verify that `backend/uploads` exists on the host or move uploads to persistent cloud storage; verify URLs are `/uploads/<filename>`.
+- PayHere errors — verify `PAYHERE_MERCHANT_ID`, `PAYHERE_SECRET`, and the derived secret hash are correct. Use sandbox settings for local testing.
+
+## Recommended improvements (next steps)
+
+- Add backend server-side validation for minimum investment amount (configurable via env).
+- Integrate durable cloud storage for uploads (S3/GCS) and update frontend URLs accordingly.
+- Add an automated admin user creation script (optional) for first-time deployments.
+- Add end-to-end tests for core payment and investment flows.
+
+## Useful commands
+
+From `backend`:
+
+```bash
+npm run dev   # start backend in dev (nodemon)
+npm start     # start production server
 ```
 
-**Troubleshooting**
-- If the backend cannot connect to MongoDB, confirm `MONGO_URI` and network access (Atlas IP whitelist or local MongoDB running).
-- If SMTP email fails, verify SMTP credentials and allow access if using Gmail (app passwords or less-secure settings may be required).
+From `frontend`:
 
-**Further work**
-- Add a `backend/.env.example` file (recommended) with placeholder values.
-- Add `docker-compose` for local dev (optional).
+```bash
+npm run dev   # vite dev
+npm run build # build for production
+```
+
+## Contact / Maintainers
+
+If you need help with deployment or want me to add S3-backed uploads or server-side min-investment enforcement, tell me and I will implement the recommended changes.
 
 ---
-For backend-specific and frontend-specific setup notes, see `backend/README.md` and `frontend/README.md`.
+
+README generated and tailored for this repository on April 5, 2026.
