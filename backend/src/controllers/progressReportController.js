@@ -38,7 +38,7 @@ export const update = async (req, res, next) => {
 export const remove = async (req, res, next) => {
   try { 
     await service.deleteReport(req.params.id, req.user.id); 
-    res.json({ success: true, message: "Report delete successfully" }); 
+    res.json({ success: true, data: { message: "Report delete successfully" } }); 
   } catch (err) { next(err); }
 };
 

@@ -86,7 +86,7 @@ describe("Backend API performance", () => {
     await Startup.create({
       name: "Perf Startup",
       description: "Load test startup",
-      UserID: founder._id,
+      userId: founder._id,
       createdBy: founder._id,
       status: "pending",
     });
@@ -123,7 +123,7 @@ describe("Backend API performance", () => {
     const startup = await Startup.create({
       name: "Request Perf Startup",
       description: "Seeded for request lookup load test",
-      UserID: founder._id,
+      userId: founder._id,
       createdBy: founder._id,
       status: "pending",
     });

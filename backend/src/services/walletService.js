@@ -415,6 +415,7 @@ export const executeInvestment = async (
   startupOwnerId
 ) => {
   const numericAmount = Number(amount);
+  const minimumInvestment = Number(process.env.MIN_INVEST_AMOUNT || 10000);
 
   if (!startupId || !startupOwnerId) {
     throw new AppError('startupId and startupOwnerId are required', 400);
@@ -422,6 +423,10 @@ export const executeInvestment = async (
 
   if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
     throw new AppError('Invalid investment amount', 400);
+  }
+
+  if (numericAmount < minimumInvestment) {
+    throw new AppError(`Minimum investment amount is ${minimumInvestment}`, 400);
   }
 
   if (String(investor.id) === String(startupOwnerId)) {

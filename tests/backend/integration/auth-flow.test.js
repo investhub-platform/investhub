@@ -2,6 +2,7 @@ import { jest } from "@jest/globals";
 import request from "supertest";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
+import jwt from "jsonwebtoken";
 
 process.env.JWT_ACCESS_SECRET = "integration-access-secret";
 process.env.JWT_REFRESH_SECRET = "integration-refresh-secret";
@@ -100,7 +101,7 @@ describe("Auth + User API integration", () => {
     await Startup.create({
       name: "Green Farm",
       description: "Agri startup",
-      UserID: founder._id,
+      userId: founder._id,
       createdBy: founder._id,
       status: "pending",
     });
@@ -132,7 +133,7 @@ describe("Auth + User API integration", () => {
     const startup = await Startup.create({
       name: "Seed Startup",
       description: "Seeded for integration testing",
-      UserID: founder._id,
+      userId: founder._id,
       createdBy: founder._id,
       status: "pending",
     });
@@ -148,8 +149,15 @@ describe("Auth + User API integration", () => {
       createdBy: founder._id,
     });
 
+    const authToken = jwt.sign(
+      { roles: ["user"] },
+      process.env.JWT_ACCESS_SECRET,
+      { subject: investor._id.toString(), expiresIn: "1h" }
+    );
+
     const res = await request(app)
       .post("/api/v1/requests")
+      .set("Authorization", `Bearer ${authToken}`)
       .send({
         investorId: investor._id.toString(),
         founderId: founder._id.toString(),

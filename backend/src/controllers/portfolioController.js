@@ -47,7 +47,7 @@ export const updatePortfolio = async (req, res, next) => {
 export const deletePortfolio = async (req, res, next) => {
   try {
     await portfolioService.deletePortfolio(req.params.id, req.user.id);
-    res.json({ success: true, message: "Portfolio deleted" });
+    res.json({ success: true, data: { message: "Portfolio deleted" } });
   } catch (err) {
     next(err);
   }

@@ -6,7 +6,7 @@ import * as walletService from '../services/walletService.js';
 export const getMyWallet = async (req, res, next) => {
   try {
     const wallet = await walletService.getOrCreateWallet(req.user.id);
-    res.status(200).json(wallet);
+    res.status(200).json({ success: true, data: wallet });
   } catch (error) {
     next(error);
   }
@@ -21,7 +21,7 @@ export const getMyWallet = async (req, res, next) => {
 export const getWalletHistory = async (req, res, next) => {
   try {
     const transactions = await walletService.getTransactionHistory(req.user.id, req.query);
-    res.status(200).json(transactions);
+    res.status(200).json({ success: true, data: transactions });
   } catch (error) {
     next(error);
   }
@@ -38,7 +38,7 @@ export const initiateDeposit = async (req, res, next) => {
       backendUrl: req.body.backendUrl,
     };
     const data = await walletService.initiateDeposit(req.user.id, req.user, req.body.amount, options);
-    res.status(200).json(data);
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -64,10 +64,7 @@ export const markDepositFailed = async (req, res, next) => {
   try {
     const { orderId, reason } = req.body;
     const transaction = await walletService.markDepositFailed(req.user.id, orderId, reason);
-    res.status(200).json({
-      message: 'Deposit status updated',
-      data: transaction,
-    });
+    res.status(200).json({ success: true, data: { message: 'Deposit status updated', transaction } });
   } catch (error) {
     next(error);
   }
@@ -79,7 +76,7 @@ export const markDepositFailed = async (req, res, next) => {
 export const getDepositStatus = async (req, res, next) => {
   try {
     const data = await walletService.getDepositStatus(req.user.id, req.params.orderId);
-    res.status(200).json(data);
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -92,7 +89,7 @@ export const confirmDepositFromClient = async (req, res, next) => {
   try {
     const { orderId } = req.body;
     const data = await walletService.confirmDepositFromClientCallback(req.user.id, orderId);
-    res.status(200).json(data);
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -105,7 +102,7 @@ export const investInStartup = async (req, res, next) => {
   try {
     const { amount, startupId, startupOwnerId } = req.body;
     await walletService.executeInvestment(req.user, amount, startupId, startupOwnerId);
-    res.status(200).json({ message: 'Investment successful' });
+    res.status(200).json({ success: true, data: { message: 'Investment successful' } });
   } catch (error) {
     next(error);
   }
@@ -118,7 +115,7 @@ export const payoutToInvestor = async (req, res, next) => {
   try {
     const { amount, startupId, investorId, requestId } = req.body;
     await walletService.executeFounderPayout(req.user, amount, startupId, investorId, requestId);
-    res.status(200).json({ message: 'Monthly payout successful' });
+    res.status(200).json({ success: true, data: { message: 'Monthly payout successful' } });
   } catch (error) {
     next(error);
   }

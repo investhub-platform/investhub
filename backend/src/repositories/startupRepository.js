@@ -10,8 +10,12 @@ import Startup from "../models/Startup.js";
 /**
  * Find all startups (excluding soft-deleted)
  */
-export const findAll = async () => {
-  return await Startup.find({ deletedUtc: null }).lean();
+export const findAll = async ({ query = {}, page = 1, limit = 20 } = {}) => {
+  const skip = (Math.max(Number(page) || 1, 1) - 1) * Math.max(Number(limit) || 20, 1);
+  return await Startup.find(query)
+    .sort({ createdUtc: -1 })
+    .skip(skip)
+    .limit(Math.max(Number(limit) || 20, 1));
 };
 
 /**
@@ -24,7 +28,7 @@ export const findById = async (id) => {
     id instanceof mongoose.Types.ObjectId
       ? id
       : new mongoose.Types.ObjectId(String(id));
-  return await Startup.findOne({ _id: oid }).lean();
+  return await Startup.findOne({ _id: oid });
 };
 
 /**
@@ -34,14 +38,18 @@ export const findByUserId = async (userId) => {
   return await Startup.find({
     deletedUtc: null,
     $or: [{ userId }, { UserID: userId }, { createdBy: userId }]
-  }).lean();
+  });
 };
 
 /**
  * Find startups by status
  */
 export const findByStatus = async (status) => {
-  return await Startup.find({ status, deletedUtc: null }).lean();
+  return await Startup.find({ status, deletedUtc: null });
+};
+
+export const countAll = async (query = {}) => {
+  return await Startup.countDocuments(query);
 };
 
 /**
