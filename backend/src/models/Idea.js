@@ -101,6 +101,11 @@ const IdeaSchema = new Schema(
       default: null
     },
 
+    promotedUntil: {
+      type: Date,
+      default: null
+    },
+
     createdUtc: {
       type: Date,
       default: () => new Date()
@@ -154,5 +159,7 @@ IdeaSchema.pre("validate", function () {
     throw new Error("Custom category is required when category is 'Other'");
   }
 });
+
+IdeaSchema.index({ promotedUntil: -1, createdUtc: -1 });
 
 export default mongoose.model("Idea", IdeaSchema);

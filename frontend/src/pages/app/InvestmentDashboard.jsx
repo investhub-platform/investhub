@@ -9,7 +9,6 @@ import {
   X,
   Clock,
   TrendingUp,
-  DollarSign,
   Loader,
   Send
 } from "lucide-react";
@@ -95,34 +94,14 @@ export default function InvestmentDashboard() {
   // Payment modal
   const [selectedRequestForPayment, setSelectedRequestForPayment] =
     useState(null);
-  const [paymentMethod, setPaymentMethod] = useState("wallet"); // "wallet" or "payhere"
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
-  const [walletBalance, setWalletBalance] = useState(0);
+  const [pendingPayHereOrderId, setPendingPayHereOrderId] = useState("");
 
   // Decision modal
   // const [selectedRequestForDecision, setSelectedRequestForDecision] =
   //   useState(null);
   const [decisionComment, setDecisionComment] = useState("");
   const [isDecisionProcessing, setIsDecisionProcessing] = useState(false);
-
-  const fetchWalletBalance = useCallback(async () => {
-    try {
-      const res = await api.get("/v1/wallets/me");
-      const wallet = extractPayload(res?.data);
-      const nextBalance = Number(wallet?.balance || 0);
-      setWalletBalance(nextBalance);
-      return nextBalance;
-    } catch (e) {
-      console.error("Failed to fetch wallet", e);
-      setWalletBalance(0);
-      return 0;
-    }
-  }, []);
-
-  // Fetch wallet balance
-  useEffect(() => {
-    fetchWalletBalance();
-  }, [fetchWalletBalance]);
 
   // Fetch sent requests (investor view)
   const fetchSentRequests = useCallback(async () => {
@@ -254,103 +233,66 @@ export default function InvestmentDashboard() {
     }
   };
 
-  // Handle wallet payment
-  const handleWalletPayment = async (requestId, amount) => {
-    const latestBalance = await fetchWalletBalance();
-
-    if (amount > latestBalance) {
-      setError("Insufficient wallet balance. Please top up your wallet.");
-      return;
-    }
-
+  // Handle PayHere payment
+  const handlePayHerePayment = async (requestId, amount) => {
     setIsPaymentProcessing(true);
     setError("");
     try {
       const request = sentRequests.find((r) => (r._id || r.id) === requestId);
       if (!request) throw new Error("Request not found");
 
-      // Get the startup owner ID from the request
       const startupOwnerId =
         request.founderId?.id || request.founderId?._id || request.founderId;
       const startupId = request.ideaId?.StartupId || request.ideaId?.startupId;
       if (!startupId || !startupOwnerId) {
-        throw new Error("Missing startup details required for wallet transfer");
+        throw new Error("Missing startup details required for payment");
       }
 
-      // Execute wallet transfer
-      const walletRes = await api.post("/v1/wallets/invest", {
+      const res = await api.post("/v1/wallets/investment/initiate", {
         amount,
-        startupOwnerId,
-        startupId
-      });
-
-      if (!walletRes?.data) {
-        throw new Error("Wallet transfer failed or no response received");
-      }
-
-      // Mark request as paid after successful wallet transfer
-      const userId = user?.id || user?._id;
-      const updateRes = await api.patch(`/v1/requests/${requestId}/status`, {
-        requestStatus: "paid",
-        updatedBy: userId
-      });
-
-      if (!updateRes?.data) {
-        console.warn("Status update response missing, but payment succeeded.");
-      }
-
-      setSuccessMessage("Investment completed successfully!");
-      await fetchWalletBalance();
-
-      // Immediately update local state to show paid status
-      setSentRequests((prevRequests) =>
-        prevRequests.map((r) =>
-          (r._id || r.id) === requestId ? { ...r, requestStatus: "paid" } : r
-        )
-      );
-
-      // Small delay to ensure backend has processed the update
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Close modal and clear selection
-      setSelectedRequestForPayment(null);
-      setPaymentMethod("wallet");
-
-      // Refetch both views to show updated paid status
-      await fetchSentRequests();
-      await fetchReceivedRequests();
-    } catch (e) {
-      const errorMsg =
-        e?.response?.data?.message || e?.message || "Payment failed";
-      setError(errorMsg);
-      console.error("Wallet payment error:", e);
-    } finally {
-      setIsPaymentProcessing(false);
-    }
-  };
-
-  // Handle PayHere payment
-  const handlePayHerePayment = async (requestId, amount) => {
-    setIsPaymentProcessing(true);
-    setError("");
-    try {
-      const res = await api.post("/v1/wallets/deposit/initiate", {
-        amount
+        requestId,
+        startupId,
+        startupOwnerId
       });
       const payload = extractPayload(res?.data);
       const orderId = payload?.order_id;
       if (!orderId)
         throw new Error("Missing order id from payment initiation response");
 
+      setPendingPayHereOrderId(orderId);
       openPayHereFormFallback(payload);
       setSuccessMessage(
-        "Payment popup opened. Complete payment to top up wallet, then pay this deal from wallet."
+        "Payment popup opened. Complete checkout and then verify status."
       );
       setSelectedRequestForPayment(null);
     } catch (e) {
       setError(e?.response?.data?.message || "PayHere payment failed");
     } finally {
       setIsPaymentProcessing(false);
+    }
+  };
+
+  const verifyPayHereInvestment = async () => {
+    if (!pendingPayHereOrderId) return;
+    setError("");
+    try {
+      const res = await api.get(
+        `/v1/wallets/deposit/status/${encodeURIComponent(pendingPayHereOrderId)}`
+      );
+      const payload = extractPayload(res?.data);
+      if (payload?.status === "Completed") {
+        setSuccessMessage("Payment confirmed. Investment ledger and status updated.");
+        setPendingPayHereOrderId("");
+        await fetchSentRequests();
+        await fetchReceivedRequests();
+      } else if (payload?.status === "Failed") {
+        setError("Payment failed or was cancelled.");
+        setPendingPayHereOrderId("");
+      } else {
+        setSuccessMessage("Payment is still processing. Please verify again in a few seconds.");
+      }
+    } catch (e) {
+      setError(e?.response?.data?.message || "Failed to verify payment status");
     }
   };
 
@@ -467,7 +409,18 @@ export default function InvestmentDashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium"
               >
-                {successMessage}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <span>{successMessage}</span>
+                  {pendingPayHereOrderId ? (
+                    <button
+                      type="button"
+                      onClick={verifyPayHereInvestment}
+                      className="px-3 py-1.5 rounded-lg border border-emerald-400/40 text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/10 transition-colors text-xs font-bold"
+                    >
+                      Verify PayHere Status
+                    </button>
+                  ) : null}
+                </div>
               </motion.div>
             )}
 
@@ -816,45 +769,15 @@ export default function InvestmentDashboard() {
               </h3>
 
               <div className="space-y-4 mb-8">
-                {/* Wallet Option */}
-                <button
-                  onClick={() => setPaymentMethod("wallet")}
-                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                    paymentMethod === "wallet"
-                      ? "border-blue-500 bg-blue-500/10"
-                      : "border-white/10 bg-[#1A1D24] hover:border-white/20"
-                  }`}
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <DollarSign className="w-5 h-5 text-blue-400" />
-                    <span className="font-bold text-white">
-                      Pay from Wallet
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    Balance: {formatCurrency(walletBalance)}
-                  </p>
-                </button>
-
-                {/* PayHere Option */}
-                <button
-                  onClick={() => setPaymentMethod("payhere")}
-                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                    paymentMethod === "payhere"
-                      ? "border-blue-500 bg-blue-500/10"
-                      : "border-white/10 bg-[#1A1D24] hover:border-white/20"
-                  }`}
-                >
+                <div className="w-full p-4 rounded-xl border-2 border-blue-500 bg-blue-500/10 text-left">
                   <div className="flex items-center gap-3 mb-2">
                     <TrendingUp className="w-5 h-5 text-blue-400" />
-                    <span className="font-bold text-white">
-                      Pay with PayHere
-                    </span>
+                    <span className="font-bold text-white">Pay with PayHere Escrow</span>
                   </div>
                   <p className="text-xs text-slate-400">
-                    Using credit/debit card
+                    Entire amount is collected in merchant escrow first, then platform split is settled.
                   </p>
-                </button>
+                </div>
               </div>
 
               {/* Amount Display */}
@@ -867,15 +790,6 @@ export default function InvestmentDashboard() {
                 </p>
               </div>
 
-              {/* Insufficient Balance Warning */}
-              {paymentMethod === "wallet" &&
-                selectedRequestForPayment?.amount > walletBalance && (
-                  <div className="mb-6 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs">
-                    ⚠ Insufficient wallet balance. Please use PayHere or top up
-                    your wallet.
-                  </div>
-                )}
-
               {/* Action Buttons */}
               <div className="flex gap-3">
                 <button
@@ -886,25 +800,13 @@ export default function InvestmentDashboard() {
                 </button>
                 <button
                   onClick={() => {
-                    if (paymentMethod === "wallet") {
-                      handleWalletPayment(
-                        selectedRequestForPayment._id ||
-                          selectedRequestForPayment.id,
-                        selectedRequestForPayment.amount
-                      );
-                    } else {
-                      handlePayHerePayment(
-                        selectedRequestForPayment._id ||
-                          selectedRequestForPayment.id,
-                        selectedRequestForPayment.amount
-                      );
-                    }
+                    handlePayHerePayment(
+                      selectedRequestForPayment._id ||
+                        selectedRequestForPayment.id,
+                      selectedRequestForPayment.amount
+                    );
                   }}
-                  disabled={
-                    isPaymentProcessing ||
-                    (paymentMethod === "wallet" &&
-                      selectedRequestForPayment?.amount > walletBalance)
-                  }
+                  disabled={isPaymentProcessing}
                   className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isPaymentProcessing ? (

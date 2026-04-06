@@ -4,7 +4,26 @@ import * as userRepo from "../repositories/userRepository.js";
 export const getMe = async (userId) => {
   const user = await userRepo.findPublicById(userId);
   if (!user) throw new AppError("User not found", 404);
-  return user;
+
+  const now = new Date();
+  const investorExpiry = user?.subscription?.investorProExpiresAt
+    ? new Date(user.subscription.investorProExpiresAt)
+    : null;
+  const founderExpiry = user?.subscription?.founderProExpiresAt
+    ? new Date(user.subscription.founderProExpiresAt)
+    : null;
+
+  const subscription = {
+    investorProExpiresAt: investorExpiry,
+    founderProExpiresAt: founderExpiry,
+    isInvestorPro: Boolean(investorExpiry && investorExpiry > now),
+    isFounderPro: Boolean(founderExpiry && founderExpiry > now),
+    isAnyPro: Boolean((investorExpiry && investorExpiry > now) || (founderExpiry && founderExpiry > now)),
+  };
+
+  const plainUser = user.toObject ? user.toObject() : user;
+  plainUser.subscription = subscription;
+  return plainUser;
 };
 
 export const updateMe = async (userId, payload) => {

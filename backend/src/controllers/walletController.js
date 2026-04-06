@@ -120,3 +120,43 @@ export const payoutToInvestor = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Purchase subscription from wallet (Investor Pro / Founder Pro / Pro Max)
+// @route   POST /api/v1/wallets/subscription/purchase
+// @access  Private
+export const purchaseSubscriptionFromWallet = async (req, res, next) => {
+  try {
+    const data = await walletService.purchaseSubscriptionFromWallet(
+      req.user.id,
+      req.body.packageType
+    );
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Initiate direct investment checkout to PayHere merchant account
+// @route   POST /api/v1/wallets/investment/initiate
+// @access  Private
+export const initiateInvestmentCheckout = async (req, res, next) => {
+  try {
+    const options = {
+      frontendUrl: req.body.frontendUrl,
+      backendUrl: req.body.backendUrl,
+    };
+    const data = await walletService.initiateInvestmentCheckout(
+      req.user,
+      {
+        amount: req.body.amount,
+        startupId: req.body.startupId,
+        startupOwnerId: req.body.startupOwnerId,
+        requestId: req.body.requestId,
+      },
+      options
+    );
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};

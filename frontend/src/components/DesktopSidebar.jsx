@@ -81,7 +81,7 @@ export function DesktopSidebar() {
         // persist current balance for next visit comparison
         try {
           localStorage.setItem("investhub:walletBalance", String(balance));
-        } catch (e) {
+        } catch {
           // ignore storage errors
         }
 

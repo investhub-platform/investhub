@@ -10,6 +10,7 @@ import Idea from "../models/Idea.js";
  */
 export const findAllRecords = async () => {
   return await Idea.find({ deletedUtc: null })
+    .sort({ promotedUntil: -1, createdUtc: -1 })
     .populate("StartupId", "_id name description BR ImgURL status UserID")
     .lean();
 };
@@ -19,6 +20,7 @@ export const findAllRecords = async () => {
  */
 export const findAllIdeasOnly = async () => {
   return await Idea.find({ deletedUtc: null, isIdea: true })
+    .sort({ promotedUntil: -1, createdUtc: -1 })
     .populate("StartupId", "_id name description BR ImgURL status UserID")
     .lean();
 };
@@ -27,7 +29,9 @@ export const findAllIdeasOnly = async () => {
  * Find all Investment Plans only
  */
 export const findAllPlansOnly = async () => {
-  return await Idea.find({ deletedUtc: null, isIdea: false }).lean();
+  return await Idea.find({ deletedUtc: null, isIdea: false })
+    .sort({ promotedUntil: -1, createdUtc: -1 })
+    .lean();
 };
 
 /**

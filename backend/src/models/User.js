@@ -33,6 +33,11 @@ const userSchema = new mongoose.Schema(
       notificationInApp: { type: Boolean, default: true },
     },
 
+    subscription: {
+      investorProExpiresAt: { type: Date, default: null },
+      founderProExpiresAt: { type: Date, default: null },
+    },
+
     // OTPs (store HASHES, not plain OTP)
     emailOtpHash: { type: String, default: null },
     emailOtpExpiryUtc: { type: Date, default: null },

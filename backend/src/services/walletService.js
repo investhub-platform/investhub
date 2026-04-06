@@ -3,6 +3,9 @@ import crypto from 'crypto';
 import * as walletRepo from '../repositories/walletRepository.js';
 import * as txRepo from '../repositories/transactionRepository.js';
 import AppError from '../utils/AppError.js';
+import User from '../models/User.js';
+import Idea from '../models/Idea.js';
+import Request from '../models/Request.js';
 
 /**
  * WalletService
@@ -12,6 +15,27 @@ import AppError from '../utils/AppError.js';
 
 const PLATFORM_FEE_PERCENT = () => Number(process.env.PLATFORM_FEE_PERCENT || 5);
 const getAdminUserId = () => process.env.ADMIN_USER_ID;
+const INVESTOR_PRO_PRICE = Number(process.env.INVESTOR_PRO_PRICE || 20);
+const FOUNDER_PRO_PRICE = Number(process.env.FOUNDER_PRO_PRICE || 49);
+const PRO_MAX_PRICE = Number(process.env.PRO_MAX_PRICE || 60);
+
+const encodeMeta = (prefix, meta) => `${prefix}|${JSON.stringify(meta || {})}`;
+
+const decodeMeta = (description = '', prefix) => {
+  if (!description || !String(description).startsWith(`${prefix}|`)) return null;
+  const json = String(description).slice(prefix.length + 1);
+  try {
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+};
+
+const addDays = (date, days) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+};
 
 // ─── Wallet ──────────────────────────────────────────────────────────────────
 
@@ -185,6 +209,216 @@ export const initiateDeposit = async (userId, user, amount, options = {}) => {
   };
 };
 
+export const purchaseSubscriptionFromWallet = async (userId, packageType) => {
+  const normalizedPackage = String(packageType || '').toLowerCase();
+  const pricing = {
+    investor_pro: INVESTOR_PRO_PRICE,
+    founder_pro: FOUNDER_PRO_PRICE,
+    pro_max: PRO_MAX_PRICE,
+  };
+
+  const amount = pricing[normalizedPackage];
+  if (!amount) {
+    throw new AppError('Invalid subscription package. Use investor_pro, founder_pro, or pro_max.', 400);
+  }
+
+  const adminUserId = getAdminUserId();
+  if (!adminUserId) {
+    throw new AppError('ADMIN_USER_ID is not configured', 500);
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const userWallet = await walletRepo.findByUser(userId, session);
+    if (!userWallet || userWallet.balance < amount) {
+      throw new AppError('Insufficient wallet balance for subscription purchase', 400);
+    }
+
+    let adminWallet = await walletRepo.findByUser(adminUserId, session);
+    if (!adminWallet) {
+      const [createdAdminWallet] = await walletRepo.create([{ userId: adminUserId }], { session });
+      adminWallet = createdAdminWallet;
+    }
+
+    const user = await User.findById(userId).session(session);
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    userWallet.balance -= amount;
+    adminWallet.balance += amount;
+
+    await walletRepo.save(userWallet, session);
+    await walletRepo.save(adminWallet, session);
+
+    const now = new Date();
+    const currentInvestorExpiry = user.subscription?.investorProExpiresAt ? new Date(user.subscription.investorProExpiresAt) : null;
+    const currentFounderExpiry = user.subscription?.founderProExpiresAt ? new Date(user.subscription.founderProExpiresAt) : null;
+
+    const subscription = { ...(user.subscription || {}) };
+    if (normalizedPackage === 'investor_pro' || normalizedPackage === 'pro_max') {
+      const baseline = currentInvestorExpiry && currentInvestorExpiry > now ? currentInvestorExpiry : now;
+      subscription.investorProExpiresAt = addDays(baseline, 30);
+    }
+    if (normalizedPackage === 'founder_pro' || normalizedPackage === 'pro_max') {
+      const baseline = currentFounderExpiry && currentFounderExpiry > now ? currentFounderExpiry : now;
+      subscription.founderProExpiresAt = addDays(baseline, 30);
+      await Idea.updateMany(
+        { createdBy: user._id, deletedUtc: null },
+        { $set: { promotedUntil: subscription.founderProExpiresAt } },
+        { session }
+      );
+    }
+
+    user.subscription = subscription;
+    user.updatedUtc = new Date();
+    await user.save({ session });
+
+    await txRepo.createMany(
+      [
+        {
+          walletId: userWallet._id,
+          userId,
+          type: 'Withdrawal',
+          amount: -amount,
+          currency: userWallet.currency || 'LKR',
+          status: 'Completed',
+          completedAt: new Date(),
+          description: `Subscription purchased from wallet: ${normalizedPackage}`,
+        },
+        {
+          walletId: adminWallet._id,
+          userId: adminUserId,
+          type: 'PlatformFee',
+          amount,
+          currency: adminWallet.currency || 'LKR',
+          status: 'Completed',
+          completedAt: new Date(),
+          description: `Subscription revenue: ${normalizedPackage}`,
+        },
+      ],
+      session
+    );
+
+    await session.commitTransaction();
+
+    return {
+      message: 'Subscription upgraded successfully',
+      packageType: normalizedPackage,
+      amount,
+      subscription,
+      walletBalance: userWallet.balance,
+    };
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
+  }
+};
+
+export const initiateInvestmentCheckout = async (
+  investor,
+  { amount, startupId, startupOwnerId, requestId },
+  options = {}
+) => {
+  const numericAmount = Number(amount);
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    throw new AppError('Invalid investment amount', 400);
+  }
+  if (!startupId || !startupOwnerId) {
+    throw new AppError('startupId and startupOwnerId are required', 400);
+  }
+
+  const merchantId = (process.env.PAYHERE_MERCHANT_ID || '').trim();
+  const merchantSecret = (process.env.PAYHERE_SECRET || '').trim();
+  const currency = (process.env.PAYHERE_CURRENCY || 'USD').trim().toUpperCase();
+  const allowLocalOverrides =
+    String(process.env.PAYHERE_ALLOW_LOCAL || '').toLowerCase() === 'true';
+
+  const frontendEnv = (process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
+  const backendEnv = (process.env.BACKEND_URL || '').trim().replace(/\/$/, '');
+
+  const frontendUrlRaw =
+    allowLocalOverrides && options.frontendUrl
+      ? String(options.frontendUrl).trim()
+      : frontendEnv;
+
+  const backendUrlRaw =
+    allowLocalOverrides && options.backendUrl
+      ? String(options.backendUrl).trim()
+      : backendEnv;
+
+  const frontendUrl = frontendUrlRaw ? frontendUrlRaw.replace(/\/$/, '') : '';
+  const backendUrl = backendUrlRaw ? backendUrlRaw.replace(/\/$/, '') : '';
+
+  if (!merchantId || !merchantSecret) {
+    throw new AppError('Payment gateway not configured', 500);
+  }
+  if (!frontendUrl || !backendUrl || !/^https?:\/\//i.test(frontendUrl) || !/^https?:\/\//i.test(backendUrl)) {
+    throw new AppError('FRONTEND_URL and BACKEND_URL must be valid absolute URLs for PayHere', 500);
+  }
+
+  const orderId = `INVEST_${Date.now()}_${String(investor.id).slice(-6)}`;
+  const amountFormatted = numericAmount.toFixed(2);
+  const hashedSecret = crypto
+    .createHash('md5')
+    .update(merchantSecret)
+    .digest('hex')
+    .toUpperCase();
+
+  const hash = crypto
+    .createHash('md5')
+    .update(merchantId + orderId + amountFormatted + currency + hashedSecret)
+    .digest('hex')
+    .toUpperCase();
+
+  const investorWallet = await getOrCreateWallet(investor.id);
+
+  await txRepo.create({
+    walletId: investorWallet._id,
+    userId: investor.id,
+    type: 'Investment',
+    amount: -numericAmount,
+    currency,
+    paymentId: orderId,
+    status: 'Pending',
+    description: encodeMeta('INVESTMENT_CHECKOUT', {
+      requestId: requestId || null,
+      startupId: String(startupId),
+      startupOwnerId: String(startupOwnerId),
+      investorId: String(investor.id),
+    }),
+  });
+
+  const [firstNameRaw = '', ...restName] = String(investor?.name || '').trim().split(/\s+/);
+  const firstName = firstNameRaw || 'InvestHub';
+  const lastName = restName.join(' ') || 'Investor';
+
+  return {
+    merchant_id: merchantId,
+    return_url: `${frontendUrl}/app/deals`,
+    cancel_url: `${frontendUrl}/app/deals`,
+    notify_url: `${backendUrl}/api/v1/wallets/notify`,
+    order_id: orderId,
+    items: `Startup Investment ${startupId}`,
+    currency,
+    amount: amountFormatted,
+    hash,
+    first_name: firstName,
+    last_name: lastName,
+    email: investor?.email || '',
+    phone: String(investor?.profile?.phone || process.env.PAYHERE_DEFAULT_PHONE || '0770000000'),
+    address: process.env.PAYHERE_DEFAULT_ADDRESS || 'InvestHub',
+    city: process.env.PAYHERE_DEFAULT_CITY || 'Colombo',
+    country: process.env.PAYHERE_DEFAULT_COUNTRY || 'Sri Lanka',
+    custom_1: String(investor.id),
+    custom_2: String(requestId || ''),
+  };
+};
+
 // ─── PayHere Webhook ──────────────────────────────────────────────────────────
 
 export const processPayhereNotify = async ({
@@ -268,7 +502,7 @@ export const processPayhereNotify = async ({
   session.startTransaction();
 
   try {
-    const expected = parseFloat(transaction.amount).toFixed(2);
+    const expected = Math.abs(parseFloat(transaction.amount)).toFixed(2);
     const received = parseFloat(payhere_amount).toFixed(2);
 
     if (expected !== received) {
@@ -276,13 +510,172 @@ export const processPayhereNotify = async ({
       throw new AppError('Amount mismatch', 400);
     }
 
-    transaction.status = 'Completed';
-    transaction.completedAt = new Date();
-    await txRepo.save(transaction, session);
+    const amount = parseFloat(payhere_amount);
+    const adminUserId = getAdminUserId();
 
-    const wallet = await walletRepo.findById(transaction.walletId, session);
-    wallet.balance += parseFloat(payhere_amount);
-    await walletRepo.save(wallet, session);
+    if (transaction.type === 'Deposit') {
+      transaction.status = 'Completed';
+      transaction.completedAt = new Date();
+      await txRepo.save(transaction, session);
+
+      const wallet = await walletRepo.findById(transaction.walletId, session);
+      wallet.balance += amount;
+      await walletRepo.save(wallet, session);
+    } else if (transaction.type === 'Investment') {
+      const meta = decodeMeta(transaction.description, 'INVESTMENT_CHECKOUT') || {};
+      const startupOwnerId = meta.startupOwnerId;
+      const startupId = meta.startupId;
+      const requestId = meta.requestId;
+
+      if (!startupOwnerId || !startupId) {
+        throw new AppError('Invalid pending investment metadata', 400);
+      }
+
+      if (!adminUserId) {
+        throw new AppError('ADMIN_USER_ID is not configured', 500);
+      }
+
+      const platformFee = Number(((amount * PLATFORM_FEE_PERCENT()) / 100).toFixed(2));
+      const startupNetAmount = Number((amount - platformFee).toFixed(2));
+
+      const investorWallet = await walletRepo.findById(transaction.walletId, session);
+      if (!investorWallet) {
+        throw new AppError('Investor wallet not found for pending transaction', 404);
+      }
+
+      let startupWallet = await walletRepo.findByUser(startupOwnerId, session);
+      if (!startupWallet) {
+        const [createdStartupWallet] = await walletRepo.create([{ userId: startupOwnerId }], { session });
+        startupWallet = createdStartupWallet;
+      }
+
+      let adminWallet = await walletRepo.findByUser(adminUserId, session);
+      if (!adminWallet) {
+        const [createdAdminWallet] = await walletRepo.create([{ userId: adminUserId }], { session });
+        adminWallet = createdAdminWallet;
+      }
+
+      investorWallet.balance -= amount;
+      startupWallet.balance += startupNetAmount;
+      adminWallet.balance += platformFee;
+
+      await walletRepo.save(investorWallet, session);
+      await walletRepo.save(startupWallet, session);
+      await walletRepo.save(adminWallet, session);
+
+      transaction.status = 'Completed';
+      transaction.completedAt = new Date();
+      transaction.description = `Investment settled from PayHere checkout for startup ${startupId}`;
+      await txRepo.save(transaction, session);
+
+      await txRepo.createMany(
+        [
+          {
+            walletId: startupWallet._id,
+            userId: startupOwnerId,
+            type: 'Deposit',
+            amount: startupNetAmount,
+            status: 'Completed',
+            completedAt: new Date(),
+            description: `Investment received after ${PLATFORM_FEE_PERCENT()}% platform fee`,
+            relatedStartupId: startupId,
+          },
+          {
+            walletId: adminWallet._id,
+            userId: adminUserId,
+            type: 'PlatformFee',
+            amount: platformFee,
+            status: 'Completed',
+            completedAt: new Date(),
+            description: `Platform fee from investment ${startupId}`,
+            relatedStartupId: startupId,
+          },
+        ],
+        session
+      );
+
+      if (requestId) {
+        await Request.findByIdAndUpdate(
+          requestId,
+          {
+            requestStatus: 'paid',
+            updatedUtc: new Date(),
+            updatedBy: transaction.userId,
+          },
+          { session }
+        );
+      }
+    } else if (transaction.type === 'Withdrawal') {
+      const meta = decodeMeta(transaction.description, 'SUBSCRIPTION_CHECKOUT') || {};
+      const packageType = String(meta.packageType || '').toLowerCase();
+      const targetUserId = meta.userId || String(transaction.userId);
+
+      if (!['investor_pro', 'founder_pro'].includes(packageType)) {
+        throw new AppError('Invalid subscription package metadata', 400);
+      }
+
+      if (!adminUserId) {
+        throw new AppError('ADMIN_USER_ID is not configured', 500);
+      }
+
+      let adminWallet = await walletRepo.findByUser(adminUserId, session);
+      if (!adminWallet) {
+        const [createdAdminWallet] = await walletRepo.create([{ userId: adminUserId }], { session });
+        adminWallet = createdAdminWallet;
+      }
+
+      adminWallet.balance += amount;
+      await walletRepo.save(adminWallet, session);
+
+      const user = await User.findById(targetUserId).session(session);
+      if (!user) {
+        throw new AppError('User not found for subscription activation', 404);
+      }
+
+      const now = new Date();
+      const currentInvestorExpiry = user.subscription?.investorProExpiresAt ? new Date(user.subscription.investorProExpiresAt) : null;
+      const currentFounderExpiry = user.subscription?.founderProExpiresAt ? new Date(user.subscription.founderProExpiresAt) : null;
+
+      const subscription = { ...(user.subscription || {}) };
+      if (packageType === 'investor_pro') {
+        const baseline = currentInvestorExpiry && currentInvestorExpiry > now ? currentInvestorExpiry : now;
+        subscription.investorProExpiresAt = addDays(baseline, 30);
+      }
+      if (packageType === 'founder_pro') {
+        const baseline = currentFounderExpiry && currentFounderExpiry > now ? currentFounderExpiry : now;
+        subscription.founderProExpiresAt = addDays(baseline, 30);
+        await Idea.updateMany(
+          { createdBy: user._id, deletedUtc: null },
+          { $set: { promotedUntil: subscription.founderProExpiresAt } },
+          { session }
+        );
+      }
+
+      user.subscription = subscription;
+      user.updatedUtc = new Date();
+      await user.save({ session });
+
+      transaction.status = 'Completed';
+      transaction.completedAt = new Date();
+      transaction.description = `${packageType} subscription activated`;
+      await txRepo.save(transaction, session);
+
+      await txRepo.create({
+        walletId: adminWallet._id,
+        userId: adminUserId,
+        type: 'PlatformFee',
+        amount,
+        currency: transaction.currency,
+        paymentId: order_id,
+        status: 'Completed',
+        completedAt: new Date(),
+        description: `Subscription revenue: ${packageType}`,
+      }, session);
+    } else {
+      transaction.status = 'Completed';
+      transaction.completedAt = new Date();
+      await txRepo.save(transaction, session);
+    }
 
     await session.commitTransaction();
     console.log(`[WalletService] Payment verified: ${order_id}`);

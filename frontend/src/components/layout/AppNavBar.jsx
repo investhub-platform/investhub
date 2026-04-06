@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { User, LogOut, Menu, X, Settings } from "lucide-react";
+import { User, LogOut, Menu, X, Settings, Crown } from "lucide-react";
 import { useAuth } from "../../features/auth/useAuth";
 import NotificationDropdown from "../../features/notifications/NotificationDropdown";
 
@@ -35,6 +35,7 @@ export default function AppNavbar() {
       .map((w) => w[0]?.toUpperCase())
       .join("") || "U";
   const avatarUrl = user?.profile?.profilePictureUrl || "";
+  const isProUser = Boolean(user?.subscription?.isAnyPro);
 
   const onLogout = async () => {
     setProfileOpen(false);
@@ -111,6 +112,11 @@ export default function AppNavbar() {
                 initials
               )}
             </div>
+            {isProUser ? (
+              <span className="-ml-4 mt-5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-slate-900 border border-amber-200 shadow-lg">
+                <Crown className="w-3 h-3" />
+              </span>
+            ) : null}
             <div className="hidden md:flex flex-col items-start text-left mr-2">
               <span className="text-sm font-bold text-white leading-none">
                 {user?.name || "User"}

@@ -18,7 +18,8 @@ import {
   RefreshCw, 
   AlertCircle, 
   CheckCircle2, 
-  Bell 
+  Bell,
+  Crown
 } from "lucide-react";
 
 function extractPayload(responseData) {
@@ -176,6 +177,7 @@ export default function ProfilePage() {
       .slice(0, 2)
       .map((w) => w[0]?.toUpperCase())
       .join("") || "U";
+  const isProUser = Boolean(user?.subscription?.isAnyPro);
 
   return (
     <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans selection:bg-blue-500/30 overflow-hidden">
@@ -260,6 +262,12 @@ export default function ProfilePage() {
                             {initials}
                           </span>
                         )}
+
+                        {isProUser ? (
+                          <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-amber-400 border border-amber-100 text-slate-900 flex items-center justify-center shadow-lg z-20">
+                            <Crown className="w-4 h-4" />
+                          </div>
+                        ) : null}
                         
                         {/* Hover Overlay */}
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">

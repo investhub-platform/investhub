@@ -16,7 +16,7 @@ import AIAnalysisContainer from "@/components/startup-details/AIAnalysisContaine
 const tabs = ["Summary & Pitch", "AI Analysis"];
 
 const StartupDetail = ({ isModal = false }) => {
-  const { user } = useAuth();
+  const { user, fetchMe } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -41,6 +41,9 @@ const StartupDetail = ({ isModal = false }) => {
   const [investError, setInvestError] = useState("");
   const [investSuccess, setInvestSuccess] = useState(null);
   const [walletBalance, setWalletBalance] = useState(0);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState("");
+  const [upgradeError, setUpgradeError] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -244,6 +247,37 @@ const StartupDetail = ({ isModal = false }) => {
   const minAmount = 1000;
   const isPlan = startup.recordType === "plan";
   const isIdeaLikeRecord = startup.recordType === "idea" || startup.recordType === "plan";
+  const hasProAccess = Boolean(user?.subscription?.isAnyPro);
+
+  const subscriptionPrices = {
+    investor_pro: 20,
+    founder_pro: 49,
+    pro_max: 60,
+  };
+
+  const purchaseSubscription = async (packageType) => {
+    const price = subscriptionPrices[packageType];
+    if (!price) return;
+    if (walletBalance < price) {
+      setUpgradeError(`Insufficient wallet balance. You need ${formatCurrency(price)}.`);
+      return;
+    }
+
+    setUpgradeLoading(true);
+    setUpgradeError("");
+    setUpgradeMessage("");
+    try {
+      const res = await api.post("/v1/wallets/subscription/purchase", { packageType });
+      const payload = res?.data?.data || {};
+      setWalletBalance(Number(payload?.walletBalance || 0));
+      setUpgradeMessage("Subscription upgraded successfully. Pro features are now available.");
+      await fetchMe();
+    } catch (e) {
+      setUpgradeError(e?.response?.data?.message || e?.message || "Failed to upgrade subscription.");
+    } finally {
+      setUpgradeLoading(false);
+    }
+  };
 
   const ideaCategory =
     startup.raw?.category === "Other"
@@ -362,6 +396,67 @@ const StartupDetail = ({ isModal = false }) => {
     setInvestStep("input");
   };
 
+  const renderProPaywall = () => (
+    <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-br from-[#0B0D10] to-[#11131a] border border-white/10 shadow-2xl space-y-6">
+      <div>
+        <h2 className="text-2xl font-black text-white tracking-tight">Pro Required</h2>
+        <p className="text-slate-400 mt-2 text-sm">
+          AI Summary and AI Analysis are available on Pro plans only.
+        </p>
+        <p className="text-slate-300 mt-2 text-sm font-semibold">
+          Wallet Balance: {formatCurrency(walletBalance)}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">Investor Pro</p>
+          <p className="text-3xl font-black text-white mt-2">$20</p>
+          <p className="text-xs text-slate-400 mt-1">per month</p>
+          <button
+            type="button"
+            onClick={() => purchaseSubscription("investor_pro")}
+            disabled={upgradeLoading}
+            className="mt-4 w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all disabled:opacity-50"
+          >
+            {upgradeLoading ? "Processing..." : "Upgrade to Investor Pro"}
+          </button>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">Founder Pro</p>
+          <p className="text-3xl font-black text-white mt-2">$49</p>
+          <p className="text-xs text-slate-400 mt-1">per month (includes top placement for idea posts)</p>
+          <button
+            type="button"
+            onClick={() => purchaseSubscription("founder_pro")}
+            disabled={upgradeLoading}
+            className="mt-4 w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all disabled:opacity-50"
+          >
+            {upgradeLoading ? "Processing..." : "Upgrade to Founder Pro"}
+          </button>
+        </div>
+
+        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5">
+          <p className="text-xs uppercase tracking-widest text-emerald-300 font-bold">Pro Max</p>
+          <p className="text-3xl font-black text-white mt-2">$60</p>
+          <p className="text-xs text-slate-300 mt-1">per month (Investor Pro + Founder Pro)</p>
+          <button
+            type="button"
+            onClick={() => purchaseSubscription("pro_max")}
+            disabled={upgradeLoading}
+            className="mt-4 w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all disabled:opacity-50"
+          >
+            {upgradeLoading ? "Processing..." : "Upgrade to Pro Max"}
+          </button>
+        </div>
+      </div>
+
+      {upgradeMessage ? <p className="text-emerald-400 text-sm">{upgradeMessage}</p> : null}
+      {upgradeError ? <p className="text-red-400 text-sm">{upgradeError}</p> : null}
+    </div>
+  );
+
   return (
     <div className={`${isModal ? "" : "min-h-screen"} bg-[#020617] text-white font-sans selection:bg-blue-500/30 overflow-x-hidden`}>
       {!isModal && <AppNavbar />}
@@ -398,9 +493,9 @@ const StartupDetail = ({ isModal = false }) => {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
               >
-                {activeTab === 0 && <SummaryTab startup={startup} />}
+                {activeTab === 0 && (hasProAccess ? <SummaryTab startup={startup} /> : renderProPaywall())}
                 {activeTab === 1 && (
-                  <AIAnalysisContainer startupId={startup.id} startup={startup} />
+                  hasProAccess ? <AIAnalysisContainer startupId={startup.id} startup={startup} /> : renderProPaywall()
                 )}
               </motion.div>
             </AnimatePresence>
