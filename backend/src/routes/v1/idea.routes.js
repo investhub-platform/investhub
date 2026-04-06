@@ -1,8 +1,10 @@
 // routes/v1/idea.routes.js
 import { Router } from "express";
+import { body } from "express-validator";
 import { requireAuth } from "../../middlewares/auth.middleware.js";
 import { requireRole } from "../../middlewares/requireRole.js";
 import { handlePostAssetsUpload } from "../../middlewares/upload.middleware.js";
+import validateRequest from "../../middlewares/validateRequest.js";
 import * as ideaController from "../../controllers/ideaController.js";
 
 const router = Router();
@@ -19,8 +21,26 @@ router.get("/:id", ideaController.getSingle);            // single record by ID
 router.use(requireAuth);
 
 // CRUD (protected)
-router.post("/", handlePostAssetsUpload, ideaController.createIdea);
-router.put("/:id", handlePostAssetsUpload, ideaController.updateIdea);
+router.post(
+	"/",
+	handlePostAssetsUpload,
+	body("title").trim().notEmpty().withMessage("title is required"),
+	body("description").trim().notEmpty().withMessage("description is required"),
+	body("category").isIn(["Tech", "Health", "Education", "Finance", "Agriculture", "Other"]).withMessage("category is invalid"),
+	body("fundingType").isIn(["Equity", "Revenue Share", "SAFE"]).withMessage("fundingType is invalid"),
+	validateRequest,
+	ideaController.createIdea
+);
+router.put(
+	"/:id",
+	handlePostAssetsUpload,
+	body("title").optional().trim().notEmpty().withMessage("title cannot be empty"),
+	body("description").optional().trim().notEmpty().withMessage("description cannot be empty"),
+	body("category").optional().isIn(["Tech", "Health", "Education", "Finance", "Agriculture", "Other"]).withMessage("category is invalid"),
+	body("fundingType").optional().isIn(["Equity", "Revenue Share", "SAFE"]).withMessage("fundingType is invalid"),
+	validateRequest,
+	ideaController.updateIdea
+);
 router.delete("/:id", ideaController.deleteIdea);
 
 // Mentor review route (requires auth + role)

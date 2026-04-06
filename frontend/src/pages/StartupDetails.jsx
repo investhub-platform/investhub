@@ -32,6 +32,7 @@ const StartupDetail = ({ isModal = false }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [investAmount, setInvestAmount] = useState("");
   const [investMessage, setInvestMessage] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isInvestOpen, setIsInvestOpen] = useState(false);
   const [investStep, setInvestStep] = useState("input");
   const [investSubmitting, setInvestSubmitting] = useState(false);
@@ -278,6 +279,7 @@ const StartupDetail = ({ isModal = false }) => {
     setInvestError("");
     setInvestSuccess(null);
     setInvestStep("input");
+    setAcceptedTerms(false);
     setIsInvestOpen(true);
   };
 
@@ -290,6 +292,10 @@ const StartupDetail = ({ isModal = false }) => {
     }
     if (!amountNumber || amountNumber < minAmount) {
       setInvestError(`Minimum investment is ${formatCurrency(minAmount)}.`);
+      return;
+    }
+    if (!acceptedTerms) {
+      setInvestError("Please accept the Terms of Service and Risk Disclosure to continue.");
       return;
     }
 
@@ -318,6 +324,7 @@ const StartupDetail = ({ isModal = false }) => {
         ideaId,
         amount: amountNumber,
         message: investMessage || "",
+        acceptedTerms,
         direction: "investor_to_startup"
       });
 
@@ -335,6 +342,7 @@ const StartupDetail = ({ isModal = false }) => {
     setIsInvestOpen(false);
     setInvestAmount("");
     setInvestMessage("");
+    setAcceptedTerms(false);
     setInvestStep("input");
   };
 
@@ -408,6 +416,8 @@ const StartupDetail = ({ isModal = false }) => {
         setInvestAmount={setInvestAmount}
         investMessage={investMessage}
         setInvestMessage={setInvestMessage}
+        acceptedTerms={acceptedTerms}
+        setAcceptedTerms={setAcceptedTerms}
         investError={investError}
         setInvestError={setInvestError}
         minAmount={minAmount}

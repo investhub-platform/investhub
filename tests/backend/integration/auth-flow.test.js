@@ -165,6 +165,7 @@ describe("Auth + User API integration", () => {
         amount: 1500,
         message: "Please consider this investment request.",
         direction: "investor_to_startup",
+        acceptedTerms: true,
       });
 
     expect(res.status).toBe(201);

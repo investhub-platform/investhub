@@ -146,6 +146,7 @@ describe("Backend API performance", () => {
       direction: "investor_to_startup",
       amount: 1000,
       message: "Perf request",
+      acceptedTerms: true,
       requestStatus: "pending_founder",
       createdBy: investor._id,
     });

@@ -1467,6 +1467,7 @@ function StartupManageCard({
     title: "",
     description: "",
     category: "Tech",
+    fundingType: "Equity",
     customCategory: "",
     budget: "",
     timeline: "",
@@ -1554,6 +1555,7 @@ function StartupManageCard({
       title: "",
       description: "",
       category: "Tech",
+      fundingType: "Equity",
       customCategory: "",
       budget: "",
       timeline: "",
@@ -1577,6 +1579,7 @@ function StartupManageCard({
       form.append("title", ideaFormData.title);
       form.append("description", ideaFormData.description);
       form.append("category", ideaFormData.category);
+      form.append("fundingType", ideaFormData.fundingType);
       if (ideaFormData.category === "Other")
         form.append("customCategory", ideaFormData.customCategory || "");
       form.append("budget", String(ideaFormData.budget || 0));
@@ -1618,6 +1621,7 @@ function StartupManageCard({
       title: idea.title || "",
       description: idea.description || "",
       category: idea.category || "Tech",
+      fundingType: idea.fundingType || "Equity",
       customCategory: idea.customCategory || "",
       budget: idea.budget || "",
       timeline: idea.timeline || "",
@@ -2019,6 +2023,28 @@ function StartupManageCard({
                             />
                           )}
                         </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">
+                            Investment Type
+                          </label>
+                          <select
+                            className={inputClass}
+                            value={ideaFormData.fundingType}
+                            onChange={(e) =>
+                              setIdeaFormData((p) => ({
+                                ...p,
+                                fundingType: e.target.value
+                              }))
+                            }
+                          >
+                            <option value="Equity">Equity</option>
+                            <option value="Revenue Share">Revenue Share</option>
+                            <option value="SAFE">SAFE</option>
+                          </select>
+                          <p className="text-[10px] font-medium text-slate-500 mt-2 ml-1 leading-relaxed">
+                            Equity is ownership, Revenue Share pays monthly, and SAFE converts into future equity.
+                          </p>
+                        </div>
                       </div>
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">
@@ -2179,6 +2205,14 @@ function StartupManageCard({
                             </p>
                             <p className="text-xs font-bold text-white">
                               {idea.timeline || "-"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
+                              Investment Type
+                            </p>
+                            <p className="text-xs font-bold text-white">
+                              {idea.fundingType || "Equity"}
                             </p>
                           </div>
                         </div>

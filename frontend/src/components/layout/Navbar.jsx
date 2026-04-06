@@ -113,6 +113,8 @@ const Navbar = () => {
               <a onClick={(event) => handleSectionScroll(event, 'startups')} href="#startups" className="p-3 rounded-xl hover:bg-white/5">Startups</a>
               <a onClick={(event) => handleSectionScroll(event, 'faq')} href="#faq" className="p-3 rounded-xl hover:bg-white/5">FAQ</a>
               <a onClick={(event) => handleSectionScroll(event, 'pricing')} href="#pricing" className="p-3 rounded-xl hover:bg-white/5">Pricing</a>
+              <Link onClick={() => setOpen(false)} to="/privacy" className="p-3 rounded-xl hover:bg-white/5">Privacy Policy</Link>
+              <Link onClick={() => setOpen(false)} to="/terms" className="p-3 rounded-xl hover:bg-white/5">Terms of Service</Link>
               <Link onClick={() => setOpen(false)} to="/auth/login" className="p-3 rounded-xl hover:bg-white/5">Log in</Link>
               <Link onClick={() => setOpen(false)} to="/auth/register" className="mt-2 p-3 text-center rounded-xl bg-white text-black font-semibold">Start Investing</Link>
             </nav>

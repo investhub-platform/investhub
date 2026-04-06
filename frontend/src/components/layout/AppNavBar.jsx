@@ -129,6 +129,12 @@ export default function AppNavbar() {
               <Link to="/app/settings" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-200 hover:bg-white/10 hover:text-white transition-colors">
                 <Settings className="w-4 h-4 text-slate-400" /> Settings
               </Link>
+              <Link to="/privacy" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-200 hover:bg-white/10 hover:text-white transition-colors">
+                Privacy Policy
+              </Link>
+              <Link to="/terms" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-200 hover:bg-white/10 hover:text-white transition-colors">
+                Terms of Service
+              </Link>
               <div className="h-px bg-white/10 my-1 mx-2" />
               <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors">
                 <LogOut className="w-4 h-4" /> Logout
@@ -167,6 +173,12 @@ export default function AppNavbar() {
                 {link.label}
               </Link>
             ))}
+            <Link onClick={() => setMobileOpen(false)} to="/privacy" className="px-4 py-3 rounded-xl text-sm font-bold text-slate-300 hover:bg-white/5 hover:text-white">
+              Privacy Policy
+            </Link>
+            <Link onClick={() => setMobileOpen(false)} to="/terms" className="px-4 py-3 rounded-xl text-sm font-bold text-slate-300 hover:bg-white/5 hover:text-white">
+              Terms of Service
+            </Link>
             <div className="h-px bg-white/10 my-2" />
             <button onClick={onLogout} className="w-full text-left px-4 py-3 rounded-xl text-sm font-bold text-red-400 hover:bg-red-500/10">
               Logout

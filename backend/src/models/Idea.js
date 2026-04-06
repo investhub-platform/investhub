@@ -31,6 +31,12 @@ const IdeaSchema = new Schema(
       required: true
     },
 
+    fundingType: {
+      type: String,
+      enum: ["Equity", "Revenue Share", "SAFE"],
+      default: "Equity"
+    },
+
     customCategory: {
       type: String,
       default: null

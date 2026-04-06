@@ -12,6 +12,8 @@ export default function InvestmentModal({
   setInvestAmount,
   investMessage,
   setInvestMessage,
+  acceptedTerms,
+  setAcceptedTerms,
   investError,
   setInvestError,
   minAmount,
@@ -111,6 +113,18 @@ export default function InvestmentModal({
                   </div>
                 )}
 
+                <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-left cursor-pointer hover:bg-white/10 transition-colors">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent text-blue-500 focus:ring-blue-500"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  />
+                  <span className="text-sm leading-relaxed text-slate-300">
+                    I understand that startup investing is high risk, and I may lose 100% of my investment if the company fails. I agree to the <a href="/terms" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 underline">Terms of Service</a> and understand the high risks associated with startup investing as outlined in the <a href="/terms" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 underline">Risk Disclosure</a>.
+                  </span>
+                </label>
+
                 {investError && <p className="text-sm font-bold text-red-400 bg-red-500/10 p-3 rounded-xl border border-red-500/20">{investError}</p>}
 
                 <div className="flex gap-3">
@@ -120,7 +134,7 @@ export default function InvestmentModal({
                   <button
                     className="flex-[2] py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     onClick={submitInvestment}
-                    disabled={investSubmitting}
+                    disabled={investSubmitting || !acceptedTerms}
                   >
                     {investSubmitting ? <><Loader className="w-5 h-5 animate-spin" /> Sending Request...</> : "Send Request to Founder"}
                   </button>

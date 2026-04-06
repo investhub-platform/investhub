@@ -33,6 +33,14 @@ const RequestSchema = new Schema(
 
     // Deal Terms
     amount: { type: Number, required: true, min: 0 },
+    acceptedTerms: {
+      type: Boolean,
+      required: true,
+      validate: {
+        validator: (value) => value === true,
+        message: "acceptedTerms must be accepted"
+      }
+    },
     message: { type: String, default: null },
     requestStatus: {
       type: String,
