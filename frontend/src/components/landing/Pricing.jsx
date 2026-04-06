@@ -10,20 +10,20 @@ const Pricing = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          
-          {/* Founder Tier */}
+
+          {/* Free (All Roles) Tier */}
           <div className="p-8 rounded-3xl bg-[#0B0D10] border border-white/5 flex flex-col">
-            <h3 className="text-xl font-bold text-white mb-2">Founder</h3>
+            <h3 className="text-xl font-bold text-white mb-2">Free (Founder, Investor, Mentor)</h3>
             <div className="text-4xl font-black text-white mb-6">Free</div>
-            <p className="text-slate-400 text-sm mb-8 pb-8 border-b border-white/5">Everything you need to pitch and raise capital.</p>
+            <p className="text-slate-400 text-sm mb-8 pb-8 border-b border-white/5">Everything you need to get started — free for all roles.</p>
             <ul className="space-y-4 mb-8 flex-1">
-              {['Post unlimited pitches', 'AI Summary & Analysis with Pro plans', 'Match with mentors', 'Standard 5% success fee on funds raised'].map((feature, i) => (
+              {['Create your profile & post pitches', 'Basic AI summary & public analysis', 'Match with mentors & projects', 'Transparent platform fees only on raised funds'].map((feature, i) => (
                 <li key={i} className="flex items-start gap-3 text-slate-300 text-sm">
                   <Check className="w-5 h-5 text-blue-500 shrink-0" /> {feature}
                 </li>
               ))}
             </ul>
-            <button className="w-full py-3 rounded-full border border-white/10 text-white font-semibold hover:bg-white/5 transition-colors">Start Building</button>
+            <button className="w-full py-3 rounded-full border border-white/10 text-white font-semibold hover:bg-white/5 transition-colors">Get Started (Free)</button>
           </div>
 
           {/* Investor Pro */}
@@ -72,20 +72,7 @@ const Pricing = () => {
             <button className="w-full py-3 rounded-full bg-emerald-600 text-white font-bold hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-500/25">Upgrade to Pro Max</button>
           </div>
 
-          {/* Mentor Tier */}
-          <div className="p-8 rounded-3xl bg-[#0B0D10] border border-white/5 flex flex-col">
-            <h3 className="text-xl font-bold text-white mb-2">Mentor</h3>
-            <div className="text-4xl font-black text-white mb-6">Free</div>
-            <p className="text-slate-400 text-sm mb-8 pb-8 border-b border-white/5">Earn by validating the next generation of tech.</p>
-            <ul className="space-y-4 mb-8 flex-1">
-              {['Review startup architectures', 'Validate funding milestones', 'Build platform reputation', 'Keep 90% of your advisory fees'].map((feature, i) => (
-                <li key={i} className="flex items-start gap-3 text-slate-300 text-sm">
-                  <Check className="w-5 h-5 text-purple-500 shrink-0" /> {feature}
-                </li>
-              ))}
-            </ul>
-            <button className="w-full py-3 rounded-full border border-white/10 text-white font-semibold hover:bg-white/5 transition-colors">Apply as Mentor</button>
-          </div>
+          {/* Mentor card removed — free tier consolidated above for all roles */}
 
         </div>
       </div>
