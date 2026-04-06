@@ -9,6 +9,7 @@ import {
   X,
   Clock,
   TrendingUp,
+  DollarSign,
   Loader,
   Send
 } from "lucide-react";
@@ -94,14 +95,34 @@ export default function InvestmentDashboard() {
   // Payment modal
   const [selectedRequestForPayment, setSelectedRequestForPayment] =
     useState(null);
+  const [paymentMethod, setPaymentMethod] = useState("wallet");
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
   const [pendingPayHereOrderId, setPendingPayHereOrderId] = useState("");
+  const [walletBalance, setWalletBalance] = useState(0);
 
   // Decision modal
   // const [selectedRequestForDecision, setSelectedRequestForDecision] =
   //   useState(null);
   const [decisionComment, setDecisionComment] = useState("");
   const [isDecisionProcessing, setIsDecisionProcessing] = useState(false);
+
+  const fetchWalletBalance = useCallback(async () => {
+    try {
+      const res = await api.get("/v1/wallets/me");
+      const wallet = extractPayload(res?.data);
+      const nextBalance = Number(wallet?.balance || 0);
+      setWalletBalance(nextBalance);
+      return nextBalance;
+    } catch (e) {
+      console.error("Failed to fetch wallet", e);
+      setWalletBalance(0);
+      return 0;
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWalletBalance();
+  }, [fetchWalletBalance]);
 
   // Fetch sent requests (investor view)
   const fetchSentRequests = useCallback(async () => {
@@ -267,6 +288,63 @@ export default function InvestmentDashboard() {
       setSelectedRequestForPayment(null);
     } catch (e) {
       setError(e?.response?.data?.message || "PayHere payment failed");
+    } finally {
+      setIsPaymentProcessing(false);
+    }
+  };
+
+  const handleWalletPayment = async (requestId, amount) => {
+    const latestBalance = await fetchWalletBalance();
+    if (amount > latestBalance) {
+      setError("Insufficient wallet balance. Please top up your wallet.");
+      return;
+    }
+
+    setIsPaymentProcessing(true);
+    setError("");
+    try {
+      const request = sentRequests.find((r) => (r._id || r.id) === requestId);
+      if (!request) throw new Error("Request not found");
+
+      const startupOwnerId =
+        request.founderId?.id || request.founderId?._id || request.founderId;
+      const startupId = request.ideaId?.StartupId || request.ideaId?.startupId;
+      if (!startupId || !startupOwnerId) {
+        throw new Error("Missing startup details required for wallet transfer");
+      }
+
+      const walletRes = await api.post("/v1/wallets/invest", {
+        amount,
+        startupOwnerId,
+        startupId
+      });
+
+      if (!walletRes?.data) {
+        throw new Error("Wallet payment failed or no response received");
+      }
+
+      const userId = user?.id || user?._id;
+      await api.patch(`/v1/requests/${requestId}/status`, {
+        requestStatus: "paid",
+        updatedBy: userId
+      });
+
+      setSuccessMessage("Investment completed successfully using wallet.");
+      await fetchWalletBalance();
+
+      setSentRequests((prevRequests) =>
+        prevRequests.map((r) =>
+          (r._id || r.id) === requestId ? { ...r, requestStatus: "paid" } : r
+        )
+      );
+
+      setSelectedRequestForPayment(null);
+      await fetchSentRequests();
+      await fetchReceivedRequests();
+    } catch (e) {
+      const errorMsg =
+        e?.response?.data?.message || e?.message || "Wallet payment failed";
+      setError(errorMsg);
     } finally {
       setIsPaymentProcessing(false);
     }
@@ -543,7 +621,7 @@ export default function InvestmentDashboard() {
                             {canPay && (
                               <button
                                 onClick={() =>
-                                  setSelectedRequestForPayment(request)
+                                  (setPaymentMethod("wallet"), setSelectedRequestForPayment(request))
                                 }
                                 className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)]"
                               >
@@ -769,7 +847,31 @@ export default function InvestmentDashboard() {
               </h3>
 
               <div className="space-y-4 mb-8">
-                <div className="w-full p-4 rounded-xl border-2 border-blue-500 bg-blue-500/10 text-left">
+                <button
+                  onClick={() => setPaymentMethod("wallet")}
+                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                    paymentMethod === "wallet"
+                      ? "border-blue-500 bg-blue-500/10"
+                      : "border-white/10 bg-[#1A1D24] hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <DollarSign className="w-5 h-5 text-blue-400" />
+                    <span className="font-bold text-white">Pay from Wallet</span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Wallet balance: {formatCurrency(walletBalance)}
+                  </p>
+                </button>
+
+                <button
+                  onClick={() => setPaymentMethod("payhere")}
+                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                    paymentMethod === "payhere"
+                      ? "border-blue-500 bg-blue-500/10"
+                      : "border-white/10 bg-[#1A1D24] hover:border-white/20"
+                  }`}
+                >
                   <div className="flex items-center gap-3 mb-2">
                     <TrendingUp className="w-5 h-5 text-blue-400" />
                     <span className="font-bold text-white">Pay with PayHere Escrow</span>
@@ -777,7 +879,7 @@ export default function InvestmentDashboard() {
                   <p className="text-xs text-slate-400">
                     Entire amount is collected in merchant escrow first, then platform split is settled.
                   </p>
-                </div>
+                </button>
               </div>
 
               {/* Amount Display */}
@@ -790,6 +892,13 @@ export default function InvestmentDashboard() {
                 </p>
               </div>
 
+              {paymentMethod === "wallet" &&
+                selectedRequestForPayment?.amount > walletBalance && (
+                  <div className="mb-6 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs">
+                    Insufficient wallet balance for this payment. Choose PayHere or top up your wallet.
+                  </div>
+                )}
+
               {/* Action Buttons */}
               <div className="flex gap-3">
                 <button
@@ -800,13 +909,25 @@ export default function InvestmentDashboard() {
                 </button>
                 <button
                   onClick={() => {
-                    handlePayHerePayment(
-                      selectedRequestForPayment._id ||
-                        selectedRequestForPayment.id,
-                      selectedRequestForPayment.amount
-                    );
+                    if (paymentMethod === "wallet") {
+                      handleWalletPayment(
+                        selectedRequestForPayment._id ||
+                          selectedRequestForPayment.id,
+                        selectedRequestForPayment.amount
+                      );
+                    } else {
+                      handlePayHerePayment(
+                        selectedRequestForPayment._id ||
+                          selectedRequestForPayment.id,
+                        selectedRequestForPayment.amount
+                      );
+                    }
                   }}
-                  disabled={isPaymentProcessing}
+                  disabled={
+                    isPaymentProcessing ||
+                    (paymentMethod === "wallet" &&
+                      selectedRequestForPayment?.amount > walletBalance)
+                  }
                   className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isPaymentProcessing ? (
