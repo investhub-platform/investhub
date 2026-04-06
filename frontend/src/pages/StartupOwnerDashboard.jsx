@@ -4,6 +4,7 @@ import AppNavbar from "../components/layout/AppNavBar";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { useAuth } from "@/features/auth/useAuth";
 import api from "@/lib/axios";
+import MonthlyPayoutModal from "../components/MonthlyPayoutModal";
 // Use a local formatter instead of mock data
 const formatCurrency = (value) => {
   const n = Number(value || 0);
@@ -66,6 +67,13 @@ const StartupOwnerDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+
+  // Monthly payout modal state
+  const [payoutModalOpen, setPayoutModalOpen] = useState(false);
+  const [payoutRequest, setPayoutRequest] = useState(null);
+  const [payoutStartupId, setPayoutStartupId] = useState(null);
+  const [payoutLoading, setPayoutLoading] = useState(false);
+  const [payoutError, setPayoutError] = useState("");
 
   const [plans, setPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(false);
@@ -362,6 +370,33 @@ const StartupOwnerDashboard = () => {
     }
   };
 
+  const openPayoutModal = (startupId, request) => {
+    setPayoutStartupId(startupId);
+    setPayoutRequest(request);
+    setPayoutError("");
+    setPayoutModalOpen(true);
+  };
+
+  const closePayoutModal = () => {
+    setPayoutModalOpen(false);
+    setPayoutRequest(null);
+    setPayoutStartupId(null);
+    setPayoutError("");
+  };
+
+  const confirmPayout = async (amount) => {
+    setPayoutLoading(true);
+    setPayoutError("");
+    try {
+      await handleFounderPayout(payoutStartupId, payoutRequest, amount);
+      closePayoutModal();
+    } catch (e) {
+      setPayoutError(e?.response?.data?.message || "Failed to send monthly payout.");
+    } finally {
+      setPayoutLoading(false);
+    }
+  };
+
   const handleStartupCreated = (startup) => {
     setStartups((prev) => [normalizeStartup(startup), ...prev]);
     setActionMessage("Startup successfully created.");
@@ -630,6 +665,18 @@ const StartupOwnerDashboard = () => {
               )}
             </AnimatePresence>
 
+            {/* Monthly payout modal (rich UI) */}
+            <MonthlyPayoutModal
+              open={payoutModalOpen}
+              onClose={closePayoutModal}
+              onConfirm={confirmPayout}
+              suggested={Math.max(1, Math.round(Number(payoutRequest?.amount || 0) * 0.05))}
+              investorName={payoutRequest?.investorId?.name || payoutRequest?.createdBy?.name || "Investor"}
+              startupTitle={payoutRequest?.ideaTitle || ""}
+              loading={payoutLoading}
+              error={payoutError}
+            />
+
             {/* Main Content Area */}
             <AnimatePresence mode="wait">
               {dashboardTab === "startups" ? (
@@ -719,7 +766,7 @@ const StartupOwnerDashboard = () => {
                               onDelete={handleDeleteStartup}
                               onActionMessage={setActionMessage}
                               onRequestAction={handleRequestStatus}
-                              onPayout={handleFounderPayout}
+                              onPayout={openPayoutModal}
                             />
                           ))
                         )}
@@ -2350,21 +2397,8 @@ function InvestorRequestCard({ request, startupId, onAction, onPayout }) {
                 {request.ideaTitle}
               </div>
               <button
-                onClick={() => {
-                  const suggested = Math.max(
-                    1,
-                    Math.round(Number(request.amount || 0) * 0.05)
-                  );
-                  const raw = window.prompt(
-                    "Monthly return amount to send to investor (USD)",
-                    String(suggested)
-                  );
-                  if (raw == null) return;
-                  const amount = Number(raw);
-                  if (!Number.isFinite(amount) || amount <= 0) return;
-                  onPayout?.(startupId, request, amount);
-                }}
-                className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white transition-colors shadow-[0_0_15px_rgba(37,99,235,0.3)]"
+                onClick={() => onPayout?.(startupId, request)}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-xs font-bold text-white transition-colors shadow-[0_0_25px_rgba(59,130,246,0.18)]"
               >
                 Send Monthly Return
               </button>
