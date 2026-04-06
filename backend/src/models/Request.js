@@ -36,7 +36,13 @@ const RequestSchema = new Schema(
     fundingType: {
       type: String,
       enum: ["Equity", "Revenue Share", "SAFE"],
-      default: "Equity"
+      required: true
+    },
+    proposedPercentage: {
+      type: Number,
+      min: 0,
+      max: 100,
+      default: null
     },
     acceptedTerms: {
       type: Boolean,

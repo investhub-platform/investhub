@@ -32,6 +32,7 @@ const StartupDetail = ({ isModal = false }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [investAmount, setInvestAmount] = useState("");
   const [fundingType, setFundingType] = useState("Equity");
+  const [proposedPercentage, setProposedPercentage] = useState("");
   const [investMessage, setInvestMessage] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isInvestOpen, setIsInvestOpen] = useState(false);
@@ -282,6 +283,7 @@ const StartupDetail = ({ isModal = false }) => {
     setInvestStep("input");
     setAcceptedTerms(false);
     setFundingType("Equity");
+    setProposedPercentage("");
     setIsInvestOpen(true);
   };
 
@@ -294,6 +296,14 @@ const StartupDetail = ({ isModal = false }) => {
     }
     if (!amountNumber || amountNumber < minAmount) {
       setInvestError(`Minimum investment is ${formatCurrency(minAmount)}.`);
+      return;
+    }
+    const parsedPercentage = Number(proposedPercentage);
+    if (
+      fundingType !== "SAFE" &&
+      (!Number.isFinite(parsedPercentage) || parsedPercentage <= 0 || parsedPercentage > 100)
+    ) {
+      setInvestError("Enter a valid proposed percentage between 0 and 100.");
       return;
     }
     if (!acceptedTerms) {
@@ -326,6 +336,7 @@ const StartupDetail = ({ isModal = false }) => {
         ideaId,
         amount: amountNumber,
         fundingType,
+        proposedPercentage: fundingType === "SAFE" ? null : parsedPercentage,
         message: investMessage || "",
         acceptedTerms,
         direction: "investor_to_startup"
@@ -345,6 +356,7 @@ const StartupDetail = ({ isModal = false }) => {
     setIsInvestOpen(false);
     setInvestAmount("");
     setFundingType("Equity");
+    setProposedPercentage("");
     setInvestMessage("");
     setAcceptedTerms(false);
     setInvestStep("input");
@@ -420,6 +432,8 @@ const StartupDetail = ({ isModal = false }) => {
         setInvestAmount={setInvestAmount}
         fundingType={fundingType}
         setFundingType={setFundingType}
+        proposedPercentage={proposedPercentage}
+        setProposedPercentage={setProposedPercentage}
         investMessage={investMessage}
         setInvestMessage={setInvestMessage}
         acceptedTerms={acceptedTerms}

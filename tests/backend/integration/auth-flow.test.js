@@ -163,6 +163,8 @@ describe("Auth + User API integration", () => {
         founderId: founder._id.toString(),
         ideaId: idea._id.toString(),
         amount: 1500,
+        fundingType: "Equity",
+        proposedPercentage: 5,
         message: "Please consider this investment request.",
         direction: "investor_to_startup",
         acceptedTerms: true,

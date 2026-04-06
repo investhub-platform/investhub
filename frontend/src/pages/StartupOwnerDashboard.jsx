@@ -126,6 +126,8 @@ const StartupOwnerDashboard = () => {
       status: (request.requestStatus || "pending").toLowerCase(),
       direction: request.direction || "investor_to_startup",
       amount: request.amount || 0,
+      fundingType: request.fundingType || "Equity",
+      proposedPercentage: request.proposedPercentage ?? null,
       ideaTitle: request.ideaId?.title || "Startup Idea",
       message: request.message || "",
       date:
@@ -2344,6 +2346,12 @@ function InvestorRequestCard({ request, startupId, onAction, onPayout }) {
   const requestedUserName = request.createdBy?.name || request.investorName;
   const requestedUserEmail =
     request.createdBy?.email || request.investorId?.email;
+  const requestTermsText =
+    request.fundingType === "SAFE"
+      ? "via SAFE"
+      : request.proposedPercentage != null
+        ? `for ${request.proposedPercentage}% ${request.fundingType}`
+        : `via ${request.fundingType || "Equity"}`;
   console.log("Rendering InvestorRequestCard with request:", request);
   return (
     <div className="p-5 rounded-2xl bg-[#1A1D24] border border-white/5 shadow-inner">
@@ -2372,9 +2380,14 @@ function InvestorRequestCard({ request, startupId, onAction, onPayout }) {
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">
               Proposed Capital
             </p>
-            <p className="text-2xl font-black text-emerald-400 mb-3">
-              {formatCurrency(request.amount)}
-            </p>
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <p className="text-2xl font-black text-emerald-400">
+                {formatCurrency(request.amount)}
+              </p>
+              <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-200">
+                {requestTermsText}
+              </span>
+            </div>
             {request.message && (
               <>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">

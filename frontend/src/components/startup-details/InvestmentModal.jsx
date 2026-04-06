@@ -12,6 +12,8 @@ export default function InvestmentModal({
   setInvestAmount,
   fundingType,
   setFundingType,
+  proposedPercentage,
+  setProposedPercentage,
   investMessage,
   setInvestMessage,
   acceptedTerms,
@@ -87,6 +89,28 @@ export default function InvestmentModal({
                   </p>
                 </div>
 
+                {fundingType !== "SAFE" && (
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block ml-1">Proposed Percentage</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={proposedPercentage}
+                        onChange={(e) => setProposedPercentage(e.target.value)}
+                        placeholder="5"
+                        className="w-full px-5 py-4 rounded-xl bg-[#1A1D24] border border-white/5 text-white font-bold text-lg focus:outline-none focus:border-blue-500/50 transition-all shadow-inner pr-14"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500">%</span>
+                    </div>
+                    <p className="text-[10px] font-medium text-slate-500 mt-2 ml-1 leading-relaxed">
+                      Enter the ownership or revenue share percentage you are offering.
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block ml-1">Message (Optional)</label>
                   <textarea
@@ -107,6 +131,13 @@ export default function InvestmentModal({
                       setInvestError(`Minimum investment is ${formatCurrency(minAmount)}.`);
                       return;
                     }
+                    if (fundingType !== "SAFE") {
+                      const parsedPercentage = Number(proposedPercentage);
+                      if (!Number.isFinite(parsedPercentage) || parsedPercentage <= 0 || parsedPercentage > 100) {
+                        setInvestError("Enter a valid proposed percentage between 0 and 100.");
+                        return;
+                      }
+                    }
                     setInvestError("");
                     setInvestStep("confirm");
                   }}
@@ -122,7 +153,16 @@ export default function InvestmentModal({
                   <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Total Commitment</p>
                   <p className="text-5xl font-black text-white mb-2">{formatCurrency(amountNumber)}</p>
                   <p className="text-sm font-medium text-slate-400">to <strong className="text-white">{startup.name}</strong></p>
-                  <p className="mt-3 text-xs font-bold uppercase tracking-widest text-blue-400">{fundingType}</p>
+                  <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                    <span className="inline-flex items-center rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-blue-300">
+                      {fundingType}
+                    </span>
+                    {fundingType !== "SAFE" && proposedPercentage ? (
+                      <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-200">
+                        {proposedPercentage}% term
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
                 {investMessage && (

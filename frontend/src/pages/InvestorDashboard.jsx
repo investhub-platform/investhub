@@ -138,6 +138,8 @@ const InvestorDashboard = () => {
   const [pitchForm, setPitchForm] = useState({
     ideaId: "",
     amount: "",
+    fundingType: "Equity",
+    proposedPercentage: "",
     message: ""
   });
   const [pitchSubmitting, setPitchSubmitting] = useState(false);
@@ -299,6 +301,8 @@ const InvestorDashboard = () => {
     setPitchForm({
       ideaId: founderIdeas[0]?.id || "",
       amount: "",
+      fundingType: "Equity",
+      proposedPercentage: "",
       message: ""
     });
     setPitchModalOpen(true);
@@ -336,6 +340,15 @@ const InvestorDashboard = () => {
       return;
     }
 
+    const proposedPercentageValue = Number(pitchForm.proposedPercentage);
+    if (
+      pitchForm.fundingType !== "SAFE" &&
+      (!Number.isFinite(proposedPercentageValue) || proposedPercentageValue <= 0 || proposedPercentageValue > 100)
+    ) {
+      setPitchFeedback("Please enter a valid proposed percentage between 0 and 100.");
+      return;
+    }
+
     const selectedIdea = founderIdeas.find(
       (i) => String(i.id) === String(pitchForm.ideaId)
     );
@@ -354,6 +367,8 @@ const InvestorDashboard = () => {
         direction: "startup_to_investor",
         requestStatus: "pending_investor",
         amount: amountValue,
+        fundingType: pitchForm.fundingType,
+        proposedPercentage: pitchForm.fundingType === "SAFE" ? null : proposedPercentageValue,
         message: pitchForm.message?.trim() || null,
         StartupsId: selectedIdea.startupId
           ? String(selectedIdea.startupId)
@@ -775,6 +790,61 @@ const InvestorDashboard = () => {
                     required
                   />
                 </div>
+
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">
+                    Funding Type
+                  </label>
+                  <select
+                    value={pitchForm.fundingType}
+                    onChange={(e) =>
+                      setPitchForm((prev) => ({
+                        ...prev,
+                        fundingType: e.target.value,
+                        proposedPercentage:
+                          e.target.value === "SAFE" ? "" : prev.proposedPercentage
+                      }))
+                    }
+                    className="w-full px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  >
+                    <option value="Equity">Equity</option>
+                    <option value="Revenue Share">Revenue Share</option>
+                    <option value="SAFE">SAFE</option>
+                  </select>
+                  <p className="mt-2 text-xs text-slate-500 leading-relaxed">
+                    {pitchForm.fundingType === "Equity"
+                      ? "You receive ownership shares in the company. Payout typically occurs during an acquisition or IPO."
+                      : pitchForm.fundingType === "Revenue Share"
+                        ? "You receive a fixed percentage of the startup's monthly revenue until your investment cap is reached."
+                        : "Simple Agreement for Future Equity. Your investment converts to shares during a future priced funding round."}
+                  </p>
+                </div>
+
+                {pitchForm.fundingType !== "SAFE" && (
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">
+                      Proposed Percentage
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={pitchForm.proposedPercentage}
+                        onChange={(e) =>
+                          setPitchForm((prev) => ({
+                            ...prev,
+                            proposedPercentage: e.target.value
+                          }))
+                        }
+                        className="w-full px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 pr-14"
+                        placeholder="5"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500">%</span>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">

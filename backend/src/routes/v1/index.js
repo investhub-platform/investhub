@@ -102,7 +102,15 @@ router.post(
   body("ideaId").isMongoId().withMessage("ideaId must be a valid Mongo id"),
   body("direction").isIn(["investor_to_startup", "startup_to_investor"]).withMessage("direction is invalid"),
   body("amount").isFloat({ gt: 0 }).withMessage("amount must be greater than 0"),
-  body("fundingType").optional().isIn(["Equity", "Revenue Share", "SAFE"]).withMessage("fundingType is invalid"),
+  body("fundingType").isIn(["Equity", "Revenue Share", "SAFE"]).withMessage("fundingType is invalid"),
+  body("proposedPercentage")
+    .optional({ nullable: true })
+    .isFloat({ min: 0, max: 100 })
+    .withMessage("proposedPercentage must be between 0 and 100"),
+  body("proposedPercentage").custom((value, { req }) => {
+    if (req.body.fundingType === "SAFE") return true;
+    return value !== undefined && value !== null && value !== "";
+  }).withMessage("proposedPercentage is required for Equity and Revenue Share"),
   body("acceptedTerms").isBoolean().withMessage("acceptedTerms is required").toBoolean().custom((value) => value === true).withMessage("acceptedTerms must be accepted"),
   validateRequest,
   createRequest

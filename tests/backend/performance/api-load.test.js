@@ -145,6 +145,8 @@ describe("Backend API performance", () => {
       ideaId: idea._id,
       direction: "investor_to_startup",
       amount: 1000,
+      fundingType: "Equity",
+      proposedPercentage: 5,
       message: "Perf request",
       acceptedTerms: true,
       requestStatus: "pending_founder",

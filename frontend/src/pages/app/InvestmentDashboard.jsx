@@ -505,6 +505,12 @@ export default function InvestmentDashboard() {
                           request.founderId?.name || "Unknown Founder";
                         const ideaTitle =
                           request.ideaId?.title || "Unknown Idea";
+                        const requestTermsText =
+                          request.fundingType === "SAFE"
+                            ? "via SAFE"
+                            : request.proposedPercentage != null
+                              ? `for ${request.proposedPercentage}% ${request.fundingType}`
+                              : `via ${request.fundingType || "Equity"}`;
                         const canPay =
                           (request.requestStatus === "pending_mentor" ||
                             request.requestStatus === "approved") &&
@@ -540,9 +546,14 @@ export default function InvestmentDashboard() {
                               <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-1">
                                 Investment Amount
                               </p>
-                              <p className="text-3xl font-black text-white">
-                                {formatCurrency(request.amount)}
-                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-3xl font-black text-white">
+                                  {formatCurrency(request.amount)}
+                                </p>
+                                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-200">
+                                  {requestTermsText}
+                                </span>
+                              </div>
                             </div>
 
                             {/* Message */}
@@ -632,6 +643,12 @@ export default function InvestmentDashboard() {
                           request.investorId?.name || "Unknown Investor";
                         const ideaTitle =
                           request.ideaId?.title || "Unknown Idea";
+                        const requestTermsText =
+                          request.fundingType === "SAFE"
+                            ? "via SAFE"
+                            : request.proposedPercentage != null
+                              ? `for ${request.proposedPercentage}% ${request.fundingType}`
+                              : `via ${request.fundingType || "Equity"}`;
                         const canDecide =
                           request.requestStatus === "pending_founder";
 
@@ -668,9 +685,14 @@ export default function InvestmentDashboard() {
                               <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-1">
                                 Proposed Investment
                               </p>
-                              <p className="text-3xl font-black text-white">
-                                {formatCurrency(request.amount)}
-                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-3xl font-black text-white">
+                                  {formatCurrency(request.amount)}
+                                </p>
+                                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-200">
+                                  {requestTermsText}
+                                </span>
+                              </div>
                             </div>
 
                             {/* Message */}
