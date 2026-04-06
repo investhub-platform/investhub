@@ -1,6 +1,4 @@
 // src/pages/PrivacyPolicy.jsx
-import React from 'react';
-
 export default function PrivacyPolicy() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12 text-slate-300 space-y-6">
@@ -20,7 +18,7 @@ export default function PrivacyPolicy() {
       </ul>
 
       <h3 className="text-xl font-semibold text-white mt-4 mb-2">Usage Data</h3>
-      <p>Usage Data is collected automatically when using the Service, including Your Device's Internet Protocol address (e.g. IP address), browser type, and the time and date of Your visit.</p>
+      <p>Usage Data is collected automatically when using the Service, including Your Device&apos;s Internet Protocol address (e.g. IP address), browser type, and the time and date of Your visit.</p>
 
       <h2 className="text-2xl font-bold text-white mt-8 mb-4">2. Use of Your Personal Data</h2>
       <p>The Company may use Personal Data for the following purposes:</p>

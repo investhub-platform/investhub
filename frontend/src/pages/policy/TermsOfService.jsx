@@ -1,6 +1,4 @@
 // src/pages/TermsOfService.jsx
-import React from 'react';
-
 export default function TermsOfService() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12 text-slate-300 space-y-6">
@@ -23,9 +21,9 @@ export default function TermsOfService() {
       </ul>
 
       <h2 className="text-2xl font-bold text-white mt-8 mb-4">2. Escrow and Wallet Mechanics</h2>
-      <p>When an Investor commits capital to a Startup, the funds are transferred from the Investor's InvestHub Wallet into a secure digital Escrow state.</p>
+      <p>When an Investor commits capital to a Startup, the funds are transferred from the Investor&apos;s InvestHub Wallet into a secure digital Escrow state.</p>
       <ul className="list-disc pl-6 space-y-2 mt-2">
-        <li><strong>Milestone Release:</strong> Escrowed funds are only released to the Founder's wallet when an assigned Mentor officially validates the agreed-upon project milestones.</li>
+        <li><strong>Milestone Release:</strong> Escrowed funds are only released to the Founder&apos;s wallet when an assigned Mentor officially validates the agreed-upon project milestones.</li>
         <li><strong>Irreversibility:</strong> Once a Mentor validates a milestone and funds are transferred from Escrow to the Founder, the transaction is strictly non-refundable and irreversible.</li>
         <li><strong>Withdrawals:</strong> Investors may withdraw uncommitted funds from their Wallet back to their registered bank account at any time, subject to standard processing times.</li>
       </ul>

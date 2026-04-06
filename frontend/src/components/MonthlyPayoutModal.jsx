@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function MonthlyPayoutModal({
   open,
@@ -12,13 +12,6 @@ export default function MonthlyPayoutModal({
 }) {
   const [amount, setAmount] = useState(suggested);
   const [localError, setLocalError] = useState("");
-
-  useEffect(() => {
-    if (open) {
-      setAmount(suggested);
-      setLocalError("");
-    }
-  }, [open, suggested]);
 
   if (!open) return null;
 
