@@ -106,7 +106,7 @@ const HowItWorks = () => {
   const steps = roleData[activeRole];
 
   return (
-    <section className="relative py-20 px-4 bg-hiw-bg min-h-screen">
+    <section className="relative py-20 px-4 bg-hiw-bg min-h-screen transition-transform duration-500 hover:shadow-2xl hover:scale-[1.003]">
       <div className="max-w-4xl mx-auto">
         {/* Section Title */}
         <h2 className="text-center text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -118,16 +118,18 @@ const HowItWorks = () => {
 
         {/* Role Switcher */}
         <div className="flex justify-center mb-16">
-          <div className="inline-flex rounded-full bg-hiw-toggle-bg p-1 gap-1">
+          <div className="inline-flex rounded-full bg-hiw-toggle-bg p-2 gap-3 shadow-inner">
             {roles.map((role) => (
               <button
                 key={role.key}
                 onClick={() => setActiveRole(role.key)}
-                className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
+                aria-pressed={activeRole === role.key}
+                className={`px-6 py-3 rounded-2xl text-sm font-medium transition-transform duration-300 transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-hiw-toggle-active/30 ${
                   activeRole === role.key
-                    ? "bg-hiw-toggle-active text-hiw-text-primary shadow-lg"
-                    : "text-hiw-text-secondary hover:text-hiw-text-primary"
+                    ? "bg-hiw-toggle-active text-hiw-text-primary shadow-[0_18px_50px_rgba(2,6,23,0.5)] border border-hiw-toggle-active/30"
+                    : "bg-transparent text-hiw-text-secondary border border-hiw-card-border/20 hover:bg-hiw-toggle-active/8 hover:text-hiw-text-primary hover:shadow-md hover:-translate-y-1"
                 }`}
+                style={{ WebkitBackdropFilter: 'blur(6px)', backdropFilter: 'blur(6px)' }}
               >
                 {role.label}
               </button>
@@ -171,7 +173,7 @@ const HowItWorks = () => {
 
                 {/* Card */}
                 <div
-                  className={`relative rounded-[2rem] overflow-hidden border border-hiw-card-border/50 backdrop-blur-md`}
+                  className={`group relative rounded-[2rem] overflow-hidden border border-hiw-card-border/50 backdrop-blur-md transition-all duration-400 hover:shadow-2xl hover:scale-[1.02] hover:border-hiw-toggle-active/40`}
                   style={{
                     background:
                       "linear-gradient(135deg, hsla(220,15%,12%,0.95) 0%, hsla(220,20%,8%,0.98) 100%)",
@@ -212,7 +214,7 @@ const HowItWorks = () => {
                         loading="lazy"
                         width={640}
                         height={512}
-                        className="rounded-xl w-full h-auto object-cover shadow-lg"
+                        className="rounded-xl w-full h-auto object-cover shadow-lg transition-transform duration-700 group-hover:scale-105"
                       />
                     </div>
                   </div>
