@@ -102,6 +102,7 @@ router.post(
   body("ideaId").isMongoId().withMessage("ideaId must be a valid Mongo id"),
   body("direction").isIn(["investor_to_startup", "startup_to_investor"]).withMessage("direction is invalid"),
   body("amount").isFloat({ gt: 0 }).withMessage("amount must be greater than 0"),
+  body("fundingType").optional().isIn(["Equity", "Revenue Share", "SAFE"]).withMessage("fundingType is invalid"),
   body("acceptedTerms").isBoolean().withMessage("acceptedTerms is required").toBoolean().custom((value) => value === true).withMessage("acceptedTerms must be accepted"),
   validateRequest,
   createRequest

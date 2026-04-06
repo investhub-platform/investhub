@@ -33,6 +33,11 @@ const RequestSchema = new Schema(
 
     // Deal Terms
     amount: { type: Number, required: true, min: 0 },
+    fundingType: {
+      type: String,
+      enum: ["Equity", "Revenue Share", "SAFE"],
+      default: "Equity"
+    },
     acceptedTerms: {
       type: Boolean,
       required: true,

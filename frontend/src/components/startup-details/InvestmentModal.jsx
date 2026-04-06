@@ -10,6 +10,8 @@ export default function InvestmentModal({
   investStep,
   investAmount,
   setInvestAmount,
+  fundingType,
+  setFundingType,
   investMessage,
   setInvestMessage,
   acceptedTerms,
@@ -70,6 +72,22 @@ export default function InvestmentModal({
                 </div>
 
                 <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block ml-1">Investment Type</label>
+                  <select
+                    value={fundingType}
+                    onChange={(e) => setFundingType(e.target.value)}
+                    className="w-full px-5 py-4 rounded-xl bg-[#1A1D24] border border-white/5 text-white font-bold text-sm focus:outline-none focus:border-blue-500/50 transition-all shadow-inner"
+                  >
+                    <option value="Equity">Equity</option>
+                    <option value="Revenue Share">Revenue Share</option>
+                    <option value="SAFE">SAFE</option>
+                  </select>
+                  <p className="text-[10px] font-medium text-slate-500 mt-2 ml-1 leading-relaxed">
+                    Equity is ownership, Revenue Share pays monthly, and SAFE converts into future equity.
+                  </p>
+                </div>
+
+                <div>
                   <label className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block ml-1">Message (Optional)</label>
                   <textarea
                     value={investMessage}
@@ -104,6 +122,7 @@ export default function InvestmentModal({
                   <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Total Commitment</p>
                   <p className="text-5xl font-black text-white mb-2">{formatCurrency(amountNumber)}</p>
                   <p className="text-sm font-medium text-slate-400">to <strong className="text-white">{startup.name}</strong></p>
+                  <p className="mt-3 text-xs font-bold uppercase tracking-widest text-blue-400">{fundingType}</p>
                 </div>
 
                 {investMessage && (

@@ -31,6 +31,7 @@ const StartupDetail = ({ isModal = false }) => {
 
   const [activeTab, setActiveTab] = useState(0);
   const [investAmount, setInvestAmount] = useState("");
+  const [fundingType, setFundingType] = useState("Equity");
   const [investMessage, setInvestMessage] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isInvestOpen, setIsInvestOpen] = useState(false);
@@ -280,6 +281,7 @@ const StartupDetail = ({ isModal = false }) => {
     setInvestSuccess(null);
     setInvestStep("input");
     setAcceptedTerms(false);
+    setFundingType("Equity");
     setIsInvestOpen(true);
   };
 
@@ -323,6 +325,7 @@ const StartupDetail = ({ isModal = false }) => {
         founderId,
         ideaId,
         amount: amountNumber,
+        fundingType,
         message: investMessage || "",
         acceptedTerms,
         direction: "investor_to_startup"
@@ -341,6 +344,7 @@ const StartupDetail = ({ isModal = false }) => {
   const closeInvestmentModal = () => {
     setIsInvestOpen(false);
     setInvestAmount("");
+    setFundingType("Equity");
     setInvestMessage("");
     setAcceptedTerms(false);
     setInvestStep("input");
@@ -414,6 +418,8 @@ const StartupDetail = ({ isModal = false }) => {
         investStep={investStep}
         investAmount={investAmount}
         setInvestAmount={setInvestAmount}
+        fundingType={fundingType}
+        setFundingType={setFundingType}
         investMessage={investMessage}
         setInvestMessage={setInvestMessage}
         acceptedTerms={acceptedTerms}
