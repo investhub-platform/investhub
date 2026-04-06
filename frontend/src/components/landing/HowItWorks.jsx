@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import founderStep1 from "@/assets/how-it-works/founder-step1.jpg";
 import founderStep2 from "@/assets/how-it-works/founder-step2.jpg";
@@ -13,85 +14,24 @@ import mentorStep2 from "@/assets/how-it-works/mentor-step2.jpg";
 import mentorStep3 from "@/assets/how-it-works/mentor-step3.jpg";
 import mentorFinal from "@/assets/how-it-works/mentor-final.jpg";
 
-// roleData maps a role key to an array of step objects
 const roleData = {
   founder: [
-    {
-      label: "Step 1",
-      title: "Build your Pitch",
-      desc: "In ~5 minutes, submit your startup idea, upload your pitch deck, and define your required budget. Let our system build a comprehensive profile for investors.",
-      image: founderStep1,
-    },
-    {
-      label: "Step 2",
-      title: "AI Risk Analysis",
-      desc: "Our Gemini-powered AI instantly analyzes your pitch, generating a detailed summary, identifying market potential, and assigning a standardized Risk Score.",
-      image: founderStep2,
-    },
-    {
-      label: "Step 3",
-      title: "Connect with Mentors",
-      desc: "Get matched with elite technical mentors who will review your architecture, validate your code, and verify your milestones to build investor trust.",
-      image: founderStep3,
-    },
-    {
-      label: "Final Step",
-      title: "Secure Funding",
-      desc: "Unlock virtual investments via our secure wallet system. Funds are released transparently as you hit your mentor-approved development milestones.",
-      image: founderFinal,
-    },
+    { label: "Phase 01", title: "Build your Pitch", desc: "In ~5 minutes, submit your startup idea, upload your pitch deck, and define your required budget. Let our system build a comprehensive profile for investors.", image: founderStep1 },
+    { label: "Phase 02", title: "AI Risk Analysis", desc: "Our Gemini-powered AI instantly analyzes your pitch, generating a detailed summary, identifying market potential, and assigning a standardized Risk Score.", image: founderStep2 },
+    { label: "Phase 03", title: "Connect with Mentors", desc: "Get matched with elite technical mentors who will review your architecture, validate your code, and verify your milestones to build investor trust.", image: founderStep3 },
+    { label: "Phase 04", title: "Secure Funding", desc: "Unlock virtual investments via our secure wallet system. Funds are released transparently as you hit your mentor-approved development milestones.", image: founderFinal },
   ],
   investor: [
-    {
-      label: "Step 1",
-      title: "Discover Opportunities",
-      desc: "Browse a highly curated list of promising startups spanning multiple tech sectors. Filter by funding stage, category, and AI-predicted success rates.",
-      image: investorStep1,
-    },
-    {
-      label: "Step 2",
-      title: "Assess AI Analytics",
-      desc: "Don't rely on gut feelings. Dive into comprehensive AI-generated risk reports, competitive analyses, and technical red flags before making a move.",
-      image: investorStep2,
-    },
-    {
-      label: "Step 3",
-      title: "Follow Mentor Insights",
-      desc: "Leverage the expertise of veteran CTOs and developers. See which projects have had their technical architecture verified by our mentor network.",
-      image: investorStep3,
-    },
-    {
-      label: "Final Step",
-      title: "Invest & Track",
-      desc: "Fund projects securely via our virtual wallet. Monitor your portfolio's growth in real-time and release funds based on strictly validated milestones.",
-      image: investorFinal,
-    },
+    { label: "Phase 01", title: "Discover Opportunities", desc: "Browse a highly curated list of promising startups spanning multiple tech sectors. Filter by funding stage, category, and AI-predicted success rates.", image: investorStep1 },
+    { label: "Phase 02", title: "Assess AI Analytics", desc: "Don't rely on gut feelings. Dive into comprehensive AI-generated risk reports, competitive analyses, and technical red flags before making a move.", image: investorStep2 },
+    { label: "Phase 03", title: "Follow Mentor Insights", desc: "Leverage the expertise of veteran CTOs and developers. See which projects have had their technical architecture verified by our mentor network.", image: investorStep3 },
+    { label: "Phase 04", title: "Invest & Track", desc: "Fund projects securely via our virtual wallet. Monitor your portfolio's growth in real-time and release funds based on strictly validated milestones.", image: investorFinal },
   ],
   mentor: [
-    {
-      label: "Step 1",
-      title: "Build your Profile",
-      desc: "Highlight your technical stack, past exits, and industry experience. Let our system verify your credentials to establish your authority on MentorHub.",
-      image: mentorStep1,
-    },
-    {
-      label: "Step 2",
-      title: "Create Content",
-      desc: "Share your expertise on MentorHub by posting lectures, workshops, tutorials, webinars, and more. Help the next generation of founders level up.",
-      image: mentorStep2,
-    },
-    {
-      label: "Step 3",
-      title: "Engage & Educate",
-      desc: "Host live sessions, answer questions, and build a following. Every role on InvestHub can also mentor — founders and investors included.",
-      image: mentorStep3,
-    },
-    {
-      label: "Final Step",
-      title: "Build Reputation",
-      desc: "Earn platform credibility, grow your audience, and get exclusive access to emerging tech communities — all while contributing as a founder or investor too.",
-      image: mentorFinal,
-    },
+    { label: "Phase 01", title: "Build your Profile", desc: "Highlight your technical stack, past exits, and industry experience. Let our system verify your credentials to establish your authority on MentorHub.", image: mentorStep1 },
+    { label: "Phase 02", title: "Create Content", desc: "Share your expertise on MentorHub by posting lectures, workshops, tutorials, webinars, and more. Help the next generation of founders level up.", image: mentorStep2 },
+    { label: "Phase 03", title: "Engage & Educate", desc: "Host live sessions, answer questions, and build a following. Every role on InvestHub can also mentor — founders and investors included.", image: mentorStep3 },
+    { label: "Phase 04", title: "Build Reputation", desc: "Earn platform credibility, grow your audience, and get exclusive access to emerging tech communities — all while contributing as a founder or investor too.", image: mentorFinal },
   ],
 };
 
@@ -106,123 +46,112 @@ const HowItWorks = () => {
   const steps = roleData[activeRole];
 
   return (
-    <section id="how-it-works" className="relative py-20 px-4 bg-hiw-bg min-h-screen scroll-mt-36 transition-transform duration-500 hover:shadow-2xl hover:scale-[1.003]">
-      <div className="max-w-4xl mx-auto">
-        {/* Section Title */}
-        <h2 className="text-center text-4xl md:text-5xl font-bold text-foreground mb-4">
-          How it Works
-        </h2>
-        <p className="text-center text-muted-foreground mb-10 max-w-xl mx-auto">
-          A simple, transparent process from start to finish.
-        </p>
+    <section id="how-it-works" className="relative py-32 bg-transparent overflow-visible z-10 scroll-mt-20">
+      
+      {/* Ambient Background Glows (Seamless blend) */}
+      <div className="absolute top-40 left-0 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-[150px] pointer-events-none" />
 
-        {/* Role Switcher */}
-        <div className="flex justify-center mb-16">
-          <div className="inline-flex rounded-full bg-hiw-toggle-bg p-2 gap-3 shadow-inner">
-            {roles.map((role) => (
-              <button
-                key={role.key}
-                onClick={() => setActiveRole(role.key)}
-                aria-pressed={activeRole === role.key}
-                className={`px-6 py-3 rounded-2xl text-sm font-medium transition-transform duration-300 transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-hiw-toggle-active/30 ${
-                  activeRole === role.key
-                    ? "bg-hiw-toggle-active text-hiw-text-primary shadow-[0_18px_50px_rgba(2,6,23,0.5)] border border-hiw-toggle-active/30"
-                    : "bg-transparent text-hiw-text-secondary border border-hiw-card-border/20 hover:bg-hiw-toggle-active/8 hover:text-hiw-text-primary hover:shadow-md hover:-translate-y-1"
-                }`}
-                style={{ WebkitBackdropFilter: 'blur(6px)', backdropFilter: 'blur(6px)' }}
-              >
-                {role.label}
-              </button>
-            ))}
-          </div>
+      <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">
+        
+        {/* Header */}
+        <div className="text-center mb-16 max-w-2xl mx-auto">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 mb-6">
+            How it Works
+          </h2>
+          <p className="text-lg md:text-xl text-slate-400 font-medium">
+            A simple, transparent process from start to finish.
+          </p>
         </div>
 
-        {/* Timeline */}
-        <div className="relative">
-          {/* Dashed SVG line */}
-          <div className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2 w-px hidden md:block">
-            <svg
-              className="w-full h-full"
-              preserveAspectRatio="none"
-              viewBox="0 0 1 100"
-            >
-              <line
-                x1="0.5"
-                y1="0"
-                x2="0.5"
-                y2="100"
-                stroke="hsl(var(--hiw-dashed-line))"
-                strokeWidth="0.5"
-                strokeDasharray="2 2"
-              />
-            </svg>
-          </div>
-
-          {steps.map((step, index) => {
-            const isEven = index % 2 === 1;
-            const isLast = index === steps.length - 1;
-
-            return (
-              <div key={`${activeRole}-${index}`} className="relative mb-12 last:mb-0">
-                {/* Step Badge */}
-                <div className="flex justify-center mb-4 relative z-10">
-                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium border bg-hiw-badge-bg border-hiw-badge-border text-hiw-text-secondary">
-                    {step.label}
-                  </span>
-                </div>
-
-                {/* Card */}
-                <div
-                  className={`group relative rounded-[2rem] overflow-hidden border border-hiw-card-border/50 backdrop-blur-md transition-all duration-400 hover:shadow-2xl hover:scale-[1.02] hover:border-hiw-toggle-active/40`}
-                  style={{
-                    background:
-                      "linear-gradient(135deg, hsla(220,15%,12%,0.95) 0%, hsla(220,20%,8%,0.98) 100%)",
-                  }}
+        {/* Premium Segmented Control */}
+        <div className="flex justify-center mb-24">
+          <div className="inline-flex rounded-full bg-[#0B0D10]/80 p-1.5 border border-white/10 backdrop-blur-xl shadow-2xl relative">
+            {roles.map((role) => {
+              const isActive = activeRole === role.key;
+              return (
+                <button
+                  key={role.key}
+                  onClick={() => setActiveRole(role.key)}
+                  className={`relative px-8 py-3 rounded-full text-sm font-bold transition-colors z-10 ${
+                    isActive ? "text-white" : "text-slate-400 hover:text-white"
+                  }`}
                 >
-                  {/* Internal glow */}
-                  <div
-                    className="absolute inset-0 opacity-20 pointer-events-none"
-                    style={{
-                      background: isLast
-                        ? "radial-gradient(ellipse at 50% 50%, hsla(220,60%,50%,0.3), transparent 70%)"
-                        : isEven
-                        ? "radial-gradient(ellipse at 30% 50%, hsla(220,60%,50%,0.15), transparent 70%)"
-                        : "radial-gradient(ellipse at 70% 50%, hsla(220,60%,50%,0.15), transparent 70%)",
-                    }}
-                  />
-
-                  <div
-                    className={`relative z-10 flex flex-col md:flex-row items-center gap-6 p-8 md:p-10 ${
-                      isEven ? "md:flex-row-reverse" : ""
-                    }`}
-                  >
-                    {/* Text */}
-                    <div className="flex-1 space-y-3">
-                      <h3 className="text-2xl md:text-3xl font-bold text-hiw-text-primary">
-                        {step.title}
-                      </h3>
-                      <p className="text-hiw-text-secondary text-sm md:text-base leading-relaxed">
-                        {step.desc}
-                      </p>
-                    </div>
-
-                    {/* Image */}
-                    <div className="flex-1 w-full">
-                      <img
-                        src={step.image}
-                        alt={step.title}
-                        loading="lazy"
-                        width={640}
-                        height={512}
-                        className="rounded-xl w-full h-auto object-cover shadow-lg transition-transform duration-700 group-hover:scale-105"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                  {isActive && (
+                    <motion.div
+                      layoutId="hiw-active-pill"
+                      className="absolute inset-0 bg-blue-600 rounded-full shadow-[0_0_20px_rgba(37,99,235,0.4)] -z-10"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  {role.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
+
+        {/* Alternating Timeline */}
+        <div className="relative">
+          {/* Glowing Center Line */}
+          <div className="absolute left-1/2 top-8 bottom-8 -translate-x-1/2 w-px bg-gradient-to-b from-transparent via-blue-500/30 to-transparent hidden lg:block" />
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeRole}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+              className="space-y-16 lg:space-y-24"
+            >
+              {steps.map((step, index) => {
+                const isEven = index % 2 === 1;
+
+                return (
+                  <div key={index} className={`relative flex flex-col lg:flex-row items-center gap-8 lg:gap-16 ${isEven ? "lg:flex-row-reverse" : ""}`}>
+                    
+                    {/* Center Node (Desktop) */}
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden lg:flex items-center justify-center w-12 h-12 rounded-full bg-[#020617] border-4 border-[#0B0D10] shadow-[0_0_20px_rgba(37,99,235,0.2)] z-20">
+                      <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_10px_#3b82f6]" />
+                    </div>
+
+                    {/* Text Content */}
+                    <div className={`flex-1 w-full lg:w-1/2 flex ${isEven ? "lg:justify-start" : "lg:justify-end"}`}>
+                      <div className={`max-w-xl ${isEven ? "lg:pl-12" : "lg:pr-12"}`}>
+                        <div className="inline-block px-3 py-1 mb-6 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-black tracking-widest uppercase shadow-sm">
+                          {step.label}
+                        </div>
+                        <h3 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
+                          {step.title}
+                        </h3>
+                        <p className="text-slate-400 text-base md:text-lg leading-relaxed">
+                          {step.desc}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Image Content */}
+                    <div className="flex-1 w-full lg:w-1/2">
+                      <div className="relative group rounded-[2rem] overflow-hidden bg-[#0B0D10] border border-white/5 shadow-2xl p-2 transform transition-transform duration-700 hover:-translate-y-2 hover:border-blue-500/30">
+                        {/* Subtle Inner Glow */}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 z-10 pointer-events-none" />
+                        
+                        <img
+                          src={step.image}
+                          alt={step.title}
+                          loading="lazy"
+                          className="rounded-[1.5rem] w-full h-auto object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700"
+                        />
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
       </div>
     </section>
   );

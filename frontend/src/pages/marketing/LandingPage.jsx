@@ -39,7 +39,7 @@ const LandingPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#020617] font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#020617] font-sans selection:bg-blue-500/30 overflow-x-hidden">
       <Navbar />
       
       {/* 1. Hero (Awwwards WOW Upgrade) */}
@@ -57,9 +57,6 @@ const LandingPage = () => {
 
         {/* 3. The Core Ecosystem Logic (How It Works) */}
         <div className="gsap-fade-section relative">
-           {/* Global Background Grid (subtle) */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] mask-image-gradient pointer-events-none" />
-          
           <div className="relative z-10 px-6">
             <HowItWorks />
           </div>

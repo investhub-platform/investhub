@@ -2,11 +2,9 @@ import { Check, Sparkles } from 'lucide-react';
 
 const Pricing = () => {
   return (
-    <section id="pricing" className="relative py-32 bg-[#020617] overflow-hidden z-10">
-      {/* Ambient Background Glows */}
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+    <section id="pricing" className="relative py-32 bg-transparent overflow-visible z-10">
+      {/* Ambient Background Glows (Allowed to bleed upwards) */}
       <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[150px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         

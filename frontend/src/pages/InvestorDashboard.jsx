@@ -403,7 +403,7 @@ const InvestorDashboard = () => {
     <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-blue-500/30 overflow-hidden flex flex-col">
       <AppNavbar />
 
-      <div className="flex flex-1 pt-6 relative w-full h-screen overflow-hidden">
+      <div className="flex flex-1 pt-20 md:pt-6 relative w-full h-screen overflow-hidden">
         {/* Ambient Background Lights */}
         <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[150px] rounded-full pointer-events-none z-0" />
         <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-cyan-600/5 blur-[120px] rounded-full pointer-events-none z-0" />
@@ -413,7 +413,7 @@ const InvestorDashboard = () => {
         <main className="flex-1 w-full overflow-y-auto px-4 md:px-8 py-8 lg:py-12 relative z-10 scroll-smooth lg:ml-64">
           <div className="max-w-7xl mx-auto">
             {/* Header Area */}
-            <div className="mb-10">
+            <div className="mb-10 mt-6 md:mt-12 lg:mt-16">
               <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">
                 Explore Opportunities
               </h1>
@@ -424,7 +424,7 @@ const InvestorDashboard = () => {
             </div>
 
             {/* Segmented Control Tabs */}
-            <div className="inline-flex rounded-full p-1.5 bg-[#0B0D10]/80 border border-white/10 backdrop-blur-xl mb-8 shadow-lg ml-4 md:ml-8">
+            <div className="inline-flex rounded-full p-1.5 bg-[#0B0D10]/80 border border-white/10 backdrop-blur-xl mb-8 shadow-lg">
               {[
                 { key: "startups", label: "Startups Pitching" },
                 { key: "mandates", label: "Investor Mandates" }
