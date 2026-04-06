@@ -10,9 +10,38 @@ import AppError from "../utils/AppError.js";
 /**
  * Get all startups (excluding soft-deleted)
  */
-export const getAllStartups = async () => {
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+export const getAllStartups = async ({ page = 1, limit = 20, q = "" } = {}) => {
   try {
-    return await startupRepository.findAll();
+    const safePage = Math.max(Number(page) || 1, 1);
+    const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+
+    const query = { deletedUtc: null };
+    const search = String(q || "").trim();
+
+    if (search) {
+      const regex = new RegExp(escapeRegex(search), "i");
+      query.$or = [
+        { name: regex },
+        { description: regex },
+        { businessRegistration: regex },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      startupRepository.findAll({ query, page: safePage, limit: safeLimit }),
+      startupRepository.countAll(query),
+    ]);
+
+    return {
+      data,
+      meta: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+      },
+    };
   } catch (error) {
     throw new AppError("Failed to fetch startups", 500);
   }
@@ -40,7 +69,7 @@ export const getStartupById = async (id) => {
 export const getStartupsByUserId = async (userId) => {
   try {
     if (!userId) {
-      throw new AppError("UserID is required", 400);
+      throw new AppError("userId is required", 400);
     }
     return await startupRepository.findByUserId(userId);
   } catch (error) {
@@ -73,23 +102,22 @@ export const getStartupsByStatus = async (status) => {
  */
 export const createNewStartup = async (payload, userId) => {
   // Validate required fields
-  const { name, UserID, createdBy } = payload;
+  const { name, userId: payloadUserId, UserID, createdBy } = payload;
   if (!name) {
     throw new AppError("Name is required", 400);
   }
-  if (!UserID && !userId) {
-    throw new AppError("UserID is required", 400);
+  if (!payloadUserId && !UserID && !userId) {
+    throw new AppError("userId is required", 400);
   }
 
   try {
-    const resolvedUserId = UserID || userId;
+    const resolvedUserId = payloadUserId || UserID || userId;
     const startupData = {
       name: name.trim(),
       description: payload.description || null,
-      BR: payload.BR || null,
-      ImgURL: payload.ImgURL || null,
-      UserID: resolvedUserId,
       userId: resolvedUserId,
+      businessRegistration: payload.businessRegistration || payload.BR || null,
+      imgUrl: payload.imgUrl || payload.ImgURL || null,
       status: payload.status || "pending",
       createdBy: createdBy || userId
       // updatedBy: createdBy || userId
@@ -120,11 +148,18 @@ export const updateExistingStartup = async (id, payload, userId) => {
 
     const resolvedUserId = payload.userId || payload.UserID;
     const updateData = {
-      ...payload,
       ...(resolvedUserId
-        ? { UserID: resolvedUserId, userId: resolvedUserId }
+        ? { userId: resolvedUserId }
         : {}),
-      ...(payload.ImgURL !== undefined ? { ImgURL: payload.ImgURL } : {}),
+      ...(payload.businessRegistration !== undefined || payload.BR !== undefined
+        ? { businessRegistration: payload.businessRegistration || payload.BR || null }
+        : {}),
+      ...(payload.imgUrl !== undefined || payload.ImgURL !== undefined
+        ? { imgUrl: payload.imgUrl || payload.ImgURL || null }
+        : {}),
+      ...(payload.name !== undefined ? { name: String(payload.name).trim() } : {}),
+      ...(payload.description !== undefined ? { description: payload.description || null } : {}),
+      ...(payload.status ? { status: payload.status } : {}),
       updatedUtc: new Date(),
       updatedBy: userId
     };

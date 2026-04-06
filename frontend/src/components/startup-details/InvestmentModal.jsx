@@ -10,8 +10,14 @@ export default function InvestmentModal({
   investStep,
   investAmount,
   setInvestAmount,
+  fundingType,
+  setFundingType,
+  proposedPercentage,
+  setProposedPercentage,
   investMessage,
   setInvestMessage,
+  acceptedTerms,
+  setAcceptedTerms,
   investError,
   setInvestError,
   minAmount,
@@ -58,7 +64,7 @@ export default function InvestmentModal({
                     type="text"
                     value={investAmount}
                     onChange={(e) => setInvestAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                    placeholder="10,000"
+                    placeholder={formatCurrency(minAmount)}
                     className="w-full px-5 py-4 rounded-xl bg-[#1A1D24] border border-white/5 text-white font-bold text-lg focus:outline-none focus:border-blue-500/50 transition-all shadow-inner"
                   />
                   <div className="flex justify-between items-center mt-2 px-1">
@@ -66,6 +72,44 @@ export default function InvestmentModal({
                     <p className="text-xs font-bold text-emerald-400">Balance: {formatCurrency(walletBalance)}</p>
                   </div>
                 </div>
+
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block ml-1">Investment Type</label>
+                  <select
+                    value={fundingType}
+                    onChange={(e) => setFundingType(e.target.value)}
+                    className="w-full px-5 py-4 rounded-xl bg-[#1A1D24] border border-white/5 text-white font-bold text-sm focus:outline-none focus:border-blue-500/50 transition-all shadow-inner"
+                  >
+                    <option value="Equity">Equity</option>
+                    <option value="Revenue Share">Revenue Share</option>
+                    <option value="SAFE">SAFE</option>
+                  </select>
+                  <p className="text-[10px] font-medium text-slate-500 mt-2 ml-1 leading-relaxed">
+                    Equity is ownership, Revenue Share pays monthly, and SAFE converts into future equity.
+                  </p>
+                </div>
+
+                {fundingType !== "SAFE" && (
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block ml-1">Proposed Percentage</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={proposedPercentage}
+                        onChange={(e) => setProposedPercentage(e.target.value)}
+                        placeholder="5"
+                        className="w-full px-5 py-4 rounded-xl bg-[#1A1D24] border border-white/5 text-white font-bold text-lg focus:outline-none focus:border-blue-500/50 transition-all shadow-inner pr-14"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500">%</span>
+                    </div>
+                    <p className="text-[10px] font-medium text-slate-500 mt-2 ml-1 leading-relaxed">
+                      Enter the ownership or revenue share percentage you are offering.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block ml-1">Message (Optional)</label>
@@ -87,6 +131,13 @@ export default function InvestmentModal({
                       setInvestError(`Minimum investment is ${formatCurrency(minAmount)}.`);
                       return;
                     }
+                    if (fundingType !== "SAFE") {
+                      const parsedPercentage = Number(proposedPercentage);
+                      if (!Number.isFinite(parsedPercentage) || parsedPercentage <= 0 || parsedPercentage > 100) {
+                        setInvestError("Enter a valid proposed percentage between 0 and 100.");
+                        return;
+                      }
+                    }
                     setInvestError("");
                     setInvestStep("confirm");
                   }}
@@ -102,6 +153,16 @@ export default function InvestmentModal({
                   <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Total Commitment</p>
                   <p className="text-5xl font-black text-white mb-2">{formatCurrency(amountNumber)}</p>
                   <p className="text-sm font-medium text-slate-400">to <strong className="text-white">{startup.name}</strong></p>
+                  <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                    <span className="inline-flex items-center rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-blue-300">
+                      {fundingType}
+                    </span>
+                    {fundingType !== "SAFE" && proposedPercentage ? (
+                      <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-200">
+                        {proposedPercentage}% term
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
                 {investMessage && (
@@ -110,6 +171,18 @@ export default function InvestmentModal({
                     <p className="text-sm text-slate-300 italic">&quot;{investMessage}&quot;</p>
                   </div>
                 )}
+
+                <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-left cursor-pointer hover:bg-white/10 transition-colors">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent text-blue-500 focus:ring-blue-500"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  />
+                  <span className="text-sm leading-relaxed text-slate-300">
+                    I understand that startup investing is high risk, and I may lose 100% of my investment if the company fails. I agree to the <a href="/terms" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 underline">Terms of Service</a> and understand the high risks associated with startup investing as outlined in the <a href="/terms" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 underline">Risk Disclosure</a>.
+                  </span>
+                </label>
 
                 {investError && <p className="text-sm font-bold text-red-400 bg-red-500/10 p-3 rounded-xl border border-red-500/20">{investError}</p>}
 
@@ -120,7 +193,7 @@ export default function InvestmentModal({
                   <button
                     className="flex-[2] py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     onClick={submitInvestment}
-                    disabled={investSubmitting}
+                    disabled={investSubmitting || !acceptedTerms}
                   >
                     {investSubmitting ? <><Loader className="w-5 h-5 animate-spin" /> Sending Request...</> : "Send Request to Founder"}
                   </button>

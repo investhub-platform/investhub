@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -21,6 +22,12 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
     setOkMsg("");
+
+    if (!acceptedTerms) {
+      setError("Please agree to the Terms of Service and Risk Disclosure.");
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
     try {
@@ -130,6 +137,19 @@ export default function RegisterPage() {
               Sign In
             </Link>
           </div>
+
+          <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-left cursor-pointer hover:bg-white/10 transition-colors">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent text-cyan-500 focus:ring-cyan-500"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              required
+            />
+            <span className="text-sm leading-relaxed text-slate-300">
+              I agree to the <Link to="/terms" className="text-cyan-400 hover:text-cyan-300 underline">Terms of Service</Link> and understand the high risks associated with startup investing as outlined in the Risk Disclosure.
+            </span>
+          </label>
         </form>
       </motion.div>
     </div>

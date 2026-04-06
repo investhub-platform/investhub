@@ -14,7 +14,7 @@ import AppError from "../utils/AppError.js";
 export const listRequests = async (_req, res, next) => {
   try {
     const data = await requestService.getAllRequests();
-    res.json({ data });
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -27,7 +27,7 @@ export const listRequests = async (_req, res, next) => {
 export const getRequest = async (req, res, next) => {
   try {
     const data = await requestService.getRequestById(req.params.id);
-    res.json({ data });
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -40,7 +40,7 @@ export const getRequest = async (req, res, next) => {
 export const createRequest = async (req, res, next) => {
   try {
     const data = await requestService.createNewRequest(req.body);
-    res.status(201).json({ data });
+    res.status(201).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -56,7 +56,7 @@ export const updateRequest = async (req, res, next) => {
       req.params.id,
       req.body
     );
-    res.json({ data });
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -72,7 +72,7 @@ export const withdrawRequest = async (req, res, next) => {
       req.params.id,
       req.body.updatedBy
     );
-    res.json({ data });
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -88,7 +88,7 @@ export const setFounderDecision = async (req, res, next) => {
       req.params.id,
       req.body
     );
-    res.json({ data });
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -104,7 +104,7 @@ export const setMentorDecision = async (req, res, next) => {
       req.params.id,
       req.body
     );
-    res.json({ data });
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -120,7 +120,7 @@ export const setInvestorDecision = async (req, res, next) => {
       req.params.id,
       req.body
     );
-    res.json({ data });
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -130,7 +130,7 @@ export const getRequestsByStartup = async (req, res, next) => {
   try {
     const startupId = req.params.startupId;
     const data = await requestService.getRequestsByStartupId(startupId);
-    res.json({ data });
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -143,7 +143,7 @@ export const setRequestStatus = async (req, res, next) => {
       req.body.requestStatus,
       req.body.updatedBy
     );
-    res.json({ data });
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -153,7 +153,7 @@ export const getRequestsByInvestor = async (req, res, next) => {
   try {
     const investorId = req.params.investorId;
     const data = await requestService.getRequestsByInvestorId(investorId);
-    res.json({ data });
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -163,7 +163,7 @@ export const getRequestsByIdea = async (req, res, next) => {
   try {
     const ideaId = req.params.ideaId;
     const data = await requestService.getRequestsByIdeaId(ideaId);
-    res.json({ data });
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }

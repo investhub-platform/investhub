@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { ArrowRight, Github, Twitter, Linkedin } from 'lucide-react'
 
 export default function Footer() {
@@ -87,9 +88,19 @@ export default function Footer() {
               <ul className="space-y-3 sm:space-y-4">
                 {['Privacy', 'Terms', 'Security', 'Status'].map((item) => (
                   <li key={item}>
-                    <a href="#" className="text-sm sm:text-base text-slate-400 hover:text-blue-400 transition-colors active:scale-95">
-                      {item}
-                    </a>
+                    {item === 'Privacy' ? (
+                      <Link to="/privacy" className="text-sm sm:text-base text-slate-400 hover:text-blue-400 transition-colors active:scale-95">
+                        Privacy Policy
+                      </Link>
+                    ) : item === 'Terms' ? (
+                      <Link to="/terms" className="text-sm sm:text-base text-slate-400 hover:text-blue-400 transition-colors active:scale-95">
+                        Terms of Service
+                      </Link>
+                    ) : (
+                      <a href="#" className="text-sm sm:text-base text-slate-400 hover:text-blue-400 transition-colors active:scale-95">
+                        {item}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -5,6 +5,8 @@ import AdminRoute from "./AdminRoute";
 import LoginPage from "../features/auth/pages/LoginPage";
 import RegisterPage from "../features/auth/pages/RegisterPage";
 import VerifyEmailPage from "../features/auth/pages/VerifyEmailPage";
+import PrivacyPolicy from "../pages/policy/PrivacyPolicy";
+import TermsOfService from "../pages/policy/TermsOfService";
 import ProfilePage from "../pages/app/ProfilePage";
 import ForgotPasswordPage from "../features/auth/pages/ForgotPasswordPage";
 import ResetPasswordPage from "../features/auth/pages/ResetPasswordPage";
@@ -35,6 +37,8 @@ export default function AppRoutes() {
     <>
       <Routes location={background || location}>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
 
       {/* Auth pages ( create next) */}
        <Route path="/auth/login" element={<LoginPage />} />

@@ -140,7 +140,7 @@ export const updateIdea = async (req, res, next) => {
 export const deleteIdea = async (req, res, next) => {
   try {
     await ideaService.deleteIdea(req.params.id, req.user.id);
-    res.json({ success: true, message: "Record delete successfully" });
+    res.json({ success: true, data: { message: "Record delete successfully" } });
   } catch (err) {
     next(err);
   }

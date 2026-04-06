@@ -2,6 +2,8 @@
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
+import swaggerUi from "swagger-ui-express";
 
 // Load backend .env reliably relative to this file, regardless of cwd
 const __filename = fileURLToPath(import.meta.url);
@@ -17,6 +19,21 @@ import app from "./app.js";
 import connectDB from "./config/db.js";
 
 const PORT = process.env.PORT || 5000;
+const openApiPath = path.resolve(__dirname, "../doc/openapi.yaml");
+
+app.get("/api/docs/openapi.yaml", (_req, res) => {
+  res.type("text/yaml").send(fs.readFileSync(openApiPath, "utf8"));
+});
+
+app.use(
+  "/api/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(null, {
+    swaggerOptions: {
+      url: "/api/docs/openapi.yaml",
+    },
+  })
+);
 
 async function start() {
   try {
