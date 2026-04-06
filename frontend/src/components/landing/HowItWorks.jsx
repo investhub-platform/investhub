@@ -1,140 +1,229 @@
-import { useState, useRef } from 'react'
-import { motion, useScroll, useSpring } from 'framer-motion'
-import { User, BrainCircuit, Users, Wallet, Search, ShieldCheck, LineChart, CheckCircle2 } from 'lucide-react'
+import { useState } from "react";
 
-// Steps Data with Icons
-const founderSteps = [
-  { id: 1, title: 'Build Profile', desc: 'Create your startup identity with AI-assisted pitch decks.', icon: User },
-  { id: 2, title: 'AI Analysis', desc: 'Our Gemini agent analyzes your pitch for market fit & risk scores.', icon: BrainCircuit },
-  { id: 3, title: 'Get Mentored', desc: 'Tech mentors validate your architecture and milestones.', icon: Users },
-  { id: 4, title: 'Get Funded', desc: 'Unlock investment tiers and receive funds in your secure wallet.', icon: Wallet },
-]
+import founderStep1 from "@/assets/how-it-works/founder-step1.jpg";
+import founderStep2 from "@/assets/how-it-works/founder-step2.jpg";
+import founderStep3 from "@/assets/how-it-works/founder-step3.jpg";
+import founderFinal from "@/assets/how-it-works/founder-final.jpg";
+import investorStep1 from "@/assets/how-it-works/investor-step1.jpg";
+import investorStep2 from "@/assets/how-it-works/investor-step2.jpg";
+import investorStep3 from "@/assets/how-it-works/investor-step3.jpg";
+import investorFinal from "@/assets/how-it-works/investor-final.jpg";
+import mentorStep1 from "@/assets/how-it-works/mentor-step1.jpg";
+import mentorStep2 from "@/assets/how-it-works/mentor-step2.jpg";
+import mentorStep3 from "@/assets/how-it-works/mentor-step3.jpg";
+import mentorFinal from "@/assets/how-it-works/mentor-final.jpg";
 
-const investorSteps = [
-  { id: 1, title: 'Discover Deals', desc: 'Browse curated startups filtered by AI risk assessments.', icon: Search },
-  { id: 2, title: 'Assess Risk', desc: 'View deep-dive technical reports and mentor validations.', icon: ShieldCheck },
-  { id: 3, title: 'Track Growth', desc: 'Monitor real-time milestone completion and burn rates.', icon: LineChart },
-  { id: 4, title: 'Invest Securely', desc: 'Fund projects via smart contracts with milestone-based release.', icon: CheckCircle2 },
-]
+// roleData maps a role key to an array of step objects
+const roleData = {
+  founder: [
+    {
+      label: "Step 1",
+      title: "Build your Pitch",
+      desc: "In ~5 minutes, submit your startup idea, upload your pitch deck, and define your required budget. Let our system build a comprehensive profile for investors.",
+      image: founderStep1,
+    },
+    {
+      label: "Step 2",
+      title: "AI Risk Analysis",
+      desc: "Our Gemini-powered AI instantly analyzes your pitch, generating a detailed summary, identifying market potential, and assigning a standardized Risk Score.",
+      image: founderStep2,
+    },
+    {
+      label: "Step 3",
+      title: "Connect with Mentors",
+      desc: "Get matched with elite technical mentors who will review your architecture, validate your code, and verify your milestones to build investor trust.",
+      image: founderStep3,
+    },
+    {
+      label: "Final Step",
+      title: "Secure Funding",
+      desc: "Unlock virtual investments via our secure wallet system. Funds are released transparently as you hit your mentor-approved development milestones.",
+      image: founderFinal,
+    },
+  ],
+  investor: [
+    {
+      label: "Step 1",
+      title: "Discover Opportunities",
+      desc: "Browse a highly curated list of promising startups spanning multiple tech sectors. Filter by funding stage, category, and AI-predicted success rates.",
+      image: investorStep1,
+    },
+    {
+      label: "Step 2",
+      title: "Assess AI Analytics",
+      desc: "Don't rely on gut feelings. Dive into comprehensive AI-generated risk reports, competitive analyses, and technical red flags before making a move.",
+      image: investorStep2,
+    },
+    {
+      label: "Step 3",
+      title: "Follow Mentor Insights",
+      desc: "Leverage the expertise of veteran CTOs and developers. See which projects have had their technical architecture verified by our mentor network.",
+      image: investorStep3,
+    },
+    {
+      label: "Final Step",
+      title: "Invest & Track",
+      desc: "Fund projects securely via our virtual wallet. Monitor your portfolio's growth in real-time and release funds based on strictly validated milestones.",
+      image: investorFinal,
+    },
+  ],
+  mentor: [
+    {
+      label: "Step 1",
+      title: "Build your Profile",
+      desc: "Highlight your technical stack, past exits, and industry experience. Let our system verify your credentials to establish your authority on MentorHub.",
+      image: mentorStep1,
+    },
+    {
+      label: "Step 2",
+      title: "Create Content",
+      desc: "Share your expertise on MentorHub by posting lectures, workshops, tutorials, webinars, and more. Help the next generation of founders level up.",
+      image: mentorStep2,
+    },
+    {
+      label: "Step 3",
+      title: "Engage & Educate",
+      desc: "Host live sessions, answer questions, and build a following. Every role on InvestHub can also mentor — founders and investors included.",
+      image: mentorStep3,
+    },
+    {
+      label: "Final Step",
+      title: "Build Reputation",
+      desc: "Earn platform credibility, grow your audience, and get exclusive access to emerging tech communities — all while contributing as a founder or investor too.",
+      image: mentorFinal,
+    },
+  ],
+};
 
-export default function HowItWorks() {
-  const [view, setView] = useState('founder')
-  const containerRef = useRef(null)
-  
-  // Scroll Progress for the "Beam"
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start center", "end center"]
-  })
-  
-  const scaleY = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001
-  })
+const roles = [
+  { key: "founder", label: "Founder" },
+  { key: "investor", label: "Investor" },
+  { key: "mentor", label: "Mentor" },
+];
 
-  const steps = view === 'founder' ? founderSteps : investorSteps
+const HowItWorks = () => {
+  const [activeRole, setActiveRole] = useState("founder");
+  const steps = roleData[activeRole];
 
   return (
-    <section id="how-it-works" className="w-full py-16 sm:py-24 md:py-32 bg-[#020617] relative overflow-hidden scroll-mt-36">
-      
-      {/* Background Grid (Optional) */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] mask-image-gradient pointer-events-none" />
+    <section className="relative py-20 px-4 bg-hiw-bg min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        {/* Section Title */}
+        <h2 className="text-center text-4xl md:text-5xl font-bold text-foreground mb-4">
+          How it Works
+        </h2>
+        <p className="text-center text-muted-foreground mb-10 max-w-xl mx-auto">
+          A simple, transparent process from start to finish.
+        </p>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 relative z-10" ref={containerRef}>
-        
-        {/* Header Section */}
-        <div className="text-center mb-12 sm:mb-16 md:mb-20">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="inline-block mb-3 sm:mb-4 px-3 sm:px-4 py-1.5 rounded-full border border-blue-500/20 bg-blue-500/10 text-blue-400 text-xs sm:text-sm font-medium"
-          >
-            Workflow
-          </motion.div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6 tracking-tight px-4">
-            From Idea to <span className="text-blue-500">Exit.</span>
-          </h2>
-          
-          {/* Toggle Switch */}
-          <div className="inline-flex bg-white/5 p-1 rounded-full border border-white/10 backdrop-blur-sm relative">
-            {(['founder', 'investor']).map((tab) => (
+        {/* Role Switcher */}
+        <div className="flex justify-center mb-16">
+          <div className="inline-flex rounded-full bg-hiw-toggle-bg p-1 gap-1">
+            {roles.map((role) => (
               <button
-                key={tab}
-                onClick={() => setView(tab)}
-                className={`relative px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors z-10 ${view === tab ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+                key={role.key}
+                onClick={() => setActiveRole(role.key)}
+                className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
+                  activeRole === role.key
+                    ? "bg-hiw-toggle-active text-hiw-text-primary shadow-lg"
+                    : "text-hiw-text-secondary hover:text-hiw-text-primary"
+                }`}
               >
-                {view === tab && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute inset-0 bg-blue-600 rounded-full"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                <span className="relative z-10 capitalize">I am a {tab}</span>
+                {role.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Timeline Container */}
+        {/* Timeline */}
         <div className="relative">
-          
-          {/* The Glowing Beam Line (Vertical) */}
-          <div className="absolute left-[28px] md:left-1/2 top-0 bottom-0 w-0.5 bg-white/10 -translate-x-1/2">
-            <motion.div 
-              style={{ scaleY, transformOrigin: "top" }}
-              className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-blue-500 via-indigo-500 to-transparent"
-            />
+          {/* Dashed SVG line */}
+          <div className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2 w-px hidden md:block">
+            <svg
+              className="w-full h-full"
+              preserveAspectRatio="none"
+              viewBox="0 0 1 100"
+            >
+              <line
+                x1="0.5"
+                y1="0"
+                x2="0.5"
+                y2="100"
+                stroke="hsl(var(--hiw-dashed-line))"
+                strokeWidth="0.5"
+                strokeDasharray="2 2"
+              />
+            </svg>
           </div>
 
-          {/* Steps */}
-          <div className="space-y-12 md:space-y-24">
-            {steps.map((step, index) => {
-              const isEven = index % 2 === 0
-              return (
-                <motion.div
-                  key={step.title}
-                  initial={{ opacity: 0, y: 50 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-50px" }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className={`relative flex items-center md:justify-between ${isEven ? 'md:flex-row' : 'md:flex-row-reverse'} flex-row`}
+          {steps.map((step, index) => {
+            const isEven = index % 2 === 1;
+            const isLast = index === steps.length - 1;
+
+            return (
+              <div key={`${activeRole}-${index}`} className="relative mb-12 last:mb-0">
+                {/* Step Badge */}
+                <div className="flex justify-center mb-4 relative z-10">
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium border bg-hiw-badge-bg border-hiw-badge-border text-hiw-text-secondary">
+                    {step.label}
+                  </span>
+                </div>
+
+                {/* Card */}
+                <div
+                  className={`relative rounded-[2rem] overflow-hidden border border-hiw-card-border/50 backdrop-blur-md`}
+                  style={{
+                    background:
+                      "linear-gradient(135deg, hsla(220,15%,12%,0.95) 0%, hsla(220,20%,8%,0.98) 100%)",
+                  }}
                 >
-                  
-                  {/* Timeline Dot (Center) */}
-                  <div className="absolute left-[28px] md:left-1/2 -translate-x-1/2 w-14 h-14 flex items-center justify-center rounded-full bg-[#020617] border border-blue-500/30 z-20 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
-                    <step.icon className="w-6 h-6 text-blue-400" />
-                  </div>
+                  {/* Internal glow */}
+                  <div
+                    className="absolute inset-0 opacity-20 pointer-events-none"
+                    style={{
+                      background: isLast
+                        ? "radial-gradient(ellipse at 50% 50%, hsla(220,60%,50%,0.3), transparent 70%)"
+                        : isEven
+                        ? "radial-gradient(ellipse at 30% 50%, hsla(220,60%,50%,0.15), transparent 70%)"
+                        : "radial-gradient(ellipse at 70% 50%, hsla(220,60%,50%,0.15), transparent 70%)",
+                    }}
+                  />
 
-                  {/* Empty space for the other side on desktop */}
-                  <div className="hidden md:block w-[45%]" />
-
-                  {/* Content Card */}
-                  <div className="w-[calc(100%-80px)] md:w-[45%] ml-20 md:ml-0 pl-4 md:pl-0">
-                    <div className="group p-4 sm:p-6 rounded-2xl bg-[#0B0D10] border border-white/5 hover:border-blue-500/30 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-900/10 active:scale-[0.98]">
-                      <div className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-3">
-                        <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white/5 text-xs font-mono text-slate-400 border border-white/5">
-                          0{index + 1}
-                        </span>
-                        <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
-                          {step.title}
-                        </h3>
-                      </div>
-                      <p className="text-slate-400 leading-relaxed text-sm">
+                  <div
+                    className={`relative z-10 flex flex-col md:flex-row items-center gap-6 p-8 md:p-10 ${
+                      isEven ? "md:flex-row-reverse" : ""
+                    }`}
+                  >
+                    {/* Text */}
+                    <div className="flex-1 space-y-3">
+                      <h3 className="text-2xl md:text-3xl font-bold text-hiw-text-primary">
+                        {step.title}
+                      </h3>
+                      <p className="text-hiw-text-secondary text-sm md:text-base leading-relaxed">
                         {step.desc}
                       </p>
                     </div>
+
+                    {/* Image */}
+                    <div className="flex-1 w-full">
+                      <img
+                        src={step.image}
+                        alt={step.title}
+                        loading="lazy"
+                        width={640}
+                        height={512}
+                        className="rounded-xl w-full h-auto object-cover shadow-lg"
+                      />
+                    </div>
                   </div>
-
-                </motion.div>
-              )
-            })}
-          </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
-
       </div>
     </section>
-  )
-}
+  );
+};
+
+export default HowItWorks;
