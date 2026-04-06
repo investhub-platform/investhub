@@ -65,7 +65,26 @@ export function DesktopSidebar() {
         });
         const data = extractPayload(res?.data) || {};
         const balance = data?.balance || 0;
-        const changePercent = data?.changePercent || 0;
+        // compute percentage change using last saved balance in localStorage as a fallback
+        const prevRaw = localStorage.getItem("investhub:walletBalance") || null;
+        const prev = prevRaw ? Number(prevRaw) : null;
+        let changePercent = 0;
+        // If backend provides an explicit changePercent use it, otherwise compute from prev value
+        if (typeof data?.changePercent === "number") {
+          changePercent = data.changePercent;
+        } else if (prev !== null && prev > 0 && prev !== balance) {
+          changePercent = ((balance - prev) / prev) * 100;
+        } else {
+          changePercent = 0;
+        }
+
+        // persist current balance for next visit comparison
+        try {
+          localStorage.setItem("investhub:walletBalance", String(balance));
+        } catch (e) {
+          // ignore storage errors
+        }
+
         setWalletBalance(formatCurrency(balance));
         setWalletChange(`${changePercent >= 0 ? "+" : ""}${Number(changePercent).toFixed(1)}%`);
       } catch (err) {
