@@ -106,7 +106,7 @@ const HowItWorks = () => {
   const steps = roleData[activeRole];
 
   return (
-    <section className="relative py-20 px-4 bg-hiw-bg min-h-screen transition-transform duration-500 hover:shadow-2xl hover:scale-[1.003]">
+    <section id="how-it-works" className="relative py-20 px-4 bg-hiw-bg min-h-screen scroll-mt-36 transition-transform duration-500 hover:shadow-2xl hover:scale-[1.003]">
       <div className="max-w-4xl mx-auto">
         {/* Section Title */}
         <h2 className="text-center text-4xl md:text-5xl font-bold text-foreground mb-4">
