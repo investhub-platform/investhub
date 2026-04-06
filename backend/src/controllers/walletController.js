@@ -136,6 +136,21 @@ export const purchaseSubscriptionFromWallet = async (req, res, next) => {
   }
 };
 
+// @desc    Deactivate subscription package for current user
+// @route   POST /api/v1/wallets/subscription/deactivate
+// @access  Private
+export const deactivateSubscriptionPackage = async (req, res, next) => {
+  try {
+    const data = await walletService.deactivateSubscriptionPackage(
+      req.user.id,
+      req.body.packageType
+    );
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Initiate direct investment checkout to PayHere merchant account
 // @route   POST /api/v1/wallets/investment/initiate
 // @access  Private

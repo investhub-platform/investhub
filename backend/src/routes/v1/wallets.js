@@ -3,6 +3,7 @@ import {
   getMyWallet,
   initiateDeposit,
   purchaseSubscriptionFromWallet,
+  deactivateSubscriptionPackage,
   initiateInvestmentCheckout,
   payhereNotify,
   markDepositFailed,
@@ -21,6 +22,7 @@ router.get('/transactions', protect, getWalletHistory);
 
 router.post('/deposit/initiate', protect, initiateDeposit);
 router.post('/subscription/purchase', protect, purchaseSubscriptionFromWallet);
+router.post('/subscription/deactivate', protect, deactivateSubscriptionPackage);
 router.post('/investment/initiate', protect, initiateInvestmentCheckout);
 router.post('/deposit/fail', protect, markDepositFailed);
 router.get('/deposit/status/:orderId', protect, getDepositStatus);

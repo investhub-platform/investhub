@@ -35,6 +35,19 @@ function getApiErrorMessage(err, fallback) {
 
 const inputClass = "w-full px-4 py-3.5 rounded-xl bg-[#1A1D24] border border-white/5 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-slate-500 shadow-inner";
 
+const packagePricing = {
+  investor_pro: 20,
+  founder_pro: 49,
+  pro_max: 60,
+};
+
+const formatDate = (value) => {
+  if (!value) return "Not active";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not active";
+  return date.toLocaleString();
+};
+
 export default function ProfilePage() {
   const { fetchMe, user, setUser } = useAuth();
   const fileInputRef = useRef(null);
@@ -59,6 +72,10 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [subscriptionLoadingKey, setSubscriptionLoadingKey] = useState("");
+  const [subscriptionMsg, setSubscriptionMsg] = useState("");
+  const [subscriptionErr, setSubscriptionErr] = useState("");
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
@@ -86,6 +103,10 @@ export default function ProfilePage() {
           notificationInApp: me?.preferences?.notificationInApp ?? true,
         },
       });
+
+      const walletRes = await api.get("/v1/wallets/me");
+      const walletPayload = extractPayload(walletRes?.data) || {};
+      setWalletBalance(Number(walletPayload?.balance || 0));
     } catch (e) {
       setErr(getApiErrorMessage(e, "Failed to load profile"));
     } finally {
@@ -178,6 +199,53 @@ export default function ProfilePage() {
       .map((w) => w[0]?.toUpperCase())
       .join("") || "U";
   const isProUser = Boolean(user?.subscription?.isAnyPro);
+
+  const isInvestorProActive = Boolean(user?.subscription?.isInvestorPro);
+  const isFounderProActive = Boolean(user?.subscription?.isFounderPro);
+  const investorExpiry = user?.subscription?.investorProExpiresAt;
+  const founderExpiry = user?.subscription?.founderProExpiresAt;
+
+  const purchaseSubscription = async (packageType) => {
+    const price = packagePricing[packageType] || 0;
+    if (!price) return;
+
+    setSubscriptionErr("");
+    setSubscriptionMsg("");
+    if (walletBalance < price) {
+      setSubscriptionErr(`Insufficient wallet balance. You need at least $${price}.`);
+      return;
+    }
+
+    setSubscriptionLoadingKey(`buy:${packageType}`);
+    try {
+      const res = await api.post("/v1/wallets/subscription/purchase", { packageType });
+      const payload = res?.data?.data || {};
+      setWalletBalance(Number(payload?.walletBalance || 0));
+      const refreshed = await fetchMe();
+      setUser(refreshed);
+      setSubscriptionMsg("Subscription activated successfully.");
+    } catch (e) {
+      setSubscriptionErr(getApiErrorMessage(e, "Failed to purchase subscription"));
+    } finally {
+      setSubscriptionLoadingKey("");
+    }
+  };
+
+  const deactivateSubscription = async (packageType) => {
+    setSubscriptionErr("");
+    setSubscriptionMsg("");
+    setSubscriptionLoadingKey(`deactivate:${packageType}`);
+    try {
+      await api.post("/v1/wallets/subscription/deactivate", { packageType });
+      const refreshed = await fetchMe();
+      setUser(refreshed);
+      setSubscriptionMsg("Subscription deactivated successfully.");
+    } catch (e) {
+      setSubscriptionErr(getApiErrorMessage(e, "Failed to deactivate subscription"));
+    } finally {
+      setSubscriptionLoadingKey("");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans selection:bg-blue-500/30 overflow-hidden">
@@ -356,7 +424,107 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Right Column: Profile Details */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="lg:col-span-2 p-6 md:p-8 rounded-3xl bg-[#0B0D10]/80 backdrop-blur-xl border border-white/5 shadow-2xl relative overflow-hidden h-fit">
+                <div className="lg:col-span-2 space-y-6">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }} className="p-6 md:p-8 rounded-3xl bg-[#0B0D10]/80 backdrop-blur-xl border border-white/5 shadow-2xl relative overflow-hidden h-fit">
+                   <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[80px] rounded-full pointer-events-none" />
+
+                   <div className="flex items-center gap-3 mb-6 relative z-10">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                        <Crown className="w-5 h-5 text-emerald-400" />
+                      </div>
+                      <h2 className="text-xl font-bold text-white">Subscription Management</h2>
+                   </div>
+
+                   <div className="relative z-10 mb-4 p-4 rounded-xl bg-white/5 border border-white/10">
+                     <p className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-1">Wallet Balance</p>
+                     <p className="text-2xl font-black text-white">${Number(walletBalance || 0).toLocaleString()}</p>
+                   </div>
+
+                   {subscriptionErr ? (
+                     <div className="relative z-10 mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 text-sm">{subscriptionErr}</div>
+                   ) : null}
+                   {subscriptionMsg ? (
+                     <div className="relative z-10 mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm">{subscriptionMsg}</div>
+                   ) : null}
+
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+                     <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                       <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">Investor Pro</p>
+                       <p className="text-2xl font-black text-white mt-2">$20/mo</p>
+                       <p className="text-xs text-slate-400 mt-1">Status: {isInvestorProActive ? "Active" : "Inactive"}</p>
+                       <p className="text-xs text-slate-500 mt-1">Expires: {formatDate(investorExpiry)}</p>
+                       <div className="mt-3 flex gap-2">
+                         <button
+                           type="button"
+                           onClick={() => purchaseSubscription("investor_pro")}
+                           disabled={subscriptionLoadingKey !== ""}
+                           className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold disabled:opacity-50"
+                         >
+                           {subscriptionLoadingKey === "buy:investor_pro" ? "Processing..." : "Subscribe"}
+                         </button>
+                         <button
+                           type="button"
+                           onClick={() => deactivateSubscription("investor_pro")}
+                           disabled={subscriptionLoadingKey !== "" || !isInvestorProActive}
+                           className="flex-1 py-2 rounded-lg border border-white/15 text-slate-200 hover:bg-white/5 text-xs font-bold disabled:opacity-50"
+                         >
+                           {subscriptionLoadingKey === "deactivate:investor_pro" ? "Processing..." : "Deactivate"}
+                         </button>
+                       </div>
+                     </div>
+
+                     <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                       <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">Founder Pro</p>
+                       <p className="text-2xl font-black text-white mt-2">$49/mo</p>
+                       <p className="text-xs text-slate-400 mt-1">Status: {isFounderProActive ? "Active" : "Inactive"}</p>
+                       <p className="text-xs text-slate-500 mt-1">Expires: {formatDate(founderExpiry)}</p>
+                       <div className="mt-3 flex gap-2">
+                         <button
+                           type="button"
+                           onClick={() => purchaseSubscription("founder_pro")}
+                           disabled={subscriptionLoadingKey !== ""}
+                           className="flex-1 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold disabled:opacity-50"
+                         >
+                           {subscriptionLoadingKey === "buy:founder_pro" ? "Processing..." : "Subscribe"}
+                         </button>
+                         <button
+                           type="button"
+                           onClick={() => deactivateSubscription("founder_pro")}
+                           disabled={subscriptionLoadingKey !== "" || !isFounderProActive}
+                           className="flex-1 py-2 rounded-lg border border-white/15 text-slate-200 hover:bg-white/5 text-xs font-bold disabled:opacity-50"
+                         >
+                           {subscriptionLoadingKey === "deactivate:founder_pro" ? "Processing..." : "Deactivate"}
+                         </button>
+                       </div>
+                     </div>
+
+                     <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                       <p className="text-xs uppercase tracking-widest text-emerald-200 font-bold">Pro Max</p>
+                       <p className="text-2xl font-black text-white mt-2">$60/mo</p>
+                       <p className="text-xs text-slate-300 mt-1">Includes Investor Pro + Founder Pro</p>
+                       <div className="mt-3 flex gap-2">
+                         <button
+                           type="button"
+                           onClick={() => purchaseSubscription("pro_max")}
+                           disabled={subscriptionLoadingKey !== ""}
+                           className="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold disabled:opacity-50"
+                         >
+                           {subscriptionLoadingKey === "buy:pro_max" ? "Processing..." : "Subscribe"}
+                         </button>
+                         <button
+                           type="button"
+                           onClick={() => deactivateSubscription("pro_max")}
+                           disabled={subscriptionLoadingKey !== "" || (!isInvestorProActive && !isFounderProActive)}
+                           className="flex-1 py-2 rounded-lg border border-white/15 text-slate-200 hover:bg-white/5 text-xs font-bold disabled:opacity-50"
+                         >
+                           {subscriptionLoadingKey === "deactivate:pro_max" ? "Processing..." : "Deactivate All"}
+                         </button>
+                       </div>
+                     </div>
+                   </div>
+                </motion.div>
+
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="p-6 md:p-8 rounded-3xl bg-[#0B0D10]/80 backdrop-blur-xl border border-white/5 shadow-2xl relative overflow-hidden h-fit">
                    <div className="absolute bottom-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[80px] rounded-full pointer-events-none" />
                    
                    <div className="flex items-center gap-3 mb-8 relative z-10">
@@ -411,6 +579,7 @@ export default function ProfilePage() {
                      </div>
                    </div>
                 </motion.div>
+                </div>
 
               </div>
             )}

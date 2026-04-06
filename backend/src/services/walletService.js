@@ -319,6 +319,53 @@ export const purchaseSubscriptionFromWallet = async (userId, packageType) => {
   }
 };
 
+export const deactivateSubscriptionPackage = async (userId, packageType) => {
+  const normalizedPackage = String(packageType || '').toLowerCase();
+  if (!['investor_pro', 'founder_pro', 'pro_max'].includes(normalizedPackage)) {
+    throw new AppError('Invalid packageType. Use investor_pro, founder_pro, or pro_max.', 400);
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const user = await User.findById(userId).session(session);
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const subscription = { ...(user.subscription || {}) };
+    if (normalizedPackage === 'investor_pro' || normalizedPackage === 'pro_max') {
+      subscription.investorProExpiresAt = null;
+    }
+    if (normalizedPackage === 'founder_pro' || normalizedPackage === 'pro_max') {
+      subscription.founderProExpiresAt = null;
+      await Idea.updateMany(
+        { createdBy: user._id, deletedUtc: null },
+        { $set: { promotedUntil: null } },
+        { session }
+      );
+    }
+
+    user.subscription = subscription;
+    user.updatedUtc = new Date();
+    await user.save({ session });
+
+    await session.commitTransaction();
+
+    return {
+      message: 'Subscription deactivated successfully',
+      packageType: normalizedPackage,
+      subscription,
+    };
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
+  }
+};
+
 export const initiateInvestmentCheckout = async (
   investor,
   { amount, startupId, startupOwnerId, requestId },
