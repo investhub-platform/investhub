@@ -189,6 +189,14 @@ Frontend variables:
 Deployment evidence is included in the repository workspace:
 - Frontend deployed screenshot: [deployment/frontend-vercel.png](deployment/frontend-vercel.png)
 - Backend deployed screenshot: [deployment/render-deployment.png](deployment/render-deployment.png)
+  
+  Frontend deployed screenshot (preview):
+
+  ![Frontend deployed screenshot](deployment/frontend-vercel.png)
+
+  Backend deployed screenshot (preview):
+
+  ![Backend deployed screenshot](deployment/render-deployment.png)
 
 #### Static uploads in production
 
@@ -254,10 +262,3 @@ npm run dev   # vite dev
 npm run build # build for production
 ```
 
-## Contact / Maintainers
-
-If you need help with deployment or want me to add S3-backed uploads or server-side min-investment enforcement, tell me and I will implement the recommended changes.
-
----
-
-README generated and tailored for this repository on April 5, 2026.

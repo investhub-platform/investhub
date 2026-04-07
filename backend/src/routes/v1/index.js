@@ -78,12 +78,16 @@ router.delete("/startups/:id", protect, deleteStartup); // soft delete a startup
 import wallets from "./wallets.js";
 import eventsRoutes from "./events.routes.js";
 import evaluationsRoutes from "./evaluations.routes.js";
+import payhereRoutes from "./payhere.routes.js";
 
 //ProgressReport routes
 import progressReportRoutes from "./progressReport.routes.js";
 
 // Wallet routes
 router.use("/wallets", wallets);
+
+// PayHere redirect endpoints (return/cancel)
+router.use('/payhere', payhereRoutes);
 
 // Event routes
 router.use("/events", eventsRoutes);
