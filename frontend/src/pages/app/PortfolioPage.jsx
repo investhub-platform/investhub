@@ -146,8 +146,8 @@ export default function PortfolioPage() {
     return (
       <DashboardShell contentClassName="max-w-6xl mx-auto">
           <div className="px-6 py-2 w-full">
-            <h1 className="text-3xl heading-tight">Portfolio</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">Portfolio</h1>
+            <p className="text-slate-400 text-sm md:text-base font-medium">
               Track your active investments and performance.
             </p>
             <div className="mt-8 obsidian-card p-6">
@@ -162,8 +162,8 @@ export default function PortfolioPage() {
     return (
       <DashboardShell contentClassName="max-w-6xl mx-auto">
           <div className="px-6 py-2 w-full">
-            <h1 className="text-3xl heading-tight">Portfolio</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">Portfolio</h1>
+            <p className="text-slate-400 text-sm md:text-base font-medium">
               Track your active investments and performance.
             </p>
             <div className="mt-8 obsidian-card p-6">
@@ -178,9 +178,9 @@ export default function PortfolioPage() {
     <DashboardShell contentClassName="max-w-6xl mx-auto">
         <div className="px-6 py-2 w-full">
           <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-3xl heading-tight">Portfolio</h1>
-              <p className="text-muted-foreground mt-1">
+              <div>
+              <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">Portfolio</h1>
+              <p className="text-slate-400 text-sm md:text-base font-medium">
                 Track your active investments and performance.
               </p>
             </div>
