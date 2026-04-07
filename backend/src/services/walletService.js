@@ -82,6 +82,7 @@ export const initiateDeposit = async (userId, user, amount, options = {}) => {
 
   const frontendEnv = (process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
   const backendEnv = (process.env.BACKEND_URL || '').trim().replace(/\/$/, '');
+    const useBackendRedirects = String(process.env.PAYHERE_USE_BACKEND_REDIRECTS || 'true').toLowerCase() === 'true';
 
   const frontendUrlRaw =
     allowLocalOverrides && options.frontendUrl
@@ -188,10 +189,17 @@ export const initiateDeposit = async (userId, user, amount, options = {}) => {
   const address = process.env.PAYHERE_DEFAULT_ADDRESS || 'InvestHub';
   const country = process.env.PAYHERE_DEFAULT_COUNTRY || 'Sri Lanka';
 
+  const depositReturn = useBackendRedirects
+    ? `${backendUrl}/api/v1/payhere/return?target=${encodeURIComponent('/app/wallet')}`
+    : `${frontendUrl}/app/wallet`;
+  const depositCancel = useBackendRedirects
+    ? `${backendUrl}/api/v1/payhere/cancel?target=${encodeURIComponent('/app/wallet')}`
+    : `${frontendUrl}/app/wallet`;
+
   return {
     merchant_id: merchantId,
-    return_url: `${frontendUrl}/app/wallet`,
-    cancel_url: `${frontendUrl}/app/wallet`,
+    return_url: depositReturn,
+    cancel_url: depositCancel,
     notify_url: `${backendUrl}/api/v1/wallets/notify`,
     order_id: orderId,
     items: 'Wallet Top-up',
@@ -446,8 +454,12 @@ export const initiateInvestmentCheckout = async (
 
   return {
     merchant_id: merchantId,
-    return_url: `${frontendUrl}/app/deals`,
-    cancel_url: `${frontendUrl}/app/deals`,
+    return_url: useBackendRedirects
+      ? `${backendUrl}/api/v1/payhere/return?target=${encodeURIComponent('/app/deals')}`
+      : `${frontendUrl}/app/deals`,
+    cancel_url: useBackendRedirects
+      ? `${backendUrl}/api/v1/payhere/cancel?target=${encodeURIComponent('/app/deals')}`
+      : `${frontendUrl}/app/deals`,
     notify_url: `${backendUrl}/api/v1/wallets/notify`,
     order_id: orderId,
     items: `Startup Investment ${startupId}`,
