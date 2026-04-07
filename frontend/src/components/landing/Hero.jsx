@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Play, ShieldCheck, Wallet, CheckCircle2, BrainCircuit } from "lucide-react";
 
