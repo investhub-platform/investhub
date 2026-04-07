@@ -189,6 +189,14 @@ Frontend variables:
 Deployment evidence is included in the repository workspace:
 - Frontend deployed screenshot: [deployment/frontend-vercel.png](deployment/frontend-vercel.png)
 - Backend deployed screenshot: [deployment/render-deployment.png](deployment/render-deployment.png)
+  
+  Frontend deployed screenshot (preview):
+
+  ![Frontend deployed screenshot](deployment/frontend-vercel.png)
+
+  Backend deployed screenshot (preview):
+
+  ![Backend deployed screenshot](deployment/render-deployment.png)
 
 #### Static uploads in production
 
