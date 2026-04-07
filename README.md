@@ -254,10 +254,3 @@ npm run dev   # vite dev
 npm run build # build for production
 ```
 
-## Contact / Maintainers
-
-If you need help with deployment or want me to add S3-backed uploads or server-side min-investment enforcement, tell me and I will implement the recommended changes.
-
----
-
-README generated and tailored for this repository on April 5, 2026.
