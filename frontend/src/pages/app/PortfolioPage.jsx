@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import AppNavbar from "../../components/layout/AppNavBar";
-import { DesktopSidebar } from "../../components/DesktopSidebar";
+import DashboardShell from "../../components/layout/DashboardShell";
 import api from "../../lib/axios";
 import { useAuth } from "../../features/auth/useAuth";
 
@@ -145,11 +144,8 @@ export default function PortfolioPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex">
-        <DesktopSidebar />
-        <main className="flex-1 w-full">
-          <AppNavbar />
-          <div className="max-w-5xl mx-auto px-6 pt-28 pb-10 w-full">
+      <DashboardShell contentClassName="max-w-6xl mx-auto">
+          <div className="px-6 py-2 w-full">
             <h1 className="text-3xl heading-tight">Portfolio</h1>
             <p className="text-muted-foreground mt-1">
               Track your active investments and performance.
@@ -158,18 +154,14 @@ export default function PortfolioPage() {
               <p className="text-sm text-muted-foreground">Loading...</p>
             </div>
           </div>
-        </main>
-      </div>
+      </DashboardShell>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex">
-        <DesktopSidebar />
-        <main className="flex-1 w-full">
-          <AppNavbar />
-          <div className="max-w-5xl mx-auto px-6 pt-28 pb-10 w-full">
+      <DashboardShell contentClassName="max-w-6xl mx-auto">
+          <div className="px-6 py-2 w-full">
             <h1 className="text-3xl heading-tight">Portfolio</h1>
             <p className="text-muted-foreground mt-1">
               Track your active investments and performance.
@@ -178,17 +170,28 @@ export default function PortfolioPage() {
               <p className="text-sm text-red-500">{error}</p>
             </div>
           </div>
-        </main>
-      </div>
+      </DashboardShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
-      <DesktopSidebar />
-      <main className="flex-1 w-full">
-        <AppNavbar />
-        <div className="max-w-5xl mx-auto px-6 pt-28 pb-10 w-full">
+    <DashboardShell contentClassName="max-w-6xl mx-auto">
+        <div className="px-6 py-2 w-full">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-3xl heading-tight">Portfolio</h1>
+              <p className="text-muted-foreground mt-1">
+                Track your active investments and performance.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+            >
+              {showCreateForm ? "Cancel" : "Create Portfolio"}
+            </button>
+          </div>
+
           {/* User Profile Section */}
           {userProfile && (
             <div className="mb-6 obsidian-card p-6 bg-gradient-to-r from-primary/5 to-primary/10">
@@ -375,21 +378,6 @@ export default function PortfolioPage() {
               </div>
             </div>
           )}
-
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl heading-tight">Portfolio</h1>
-              <p className="text-muted-foreground mt-1">
-                Track your active investments and performance.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowCreateForm(!showCreateForm)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
-            >
-              {showCreateForm ? "Cancel" : "Create Portfolio"}
-            </button>
-          </div>
 
           {showCreateForm && (
             <div className="mt-8 obsidian-card p-6">
@@ -771,7 +759,6 @@ export default function PortfolioPage() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+    </DashboardShell>
   );
 }

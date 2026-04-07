@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../lib/axios";
 import { formatCurrency } from "@/data/mockData";
-import AppNavbar from "../../components/layout/AppNavBar";
-import { DesktopSidebar } from "../../components/DesktopSidebar";
+import DashboardShell from "../../components/layout/DashboardShell";
 import { CreditCard, History, ArrowRight, RefreshCw, AlertCircle, CheckCircle2, Wifi } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -210,24 +209,7 @@ export default function WalletPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans selection:bg-blue-500/30 overflow-hidden">
-      
-      {/* Fixed Top Navbar */}
-      <AppNavbar />
-
-      {/* Main App Shell */}
-      <div className="flex flex-1 pt-20 relative w-full h-screen overflow-hidden">
-        
-        {/* Ambient Background Lights */}
-        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[150px] rounded-full pointer-events-none z-0" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-cyan-600/5 blur-[120px] rounded-full pointer-events-none z-0" />
-
-        {/* Sticky Sidebar */}
-        <DesktopSidebar />
-
-        {/* Scrollable Content Area */}
-        <main className="flex-1 w-full overflow-y-auto px-4 sm:px-8 py-8 lg:py-12 relative z-10 scroll-smooth">
-          <div className="max-w-4xl mx-auto">
+    <DashboardShell contentClassName="max-w-6xl mx-auto">
             
             <div className="mb-8 md:mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
               <div>
@@ -378,9 +360,6 @@ export default function WalletPage() {
                </p>
             </div>
 
-          </div>
-        </main>
-      </div>
-    </div>
+    </DashboardShell>
   );
 }
