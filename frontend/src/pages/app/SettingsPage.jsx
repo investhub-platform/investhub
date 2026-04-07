@@ -18,8 +18,7 @@ import {
   Image as ImageIcon
 } from "lucide-react";
 import { motion } from "framer-motion";
-import AppNavbar from "../../components/layout/AppNavBar";
-import { DesktopSidebar } from "../../components/DesktopSidebar";
+import DashboardShell from "../../components/layout/DashboardShell";
 import api from "../../lib/axios";
 import { useAuth } from "../../features/auth/useAuth";
 
@@ -173,18 +172,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans selection:bg-blue-500/30 overflow-hidden">
-      <AppNavbar />
-
-      <div className="flex flex-1 pt-20 relative w-full h-screen overflow-hidden">
-        {/* Ambient Background Lights */}
-        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-indigo-600/5 blur-[150px] rounded-full pointer-events-none z-0" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-cyan-600/5 blur-[120px] rounded-full pointer-events-none z-0" />
-
-        <DesktopSidebar />
-
-        <main className="flex-1 w-full overflow-y-auto px-4 sm:px-8 py-8 lg:py-12 lg:ml-64 relative z-10 scroll-smooth">
-          <div className="max-w-6xl mx-auto">
+    <DashboardShell contentClassName="max-w-6xl mx-auto">
             
             <div className="mb-8 md:mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
               <div>
@@ -374,9 +362,6 @@ export default function SettingsPage() {
                 </motion.section>
               </div>
             )}
-          </div>
-        </main>
-      </div>
-    </div>
+    </DashboardShell>
   );
 }

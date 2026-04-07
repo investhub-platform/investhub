@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import AppNavbar from "../../components/layout/AppNavBar";
-import { DesktopSidebar } from "../../components/DesktopSidebar";
+import DashboardShell from "../../components/layout/DashboardShell";
 import { useAuth } from "../../features/auth/useAuth";
 import api from "../../lib/axios";
 import {
@@ -415,17 +414,7 @@ export default function InvestmentDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans selection:bg-blue-500/30 overflow-hidden">
-      <AppNavbar />
-
-      <div className="flex flex-1 pt-20 relative w-full h-screen overflow-hidden">
-        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[150px] rounded-full pointer-events-none z-0" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none z-0" />
-
-        <DesktopSidebar />
-
-        <main className="flex-1 w-full overflow-y-auto px-4 sm:px-8 py-8 lg:py-12 relative z-10 scroll-smooth md:ml-64 lg:ml-64">
-          <div className="max-w-6xl mx-auto">
+    <DashboardShell contentClassName="max-w-6xl mx-auto">
             {/* Header */}
             <div className="mb-10">
               <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">
@@ -821,9 +810,6 @@ export default function InvestmentDashboard() {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-        </main>
-      </div>
 
       {/* Payment Method Modal */}
       <AnimatePresence>
@@ -943,6 +929,6 @@ export default function InvestmentDashboard() {
           </div>
         )}
       </AnimatePresence>
-    </div>
+    </DashboardShell>
   );
 }

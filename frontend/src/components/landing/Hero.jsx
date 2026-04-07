@@ -1,7 +1,39 @@
+import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Play, ShieldCheck, Wallet, CheckCircle2, BrainCircuit } from "lucide-react";
 
 const Hero = () => {
+  const gridRef = useRef(null);
+
+  useEffect(() => {
+    const cardEls = document.querySelectorAll('.bento-card');
+
+    let rafId = null;
+
+    function animate() {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      cardEls.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const offsetX = (cx - vw / 2) / (vw / 2);
+        const offsetY = (cy - vh / 2) / (vh / 2);
+        const rotateY = Math.max(-10, Math.min(10, offsetX * 8));
+        const rotateX = Math.max(-10, Math.min(10, -offsetY * 8));
+        el.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+      });
+
+      rafId = requestAnimationFrame(animate);
+    }
+
+    rafId = requestAnimationFrame(animate);
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
   return (
     <section id="hero" className="relative w-full min-h-screen overflow-hidden bg-[#020617] text-white selection:bg-blue-500/30 pt-24 pb-20">
       
@@ -22,8 +54,19 @@ const Hero = () => {
         </defs>
       </svg>
 
-      {/* Grid Pattern Overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:32px_32px] opacity-40 z-0 pointer-events-none mask-image-gradient" />
+      {/* Grid Pattern Overlay (animated pan) */}
+      <div ref={gridRef} className="hero-grid-pan absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:32px_32px] opacity-40 z-0 pointer-events-none mask-image-gradient grid-pan" />
+
+      {/* Static glowing orb (decorative) */}
+      <div className="orb absolute left-1/2 top-24 -translate-x-1/2 -translate-y-1/2 w-56 h-56 md:w-72 md:h-72 rounded-full pointer-events-none z-0 opacity-80" aria-hidden="true" />
+
+      {/* Inline styles for the grid pan, orb blur and card tilt smoothing */}
+      <style>{`
+        .grid-pan{ animation: pan-down 40s linear infinite; }
+        @keyframes pan-down { from { background-position: 0 0; } to { background-position: 0 640px; } }
+        .orb{ background: radial-gradient(circle at 30% 30%, rgba(6,182,212,0.35), rgba(59,130,246,0.12) 35%, rgba(2,6,23,0.0) 60%); filter: blur(40px); transform: translate(-50%, -50%); }
+        .bento-card{ transform-style: preserve-3d; will-change: transform; transition: transform 450ms cubic-bezier(.2,.9,.3,1); }
+      `}</style>
 
 
       {/* --- MAIN CONTENT --- */}
@@ -76,11 +119,12 @@ const Hero = () => {
           initial={{ opacity: 0, y: 60 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.6, type: "spring", stiffness: 40 }}
-          className="mt-20 md:mt-28 w-full grid grid-cols-1 md:grid-cols-3 gap-4 perspective-1000"
+          className="mt-20 md:mt-28 w-full grid grid-cols-1 md:grid-cols-3 gap-4"
+          style={{ perspective: 1000 }}
         >
           
           {/* Card 1: AI Risk Analysis */}
-          <div className="col-span-1 md:col-span-2 relative p-6 md:p-8 rounded-3xl bg-[#0B0D10]/80 backdrop-blur-xl border border-white/10 overflow-hidden group hover:border-blue-500/30 transition-colors">
+          <div className="col-span-1 md:col-span-2 relative p-6 md:p-8 rounded-3xl bg-[#0B0D10]/80 backdrop-blur-xl border border-white/10 overflow-hidden group hover:border-blue-500/30 transition-colors bento-card">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
             
             <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center h-full">
@@ -119,7 +163,7 @@ const Hero = () => {
           </div>
 
           {/* Card 2: Smart Escrow Wallet */}
-          <div className="col-span-1 p-6 md:p-8 rounded-3xl bg-[#0B0D10]/80 backdrop-blur-xl border border-white/10 relative overflow-hidden group hover:border-emerald-500/30 transition-colors flex flex-col justify-between">
+          <div className="col-span-1 p-6 md:p-8 rounded-3xl bg-[#0B0D10]/80 backdrop-blur-xl border border-white/10 relative overflow-hidden group hover:border-emerald-500/30 transition-colors flex flex-col justify-between bento-card">
             <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-emerald-500/10 blur-[60px] rounded-full pointer-events-none" />
             
             <div>
@@ -144,7 +188,7 @@ const Hero = () => {
           </div>
 
           {/* Card 3: Mentor Verification */}
-          <div className="col-span-1 md:col-span-3 p-6 rounded-3xl bg-[#0B0D10]/80 backdrop-blur-xl border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-6 group hover:border-purple-500/30 transition-colors">
+          <div className="col-span-1 md:col-span-3 p-6 rounded-3xl bg-[#0B0D10]/80 backdrop-blur-xl border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-6 group hover:border-purple-500/30 transition-colors bento-card">
             <div className="flex items-center gap-4 text-left">
               <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/30 shrink-0">
                 <ShieldCheck className="w-6 h-6 text-purple-400" />
