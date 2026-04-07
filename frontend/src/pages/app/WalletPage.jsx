@@ -211,17 +211,11 @@ export default function WalletPage() {
   return (
     <DashboardShell contentClassName="max-w-6xl mx-auto">
             
-            <div className="mb-8 md:mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="mb-8 md:mb-10">
               <div>
                 <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">Virtual Wallet</h1>
                 <p className="text-slate-400 text-sm md:text-base font-medium">Manage your funds and investment capacity.</p>
               </div>
-              <Link 
-                to="/app/wallet/transactions" 
-                className="flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-bold text-slate-300 hover:text-white shadow-lg w-full sm:w-auto"
-              >
-                <History className="w-4 h-4" /> View Transactions
-              </Link>
             </div>
 
             {error && (
@@ -240,12 +234,12 @@ export default function WalletPage() {
               {/* ----------------------------------------------------- */}
               {/* REALISTIC E-CREDIT CARD DESIGN                        */}
               {/* ----------------------------------------------------- */}
-              <div className="lg:col-span-3 perspective-1000 flex items-center justify-center">
+              <div className="lg:col-span-3 perspective-1000 flex items-start justify-center lg:justify-start">
                 <motion.div 
                   initial={{ rotateY: -10, rotateX: 10, opacity: 0 }}
                   animate={{ rotateY: 0, rotateX: 0, opacity: 1 }}
                   transition={{ duration: 0.8, type: "spring" }}
-                  className="w-full max-w-[500px] aspect-[1.586/1] rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 flex flex-col justify-between relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/20 group mx-auto lg:mx-0"
+                  className="w-full max-w-[500px] aspect-[1.586/1] rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 flex flex-col justify-between relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/20 group lg:mx-0"
                   style={{
                     background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #020617 100%)",
                   }}
@@ -306,41 +300,50 @@ export default function WalletPage() {
               {/* ----------------------------------------------------- */}
               {/* TOP UP ACTION CARD                                    */}
               {/* ----------------------------------------------------- */}
-              <div className="lg:col-span-2 p-6 md:p-8 rounded-3xl bg-[#0B0D10] border border-white/5 shadow-2xl flex flex-col justify-between">
-                <div>
-                   <h2 className="text-xl font-bold text-white mb-2">Deposit Funds</h2>
-                   <p className="text-sm text-slate-400 mb-6">Add capital to securely invest in validated startups.</p>
-                   
-                   <div className="relative mb-6">
-                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">$</span>
-                     <input
-                       type="number"
-                       value={amount}
-                       onChange={(e) => setAmount(Number(e.target.value))}
-                       className="w-full pl-8 pr-4 py-4 rounded-xl bg-[#1A1D24] border border-white/5 text-white font-bold text-lg focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all shadow-inner"
-                       min={1}
-                     />
-                   </div>
-                </div>
+              <div className="lg:col-span-2 flex flex-col items-start gap-4">
+                <Link 
+                  to="/app/wallet/transactions" 
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-bold text-slate-300 hover:text-white shadow-lg w-full sm:w-auto"
+                >
+                  <History className="w-4 h-4" /> View Transactions
+                </Link>
 
-                <div className="space-y-3 mt-auto">
-                   <button
-                     onClick={initiateDeposit}
-                     disabled={initiating}
-                     className="w-full group flex items-center justify-center gap-2 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] disabled:opacity-50"
-                   >
-                     {initiating ? "Processing..." : "Continue to Payment"}
-                     {!initiating && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
-                   </button>
-                   
-                   {pendingOrderId && (
+                <div className="w-full p-6 md:p-8 rounded-3xl bg-[#0B0D10] border border-white/5 shadow-2xl flex flex-col justify-between">
+                  <div>
+                     <h2 className="text-xl font-bold text-white mb-2">Deposit Funds</h2>
+                     <p className="text-sm text-slate-400 mb-6">Add capital to securely invest in validated startups.</p>
+                     
+                     <div className="relative mb-6">
+                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">$</span>
+                       <input
+                         type="number"
+                         value={amount}
+                         onChange={(e) => setAmount(Number(e.target.value))}
+                         className="w-full pl-8 pr-4 py-4 rounded-xl bg-[#1A1D24] border border-white/5 text-white font-bold text-lg focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all shadow-inner"
+                         min={1}
+                       />
+                     </div>
+                  </div>
+
+                  <div className="space-y-3 mt-auto">
                      <button
-                       onClick={() => pollDepositStatus(pendingOrderId)}
-                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 text-slate-300 hover:text-white hover:bg-white/5 transition-all text-sm font-bold"
+                       onClick={initiateDeposit}
+                       disabled={initiating}
+                       className="w-full group flex items-center justify-center gap-2 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] disabled:opacity-50"
                      >
-                       <RefreshCw className="w-4 h-4" /> Verify Status
+                       {initiating ? "Processing..." : "Continue to Payment"}
+                       {!initiating && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
                      </button>
-                   )}
+                     
+                     {pendingOrderId && (
+                       <button
+                         onClick={() => pollDepositStatus(pendingOrderId)}
+                         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 text-slate-300 hover:text-white hover:bg-white/5 transition-all text-sm font-bold"
+                       >
+                         <RefreshCw className="w-4 h-4" /> Verify Status
+                       </button>
+                     )}
+                  </div>
                 </div>
               </div>
 

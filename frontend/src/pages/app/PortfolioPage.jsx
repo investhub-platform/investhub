@@ -145,7 +145,7 @@ export default function PortfolioPage() {
   if (loading) {
     return (
       <DashboardShell contentClassName="max-w-6xl mx-auto">
-          <div className="px-6 py-2 w-full">
+          <div className="mb-10 w-full">
             <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">Portfolio</h1>
             <p className="text-slate-400 text-sm md:text-base font-medium">
               Track your active investments and performance.
@@ -161,7 +161,7 @@ export default function PortfolioPage() {
   if (error) {
     return (
       <DashboardShell contentClassName="max-w-6xl mx-auto">
-          <div className="px-6 py-2 w-full">
+          <div className="mb-10 w-full">
             <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">Portfolio</h1>
             <p className="text-slate-400 text-sm md:text-base font-medium">
               Track your active investments and performance.
@@ -176,9 +176,9 @@ export default function PortfolioPage() {
 
   return (
     <DashboardShell contentClassName="max-w-6xl mx-auto">
-        <div className="px-6 py-2 w-full">
+        <div className="mb-10 w-full">
           <div className="flex justify-between items-center mb-6">
-              <div>
+            <div>
               <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">Portfolio</h1>
               <p className="text-slate-400 text-sm md:text-base font-medium">
                 Track your active investments and performance.
