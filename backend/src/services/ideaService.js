@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import AppError from "../utils/AppError.js";
 import * as ideaRepository from "../repositories/ideaRepository.js";
+import * as userRepo from "../repositories/userRepository.js";
 import { generateIdeaSummary } from "./aiService.js";
 import { notifyAllUsers } from "./notificationService.js";
 /**
@@ -77,6 +78,12 @@ export const createNewIdea = async ({ userId, ...data }) => {
     throw new AppError("Investment Plan should not have StartupId", 400);
   }
 
+  const creator = await userRepo.findById(userId);
+  const founderProExpiresAt = creator?.subscription?.founderProExpiresAt
+    ? new Date(creator.subscription.founderProExpiresAt)
+    : null;
+  const hasFounderPro = founderProExpiresAt && founderProExpiresAt > new Date();
+
   // Generate AI summary
   let aiSummary = null;
   try {
@@ -98,7 +105,8 @@ export const createNewIdea = async ({ userId, ...data }) => {
     currentVersion: 1,
     status: "pending_review",
     aiSummary,
-    aiGeneratedAt: aiSummary ? new Date() : null
+    aiGeneratedAt: aiSummary ? new Date() : null,
+    promotedUntil: hasFounderPro ? founderProExpiresAt : null
   };
 
     const created = await ideaRepository.create(payload);

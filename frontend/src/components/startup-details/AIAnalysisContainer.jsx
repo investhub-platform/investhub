@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import API from "@/utils/API";
 import AIAnalysisTab from "./AIAnalysisTab";
 
@@ -35,25 +35,7 @@ const transformData = (evaluation) => {
   };
 };
 
-  const fetchEvaluation = async () => {
-    try {
-      setLoading(true);
-
-      const res = await API.get(`/evaluations/${startupId}`);
-      setData(transformData(res.data.data));
-
-    } catch (err) {
-      if (err.response?.status === 404) {
-        await generateEvaluation();
-      } else {
-        setError("Failed to load AI analysis");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generateEvaluation = async () => {
+  const generateEvaluation = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -70,11 +52,29 @@ const transformData = (evaluation) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [startupId, startup?.pitchSummary, startup?.tagline, startup?.fundingGoal, startup?.industry]);
+
+  const fetchEvaluation = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const res = await API.get(`/evaluations/${startupId}`);
+      setData(transformData(res.data.data));
+
+    } catch (err) {
+      if (err.response?.status === 404) {
+        await generateEvaluation();
+      } else {
+        setError("Failed to load AI analysis");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [generateEvaluation, startupId]);
 
   useEffect(() => {
     if (startupId) fetchEvaluation();
-  }, [startupId]);
+  }, [fetchEvaluation, startupId]);
 
   if (loading) return <div className="text-white p-6">Analyzing startup...</div>;
   if (error) return <div className="text-red-400 p-6">{error}</div>;

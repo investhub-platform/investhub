@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import AppNavbar from "../components/layout/AppNavBar";
-import { DesktopSidebar } from "@/components/DesktopSidebar";
+import DashboardShell from "../components/layout/DashboardShell";
 import SearchBar from "@/components/SearchBar";
 import {
   Plus,
@@ -81,18 +80,7 @@ const MentorDashboard = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans selection:bg-blue-500/30 overflow-hidden">
-      <AppNavbar />
-      
-      <div className="flex flex-1 pt-20 relative w-full h-screen overflow-hidden">
-        {/* Ambient Background Lights */}
-        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-purple-600/5 blur-[150px] rounded-full pointer-events-none z-0" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none z-0" />
-
-        <DesktopSidebar />
-
-        <main className="flex-1 w-full overflow-y-auto px-4 sm:px-8 py-8 lg:py-12 relative z-10 scroll-smooth lg:ml-64">
-          <div className="max-w-7xl mx-auto">
+    <DashboardShell contentClassName="max-w-6xl mx-auto">
             <Toaster position="top-right" toastOptions={{ style: { background: '#0B0D10', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' } }} />
             
             {/* Header */}
@@ -235,10 +223,7 @@ const MentorDashboard = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-        </main>
-      </div>
-    </div>
+    </DashboardShell>
   );
 };
 

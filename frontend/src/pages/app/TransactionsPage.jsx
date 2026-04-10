@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../../lib/axios";
 import { formatCurrency } from "@/data/mockData";
-import AppNavbar from "../../components/layout/AppNavBar";
-import { DesktopSidebar } from "../../components/DesktopSidebar";
+import DashboardShell from "../../components/layout/DashboardShell";
 import { useAuth } from "../../features/auth/useAuth";
 import { motion } from "framer-motion";
 import { 
@@ -139,24 +138,7 @@ export default function TransactionsPage() {
   const inputClass = "w-full px-4 py-3 rounded-xl bg-[#0B0D10] border border-white/10 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-slate-500";
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans selection:bg-blue-500/30 overflow-hidden">
-      
-      {/* Fixed Top Navbar */}
-      <AppNavbar />
-
-      {/* Main App Shell */}
-      <div className="flex flex-1 pt-20 relative w-full h-screen overflow-hidden">
-        
-        {/* Ambient Background Lights */}
-        <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-indigo-600/5 blur-[150px] rounded-full pointer-events-none z-0" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-emerald-600/5 blur-[120px] rounded-full pointer-events-none z-0" />
-
-        {/* Sticky Sidebar */}
-        <DesktopSidebar />
-
-        {/* Scrollable Content Area */}
-        <main className="flex-1 w-full overflow-y-auto px-4 sm:px-8 py-8 lg:py-12 lg:ml-64 relative z-10 scroll-smooth">
-          <div className="max-w-6xl mx-auto">
+    <DashboardShell contentClassName="max-w-6xl mx-auto">
             
             {/* Header Area */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
@@ -316,9 +298,6 @@ export default function TransactionsPage() {
               
             </div>
             
-          </div>
-        </main>
-      </div>
-    </div>
+    </DashboardShell>
   );
 }

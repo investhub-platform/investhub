@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Compass,
   Briefcase,
@@ -47,10 +47,12 @@ function getActivePath(pathname, items) {
   return match?.path || "";
 }
 
-export function DesktopSidebar() {
+export function DesktopSidebar({
+  collapsed = false,
+  onToggleCollapsed,
+}) {
   const location = useLocation();
   const { accessToken } = useAuth();
-  const [collapsed, setCollapsed] = useState(false); // Default OPEN so users can read text
   const [walletBalance, setWalletBalance] = useState("$0");
   const [walletChange, setWalletChange] = useState("+0.0%");
   const activePath = getActivePath(location.pathname, sidebarItems);
@@ -65,7 +67,26 @@ export function DesktopSidebar() {
         });
         const data = extractPayload(res?.data) || {};
         const balance = data?.balance || 0;
-        const changePercent = data?.changePercent || 0;
+        // compute percentage change using last saved balance in localStorage as a fallback
+        const prevRaw = localStorage.getItem("investhub:walletBalance") || null;
+        const prev = prevRaw ? Number(prevRaw) : null;
+        let changePercent = 0;
+        // If backend provides an explicit changePercent use it, otherwise compute from prev value
+        if (typeof data?.changePercent === "number") {
+          changePercent = data.changePercent;
+        } else if (prev !== null && prev > 0 && prev !== balance) {
+          changePercent = ((balance - prev) / prev) * 100;
+        } else {
+          changePercent = 0;
+        }
+
+        // persist current balance for next visit comparison
+        try {
+          localStorage.setItem("investhub:walletBalance", String(balance));
+        } catch {
+          // ignore storage errors
+        }
+
         setWalletBalance(formatCurrency(balance));
         setWalletChange(`${changePercent >= 0 ? "+" : ""}${Number(changePercent).toFixed(1)}%`);
       } catch (err) {
@@ -90,7 +111,7 @@ export function DesktopSidebar() {
       {/* Minimize/Expand Toggle */}
       <button
         type="button"
-        onClick={() => setCollapsed((v) => !v)}
+        onClick={() => onToggleCollapsed?.(!collapsed)}
         className="absolute top-6 -right-3.5 p-1.5 rounded-full bg-[#1A1D24] border border-white/10 text-slate-400 hover:text-white transition-colors z-[60] shadow-lg hover:scale-110"
       >
         {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}

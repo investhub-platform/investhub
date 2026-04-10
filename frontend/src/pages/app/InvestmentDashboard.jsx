@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import AppNavbar from "../../components/layout/AppNavBar";
-import { DesktopSidebar } from "../../components/DesktopSidebar";
+import DashboardShell from "../../components/layout/DashboardShell";
 import { useAuth } from "../../features/auth/useAuth";
 import api from "../../lib/axios";
 import {
@@ -95,8 +94,9 @@ export default function InvestmentDashboard() {
   // Payment modal
   const [selectedRequestForPayment, setSelectedRequestForPayment] =
     useState(null);
-  const [paymentMethod, setPaymentMethod] = useState("wallet"); // "wallet" or "payhere"
+  const [paymentMethod, setPaymentMethod] = useState("wallet");
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
+  const [pendingPayHereOrderId, setPendingPayHereOrderId] = useState("");
   const [walletBalance, setWalletBalance] = useState(0);
 
   // Decision modal
@@ -119,7 +119,6 @@ export default function InvestmentDashboard() {
     }
   }, []);
 
-  // Fetch wallet balance
   useEffect(() => {
     fetchWalletBalance();
   }, [fetchWalletBalance]);
@@ -254,10 +253,47 @@ export default function InvestmentDashboard() {
     }
   };
 
-  // Handle wallet payment
+  // Handle PayHere payment
+  const handlePayHerePayment = async (requestId, amount) => {
+    setIsPaymentProcessing(true);
+    setError("");
+    try {
+      const request = sentRequests.find((r) => (r._id || r.id) === requestId);
+      if (!request) throw new Error("Request not found");
+
+      const startupOwnerId =
+        request.founderId?.id || request.founderId?._id || request.founderId;
+      const startupId = request.ideaId?.StartupId || request.ideaId?.startupId;
+      if (!startupId || !startupOwnerId) {
+        throw new Error("Missing startup details required for payment");
+      }
+
+      const res = await api.post("/v1/wallets/investment/initiate", {
+        amount,
+        requestId,
+        startupId,
+        startupOwnerId
+      });
+      const payload = extractPayload(res?.data);
+      const orderId = payload?.order_id;
+      if (!orderId)
+        throw new Error("Missing order id from payment initiation response");
+
+      setPendingPayHereOrderId(orderId);
+      openPayHereFormFallback(payload);
+      setSuccessMessage(
+        "Payment popup opened. Complete checkout and then verify status."
+      );
+      setSelectedRequestForPayment(null);
+    } catch (e) {
+      setError(e?.response?.data?.message || "PayHere payment failed");
+    } finally {
+      setIsPaymentProcessing(false);
+    }
+  };
+
   const handleWalletPayment = async (requestId, amount) => {
     const latestBalance = await fetchWalletBalance();
-
     if (amount > latestBalance) {
       setError("Insufficient wallet balance. Please top up your wallet.");
       return;
@@ -269,7 +305,6 @@ export default function InvestmentDashboard() {
       const request = sentRequests.find((r) => (r._id || r.id) === requestId);
       if (!request) throw new Error("Request not found");
 
-      // Get the startup owner ID from the request
       const startupOwnerId =
         request.founderId?.id || request.founderId?._id || request.founderId;
       const startupId = request.ideaId?.StartupId || request.ideaId?.startupId;
@@ -277,7 +312,6 @@ export default function InvestmentDashboard() {
         throw new Error("Missing startup details required for wallet transfer");
       }
 
-      // Execute wallet transfer
       const walletRes = await api.post("/v1/wallets/invest", {
         amount,
         startupOwnerId,
@@ -285,72 +319,57 @@ export default function InvestmentDashboard() {
       });
 
       if (!walletRes?.data) {
-        throw new Error("Wallet transfer failed or no response received");
+        throw new Error("Wallet payment failed or no response received");
       }
 
-      // Mark request as paid after successful wallet transfer
       const userId = user?.id || user?._id;
-      const updateRes = await api.patch(`/v1/requests/${requestId}/status`, {
+      await api.patch(`/v1/requests/${requestId}/status`, {
         requestStatus: "paid",
         updatedBy: userId
       });
 
-      if (!updateRes?.data) {
-        console.warn("Status update response missing, but payment succeeded.");
-      }
-
-      setSuccessMessage("Investment completed successfully!");
+      setSuccessMessage("Investment completed successfully using wallet.");
       await fetchWalletBalance();
 
-      // Immediately update local state to show paid status
       setSentRequests((prevRequests) =>
         prevRequests.map((r) =>
           (r._id || r.id) === requestId ? { ...r, requestStatus: "paid" } : r
         )
       );
 
-      // Small delay to ensure backend has processed the update
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Close modal and clear selection
       setSelectedRequestForPayment(null);
-      setPaymentMethod("wallet");
-
-      // Refetch both views to show updated paid status
       await fetchSentRequests();
       await fetchReceivedRequests();
     } catch (e) {
       const errorMsg =
-        e?.response?.data?.message || e?.message || "Payment failed";
+        e?.response?.data?.message || e?.message || "Wallet payment failed";
       setError(errorMsg);
-      console.error("Wallet payment error:", e);
     } finally {
       setIsPaymentProcessing(false);
     }
   };
 
-  // Handle PayHere payment
-  const handlePayHerePayment = async (requestId, amount) => {
-    setIsPaymentProcessing(true);
+  const verifyPayHereInvestment = async () => {
+    if (!pendingPayHereOrderId) return;
     setError("");
     try {
-      const res = await api.post("/v1/wallets/deposit/initiate", {
-        amount
-      });
-      const payload = extractPayload(res?.data);
-      const orderId = payload?.order_id;
-      if (!orderId)
-        throw new Error("Missing order id from payment initiation response");
-
-      openPayHereFormFallback(payload);
-      setSuccessMessage(
-        "Payment popup opened. Complete payment to top up wallet, then pay this deal from wallet."
+      const res = await api.get(
+        `/v1/wallets/deposit/status/${encodeURIComponent(pendingPayHereOrderId)}`
       );
-      setSelectedRequestForPayment(null);
+      const payload = extractPayload(res?.data);
+      if (payload?.status === "Completed") {
+        setSuccessMessage("Payment confirmed. Investment ledger and status updated.");
+        setPendingPayHereOrderId("");
+        await fetchSentRequests();
+        await fetchReceivedRequests();
+      } else if (payload?.status === "Failed") {
+        setError("Payment failed or was cancelled.");
+        setPendingPayHereOrderId("");
+      } else {
+        setSuccessMessage("Payment is still processing. Please verify again in a few seconds.");
+      }
     } catch (e) {
-      setError(e?.response?.data?.message || "PayHere payment failed");
-    } finally {
-      setIsPaymentProcessing(false);
+      setError(e?.response?.data?.message || "Failed to verify payment status");
     }
   };
 
@@ -395,17 +414,7 @@ export default function InvestmentDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans selection:bg-blue-500/30 overflow-hidden">
-      <AppNavbar />
-
-      <div className="flex flex-1 pt-20 relative w-full h-screen overflow-hidden">
-        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[150px] rounded-full pointer-events-none z-0" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none z-0" />
-
-        <DesktopSidebar />
-
-        <main className="flex-1 w-full overflow-y-auto px-4 sm:px-8 py-8 lg:py-12 relative z-10 scroll-smooth md:ml-64 lg:ml-64">
-          <div className="max-w-6xl mx-auto">
+    <DashboardShell contentClassName="max-w-6xl mx-auto">
             {/* Header */}
             <div className="mb-10">
               <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">
@@ -467,7 +476,18 @@ export default function InvestmentDashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium"
               >
-                {successMessage}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <span>{successMessage}</span>
+                  {pendingPayHereOrderId ? (
+                    <button
+                      type="button"
+                      onClick={verifyPayHereInvestment}
+                      className="px-3 py-1.5 rounded-lg border border-emerald-400/40 text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/10 transition-colors text-xs font-bold"
+                    >
+                      Verify PayHere Status
+                    </button>
+                  ) : null}
+                </div>
               </motion.div>
             )}
 
@@ -505,6 +525,12 @@ export default function InvestmentDashboard() {
                           request.founderId?.name || "Unknown Founder";
                         const ideaTitle =
                           request.ideaId?.title || "Unknown Idea";
+                        const requestTermsText =
+                          request.fundingType === "SAFE"
+                            ? "via SAFE"
+                            : request.proposedPercentage != null
+                              ? `for ${request.proposedPercentage}% ${request.fundingType}`
+                              : `via ${request.fundingType || "Equity"}`;
                         const canPay =
                           (request.requestStatus === "pending_mentor" ||
                             request.requestStatus === "approved") &&
@@ -540,9 +566,14 @@ export default function InvestmentDashboard() {
                               <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-1">
                                 Investment Amount
                               </p>
-                              <p className="text-3xl font-black text-white">
-                                {formatCurrency(request.amount)}
-                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-3xl font-black text-white">
+                                  {formatCurrency(request.amount)}
+                                </p>
+                                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-200">
+                                  {requestTermsText}
+                                </span>
+                              </div>
                             </div>
 
                             {/* Message */}
@@ -579,7 +610,7 @@ export default function InvestmentDashboard() {
                             {canPay && (
                               <button
                                 onClick={() =>
-                                  setSelectedRequestForPayment(request)
+                                  (setPaymentMethod("wallet"), setSelectedRequestForPayment(request))
                                 }
                                 className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)]"
                               >
@@ -632,6 +663,12 @@ export default function InvestmentDashboard() {
                           request.investorId?.name || "Unknown Investor";
                         const ideaTitle =
                           request.ideaId?.title || "Unknown Idea";
+                        const requestTermsText =
+                          request.fundingType === "SAFE"
+                            ? "via SAFE"
+                            : request.proposedPercentage != null
+                              ? `for ${request.proposedPercentage}% ${request.fundingType}`
+                              : `via ${request.fundingType || "Equity"}`;
                         const canDecide =
                           request.requestStatus === "pending_founder";
 
@@ -668,9 +705,14 @@ export default function InvestmentDashboard() {
                               <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-1">
                                 Proposed Investment
                               </p>
-                              <p className="text-3xl font-black text-white">
-                                {formatCurrency(request.amount)}
-                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-3xl font-black text-white">
+                                  {formatCurrency(request.amount)}
+                                </p>
+                                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-200">
+                                  {requestTermsText}
+                                </span>
+                              </div>
                             </div>
 
                             {/* Message */}
@@ -768,9 +810,6 @@ export default function InvestmentDashboard() {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-        </main>
-      </div>
 
       {/* Payment Method Modal */}
       <AnimatePresence>
@@ -794,7 +833,6 @@ export default function InvestmentDashboard() {
               </h3>
 
               <div className="space-y-4 mb-8">
-                {/* Wallet Option */}
                 <button
                   onClick={() => setPaymentMethod("wallet")}
                   className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
@@ -805,16 +843,13 @@ export default function InvestmentDashboard() {
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <DollarSign className="w-5 h-5 text-blue-400" />
-                    <span className="font-bold text-white">
-                      Pay from Wallet
-                    </span>
+                    <span className="font-bold text-white">Pay from Wallet</span>
                   </div>
                   <p className="text-xs text-slate-400">
-                    Balance: {formatCurrency(walletBalance)}
+                    Wallet balance: {formatCurrency(walletBalance)}
                   </p>
                 </button>
 
-                {/* PayHere Option */}
                 <button
                   onClick={() => setPaymentMethod("payhere")}
                   className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
@@ -825,12 +860,10 @@ export default function InvestmentDashboard() {
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <TrendingUp className="w-5 h-5 text-blue-400" />
-                    <span className="font-bold text-white">
-                      Pay with PayHere
-                    </span>
+                    <span className="font-bold text-white">Pay with PayHere Escrow</span>
                   </div>
                   <p className="text-xs text-slate-400">
-                    Using credit/debit card
+                    Entire amount is collected in merchant escrow first, then platform split is settled.
                   </p>
                 </button>
               </div>
@@ -845,12 +878,10 @@ export default function InvestmentDashboard() {
                 </p>
               </div>
 
-              {/* Insufficient Balance Warning */}
               {paymentMethod === "wallet" &&
                 selectedRequestForPayment?.amount > walletBalance && (
                   <div className="mb-6 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs">
-                    ⚠ Insufficient wallet balance. Please use PayHere or top up
-                    your wallet.
+                    Insufficient wallet balance for this payment. Choose PayHere or top up your wallet.
                   </div>
                 )}
 
@@ -898,6 +929,6 @@ export default function InvestmentDashboard() {
           </div>
         )}
       </AnimatePresence>
-    </div>
+    </DashboardShell>
   );
 }

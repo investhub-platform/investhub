@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { deleteUser, getUserById, updateUser } from "../api/adminApi";
 
@@ -15,7 +15,7 @@ export default function AdminUserPage() {
   const [name, setName] = useState("");
   const [rolesText, setRolesText] = useState("");
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -31,11 +31,11 @@ export default function AdminUserPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchUser();
-  }, [id]);
+  }, [fetchUser]);
 
   const handleSave = async () => {
     try {

@@ -66,7 +66,7 @@ export const deleteUser = async (req, res, next) => {
 
     await user.save();
 
-    res.json({ success: true, message: "User soft deleted" });
+    res.json({ success: true, data: { message: "User soft deleted" } });
   } catch (err) {
     next(err);
   }

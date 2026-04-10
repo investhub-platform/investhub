@@ -46,7 +46,7 @@ export const logout = async (req, res, next) => {
     // If you have auth middleware, you can read req.user.id.
     // For now, just clear cookie and (optional) clear token in DB later.
     res.clearCookie("refreshToken", { path: "/api/v1/auth" });
-    res.json({ success: true, message: "Logged out" });
+    res.json({ success: true, data: { message: "Logged out" } });
   } catch (err) {
     next(err);
   }

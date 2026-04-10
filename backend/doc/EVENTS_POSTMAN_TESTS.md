@@ -199,6 +199,4 @@ Failure cases to test
 - Date and time: send ISO8601 timestamps (UTC) to avoid timezone issues.
 - Adjust `baseUrl` path prefix based on how your server mounts v1 routes (some projects use `/api/v1`, others `/v1` or `/api`).
 
----
 
-If you want, I can also generate a Postman Collection JSON for import with these requests. Let me know if you want that file generated in the repo.

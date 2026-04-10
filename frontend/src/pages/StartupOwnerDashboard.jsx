@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import AppNavbar from "../components/layout/AppNavBar";
-import { DesktopSidebar } from "@/components/DesktopSidebar";
+import DashboardShell from "../components/layout/DashboardShell";
 import { useAuth } from "@/features/auth/useAuth";
 import api from "@/lib/axios";
+import MonthlyPayoutModal from "../components/MonthlyPayoutModal";
 // Use a local formatter instead of mock data
 const formatCurrency = (value) => {
   const n = Number(value || 0);
@@ -67,6 +67,13 @@ const StartupOwnerDashboard = () => {
   const [error, setError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
 
+  // Monthly payout modal state
+  const [payoutModalOpen, setPayoutModalOpen] = useState(false);
+  const [payoutRequest, setPayoutRequest] = useState(null);
+  const [payoutStartupId, setPayoutStartupId] = useState(null);
+  const [payoutLoading, setPayoutLoading] = useState(false);
+  const [payoutError, setPayoutError] = useState("");
+
   const [plans, setPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(false);
   const [plansError, setPlansError] = useState("");
@@ -118,6 +125,8 @@ const StartupOwnerDashboard = () => {
       status: (request.requestStatus || "pending").toLowerCase(),
       direction: request.direction || "investor_to_startup",
       amount: request.amount || 0,
+      fundingType: request.fundingType || "Equity",
+      proposedPercentage: request.proposedPercentage ?? null,
       ideaTitle: request.ideaId?.title || "Startup Idea",
       message: request.message || "",
       date:
@@ -362,6 +371,33 @@ const StartupOwnerDashboard = () => {
     }
   };
 
+  const openPayoutModal = (startupId, request) => {
+    setPayoutStartupId(startupId);
+    setPayoutRequest(request);
+    setPayoutError("");
+    setPayoutModalOpen(true);
+  };
+
+  const closePayoutModal = () => {
+    setPayoutModalOpen(false);
+    setPayoutRequest(null);
+    setPayoutStartupId(null);
+    setPayoutError("");
+  };
+
+  const confirmPayout = async (amount) => {
+    setPayoutLoading(true);
+    setPayoutError("");
+    try {
+      await handleFounderPayout(payoutStartupId, payoutRequest, amount);
+      closePayoutModal();
+    } catch (e) {
+      setPayoutError(e?.response?.data?.message || "Failed to send monthly payout.");
+    } finally {
+      setPayoutLoading(false);
+    }
+  };
+
   const handleStartupCreated = (startup) => {
     setStartups((prev) => [normalizeStartup(startup), ...prev]);
     setActionMessage("Startup successfully created.");
@@ -547,18 +583,7 @@ const StartupOwnerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans selection:bg-blue-500/30 overflow-hidden">
-      <AppNavbar />
-
-      <div className="flex flex-1 pt-20 relative w-full h-screen overflow-hidden">
-        {/* Ambient Background Lights */}
-        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[150px] rounded-full pointer-events-none z-0" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none z-0" />
-
-        <DesktopSidebar />
-
-        <main className="flex-1 w-full overflow-y-auto px-4 sm:px-8 py-8 lg:py-12 relative z-10 scroll-smooth md:ml-64 lg:ml-64">
-          <div className="max-w-6xl mx-auto">
+    <DashboardShell contentClassName="max-w-6xl mx-auto">
             {/* Header Area */}
             <div className="mb-10">
               <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">
@@ -629,6 +654,18 @@ const StartupOwnerDashboard = () => {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Monthly payout modal (rich UI) */}
+            <MonthlyPayoutModal
+              open={payoutModalOpen}
+              onClose={closePayoutModal}
+              onConfirm={confirmPayout}
+              suggested={Math.max(1, Math.round(Number(payoutRequest?.amount || 0) * 0.05))}
+              investorName={payoutRequest?.investorId?.name || payoutRequest?.createdBy?.name || "Investor"}
+              startupTitle={payoutRequest?.ideaTitle || ""}
+              loading={payoutLoading}
+              error={payoutError}
+            />
 
             {/* Main Content Area */}
             <AnimatePresence mode="wait">
@@ -719,7 +756,7 @@ const StartupOwnerDashboard = () => {
                               onDelete={handleDeleteStartup}
                               onActionMessage={setActionMessage}
                               onRequestAction={handleRequestStatus}
-                              onPayout={handleFounderPayout}
+                              onPayout={openPayoutModal}
                             />
                           ))
                         )}
@@ -1383,10 +1420,7 @@ const StartupOwnerDashboard = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-        </main>
-      </div>
-    </div>
+    </DashboardShell>
   );
 };
 
@@ -1420,6 +1454,7 @@ function StartupManageCard({
     title: "",
     description: "",
     category: "Tech",
+    fundingType: "Equity",
     customCategory: "",
     budget: "",
     timeline: "",
@@ -1507,6 +1542,7 @@ function StartupManageCard({
       title: "",
       description: "",
       category: "Tech",
+      fundingType: "Equity",
       customCategory: "",
       budget: "",
       timeline: "",
@@ -1530,6 +1566,7 @@ function StartupManageCard({
       form.append("title", ideaFormData.title);
       form.append("description", ideaFormData.description);
       form.append("category", ideaFormData.category);
+      form.append("fundingType", ideaFormData.fundingType);
       if (ideaFormData.category === "Other")
         form.append("customCategory", ideaFormData.customCategory || "");
       form.append("budget", String(ideaFormData.budget || 0));
@@ -1571,6 +1608,7 @@ function StartupManageCard({
       title: idea.title || "",
       description: idea.description || "",
       category: idea.category || "Tech",
+      fundingType: idea.fundingType || "Equity",
       customCategory: idea.customCategory || "",
       budget: idea.budget || "",
       timeline: idea.timeline || "",
@@ -1972,6 +2010,28 @@ function StartupManageCard({
                             />
                           )}
                         </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">
+                            Investment Type
+                          </label>
+                          <select
+                            className={inputClass}
+                            value={ideaFormData.fundingType}
+                            onChange={(e) =>
+                              setIdeaFormData((p) => ({
+                                ...p,
+                                fundingType: e.target.value
+                              }))
+                            }
+                          >
+                            <option value="Equity">Equity</option>
+                            <option value="Revenue Share">Revenue Share</option>
+                            <option value="SAFE">SAFE</option>
+                          </select>
+                          <p className="text-[10px] font-medium text-slate-500 mt-2 ml-1 leading-relaxed">
+                            Equity is ownership, Revenue Share pays monthly, and SAFE converts into future equity.
+                          </p>
+                        </div>
                       </div>
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">
@@ -2134,6 +2194,14 @@ function StartupManageCard({
                               {idea.timeline || "-"}
                             </p>
                           </div>
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
+                              Investment Type
+                            </p>
+                            <p className="text-xs font-bold text-white">
+                              {idea.fundingType || "Equity"}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -2263,6 +2331,12 @@ function InvestorRequestCard({ request, startupId, onAction, onPayout }) {
   const requestedUserName = request.createdBy?.name || request.investorName;
   const requestedUserEmail =
     request.createdBy?.email || request.investorId?.email;
+  const requestTermsText =
+    request.fundingType === "SAFE"
+      ? "via SAFE"
+      : request.proposedPercentage != null
+        ? `for ${request.proposedPercentage}% ${request.fundingType}`
+        : `via ${request.fundingType || "Equity"}`;
   console.log("Rendering InvestorRequestCard with request:", request);
   return (
     <div className="p-5 rounded-2xl bg-[#1A1D24] border border-white/5 shadow-inner">
@@ -2291,9 +2365,14 @@ function InvestorRequestCard({ request, startupId, onAction, onPayout }) {
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">
               Proposed Capital
             </p>
-            <p className="text-2xl font-black text-emerald-400 mb-3">
-              {formatCurrency(request.amount)}
-            </p>
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <p className="text-2xl font-black text-emerald-400">
+                {formatCurrency(request.amount)}
+              </p>
+              <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-200">
+                {requestTermsText}
+              </span>
+            </div>
             {request.message && (
               <>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">
@@ -2350,21 +2429,8 @@ function InvestorRequestCard({ request, startupId, onAction, onPayout }) {
                 {request.ideaTitle}
               </div>
               <button
-                onClick={() => {
-                  const suggested = Math.max(
-                    1,
-                    Math.round(Number(request.amount || 0) * 0.05)
-                  );
-                  const raw = window.prompt(
-                    "Monthly return amount to send to investor (USD)",
-                    String(suggested)
-                  );
-                  if (raw == null) return;
-                  const amount = Number(raw);
-                  if (!Number.isFinite(amount) || amount <= 0) return;
-                  onPayout?.(startupId, request, amount);
-                }}
-                className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white transition-colors shadow-[0_0_15px_rgba(37,99,235,0.3)]"
+                onClick={() => onPayout?.(startupId, request)}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-xs font-bold text-white transition-colors shadow-[0_0_25px_rgba(59,130,246,0.18)]"
               >
                 Send Monthly Return
               </button>

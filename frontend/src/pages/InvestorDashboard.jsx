@@ -10,8 +10,7 @@ import {
   Send
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import AppNavbar from "../components/layout/AppNavBar";
-import { DesktopSidebar } from "@/components/DesktopSidebar";
+import DashboardShell from "../components/layout/DashboardShell";
 import { FilterBar } from "@/components/FilterBar";
 import SearchBar from "@/components/SearchBar";
 import { StartupCard } from "@/components/StartupCard";
@@ -138,6 +137,8 @@ const InvestorDashboard = () => {
   const [pitchForm, setPitchForm] = useState({
     ideaId: "",
     amount: "",
+    fundingType: "Equity",
+    proposedPercentage: "",
     message: ""
   });
   const [pitchSubmitting, setPitchSubmitting] = useState(false);
@@ -299,6 +300,8 @@ const InvestorDashboard = () => {
     setPitchForm({
       ideaId: founderIdeas[0]?.id || "",
       amount: "",
+      fundingType: "Equity",
+      proposedPercentage: "",
       message: ""
     });
     setPitchModalOpen(true);
@@ -336,6 +339,15 @@ const InvestorDashboard = () => {
       return;
     }
 
+    const proposedPercentageValue = Number(pitchForm.proposedPercentage);
+    if (
+      pitchForm.fundingType !== "SAFE" &&
+      (!Number.isFinite(proposedPercentageValue) || proposedPercentageValue <= 0 || proposedPercentageValue > 100)
+    ) {
+      setPitchFeedback("Please enter a valid proposed percentage between 0 and 100.");
+      return;
+    }
+
     const selectedIdea = founderIdeas.find(
       (i) => String(i.id) === String(pitchForm.ideaId)
     );
@@ -354,6 +366,8 @@ const InvestorDashboard = () => {
         direction: "startup_to_investor",
         requestStatus: "pending_investor",
         amount: amountValue,
+        fundingType: pitchForm.fundingType,
+        proposedPercentage: pitchForm.fundingType === "SAFE" ? null : proposedPercentageValue,
         message: pitchForm.message?.trim() || null,
         StartupsId: selectedIdea.startupId
           ? String(selectedIdea.startupId)
@@ -385,18 +399,8 @@ const InvestorDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-blue-500/30 overflow-hidden flex flex-col">
-      <AppNavbar />
-
-      <div className="flex flex-1 pt-6 relative w-full h-screen overflow-hidden">
-        {/* Ambient Background Lights */}
-        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[150px] rounded-full pointer-events-none z-0" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-cyan-600/5 blur-[120px] rounded-full pointer-events-none z-0" />
-
-        <DesktopSidebar />
-
-        <main className="flex-1 w-full overflow-y-auto px-4 md:px-8 py-8 lg:py-12 relative z-10 scroll-smooth lg:ml-64">
-          <div className="max-w-7xl mx-auto">
+    <>
+      <DashboardShell contentClassName="max-w-6xl mx-auto">
             {/* Header Area */}
             <div className="mb-10">
               <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">
@@ -409,7 +413,7 @@ const InvestorDashboard = () => {
             </div>
 
             {/* Segmented Control Tabs */}
-            <div className="inline-flex rounded-full p-1.5 bg-[#0B0D10]/80 border border-white/10 backdrop-blur-xl mb-8 shadow-lg ml-4 md:ml-8">
+            <div className="inline-flex rounded-full p-1.5 bg-[#0B0D10]/80 border border-white/10 backdrop-blur-xl mb-8 shadow-lg">
               {[
                 { key: "startups", label: "Startups Pitching" },
                 { key: "mandates", label: "Investor Mandates" }
@@ -690,9 +694,7 @@ const InvestorDashboard = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-        </main>
-      </div>
+      </DashboardShell>
 
       <AnimatePresence>
         {pitchModalOpen && selectedMandate && (
@@ -778,6 +780,61 @@ const InvestorDashboard = () => {
 
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">
+                    Funding Type
+                  </label>
+                  <select
+                    value={pitchForm.fundingType}
+                    onChange={(e) =>
+                      setPitchForm((prev) => ({
+                        ...prev,
+                        fundingType: e.target.value,
+                        proposedPercentage:
+                          e.target.value === "SAFE" ? "" : prev.proposedPercentage
+                      }))
+                    }
+                    className="w-full px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  >
+                    <option value="Equity">Equity</option>
+                    <option value="Revenue Share">Revenue Share</option>
+                    <option value="SAFE">SAFE</option>
+                  </select>
+                  <p className="mt-2 text-xs text-slate-500 leading-relaxed">
+                    {pitchForm.fundingType === "Equity"
+                      ? "You receive ownership shares in the company. Payout typically occurs during an acquisition or IPO."
+                      : pitchForm.fundingType === "Revenue Share"
+                        ? "You receive a fixed percentage of the startup's monthly revenue until your investment cap is reached."
+                        : "Simple Agreement for Future Equity. Your investment converts to shares during a future priced funding round."}
+                  </p>
+                </div>
+
+                {pitchForm.fundingType !== "SAFE" && (
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">
+                      Proposed Percentage
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={pitchForm.proposedPercentage}
+                        onChange={(e) =>
+                          setPitchForm((prev) => ({
+                            ...prev,
+                            proposedPercentage: e.target.value
+                          }))
+                        }
+                        className="w-full px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 pr-14"
+                        placeholder="5"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500">%</span>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">
                     Pitch Message
                   </label>
                   <textarea
@@ -821,7 +878,7 @@ const InvestorDashboard = () => {
           </>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 };
 

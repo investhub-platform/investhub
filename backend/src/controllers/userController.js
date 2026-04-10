@@ -22,7 +22,7 @@ export const updateMe = async (req, res, next) => {
 export const deleteMe = async (req, res, next) => {
   try {
     await userService.deleteMe(req.user.id);
-    res.json({ success: true, message: "Account deleted" });
+    res.json({ success: true, data: { message: "Account deleted" } });
   } catch (err) {
     next(err);
   }
